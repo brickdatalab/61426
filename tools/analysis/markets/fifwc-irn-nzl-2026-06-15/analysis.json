@@ -1,0 +1,100 @@
+{
+  "t0": 1781569663,
+  "slug": "fifwc-irn-nzl-2026-06-15",
+  "price_vector": {
+    "0xe70fd51f42e61fc309d8e57019a7b76c8dc7bd19b473351d56ff1e125ae0d9d4": 0.535,
+    "0xcd05a73f2ddf6c07340b4f1c6c853c4754b2f4428045fec1b295c192e399e563": 0.275,
+    "0x4d32282db59ec449edbc191b4b487b7f8218c07d6f94b0c01e2e7ddf6964c26d": 0.195,
+    "0x283fb302cb02a450e38e998395aa0ccf6f4ad6dca3fa5473f95856bac487c616": 0.395,
+    "0xd51508117bf9f6ddfde52acd41b962e4da3e2362bc5e6afc360e1c0c5a762f1e": 0.42,
+    "0xd33ac29ef9f4682ae195a4068a75a49f7896c056949f152e076186cb660c3fc2": 0.175
+  },
+  "edges": [
+    {
+      "leg": "Will IR Iran win on 2026-06-15?",
+      "condition_id": "0xe70fd51f42e61fc309d8e57019a7b76c8dc7bd19b473351d56ff1e125ae0d9d4",
+      "token_id": "98258440478094610167729510800284333090952142769785486649204893493792445830714",
+      "side": "BUY",
+      "price_t0": 0.535,
+      "price_t0_vigfree": 0.5,
+      "fair_price": 0.522,
+      "edge_cents": 2.2,
+      "confidence": 3,
+      "evidence": {
+        "fairvalue": "vig-free 0.500 vs sharp-consensus 0.522 = +2.2c lean, SUB-threshold and fragile (2c book disagreement; raw 0.535 fully prices Iran)",
+        "coherence": "match triplet coherent",
+        "smart_money": "favourite-confirmation only (disqualified as signal); biggest Iran tickets unproven $0 P&L; tape truncated",
+        "microstructure": "TRADEABLE, 1c spread, ~$2.2M ask depth, stable",
+        "refutation": "sub-threshold; direction flips on a 2c line move; not actionable"
+      }
+    },
+    {
+      "leg": "Will New Zealand win on 2026-06-15?",
+      "condition_id": "0x4d32282db59ec449edbc191b4b487b7f8218c07d6f94b0c01e2e7ddf6964c26d",
+      "token_id": "55137687241393541361565001012865874102902217097342494894791514463933071353645",
+      "side": "BUY",
+      "price_t0": 0.195,
+      "fair_price": 0.203,
+      "edge_cents": -0.8,
+      "confidence": 2,
+      "evidence": {
+        "fairvalue": "CONTRADICTS the flow: PM 0.216 vig-free vs book-fair 0.203 -> NZ slightly RICH on PM, not cheap",
+        "coherence": "neutral",
+        "smart_money": "2 MIXED (not SHARP) profitable wallets back NZ (+$35.7k, +$33.5k realized) = divergent, clears >=2 bar but weak quality",
+        "microstructure": "TRADEABLE ($178k bid)",
+        "refutation": "REFUTED as edge: anchor contradicts the smart-money lean; two-lane disagreement -> observation only"
+      }
+    }
+  ],
+  "scorecards": {
+    "0x3f3aa7005f8006bfcc367d43a25cde25509fe8fd": {
+      "label": "MIXED",
+      "score": 0.441,
+      "realized_pnl": 35660,
+      "roi": 0.018,
+      "role": "backs NZ (divergent)"
+    },
+    "0x53757615de1c42b83f893b79d4241a009dc2aeea": {
+      "label": "MIXED",
+      "score": 0.479,
+      "realized_pnl": 33508,
+      "roi": 0.029,
+      "role": "backs NZ (divergent)"
+    },
+    "0x9703676286b93c2eca71ca96e8757104519a69c2": {
+      "label": "SHARP",
+      "score": 0.762,
+      "realized_pnl": 1944686,
+      "roi": 5.26,
+      "role": "backs Draw (lone, below 2-wallet bar)"
+    },
+    "0x2c335066fe58fe9237c3d3dc7b275c2a034a0563": {
+      "label": "MIXED",
+      "score": 0.551,
+      "realized_pnl": 395037,
+      "roi": 0.106,
+      "role": "backs Iran (favourite-confirmation, disqualified)"
+    }
+  },
+  "anchors": {
+    "match_1X2": {
+      "source": "sharp-3 consensus bet365+FanDuel 2026-06-15",
+      "fair": {
+        "iran": 0.5223,
+        "draw": 0.2746,
+        "nz": 0.2031
+      },
+      "polymarket_vigfree": {
+        "iran": 0.5,
+        "draw": 0.284,
+        "nz": 0.216
+      },
+      "verdict": "within ~2.2c -> efficiently priced, no edge >=3c"
+    }
+  },
+  "coherence": [],
+  "graded": false,
+  "verdict": "MARKET EFFICIENT. No edge >=6. 1X2 within ~2.2c of sharp consensus; both triplets coherent; 2nd-half = dust. Hardened-rule win: the >=2-validated-wallet NZ divergence was REFUTED by the external anchor (NZ slightly rich on PM), so it is logged as observation (conf 2), not an edge. Iran shows only a sub-threshold vig-free lean (conf 3). Not actionable at size.",
+  "kickoff_et": "2026-06-15 21:00 ET",
+  "closing_snapshot": "PENDING \u2014 capture line near 21:00 ET for CLV (Run #1 fix)."
+}

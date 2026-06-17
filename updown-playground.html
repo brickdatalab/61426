@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Up/Down — Live Cushion</title>
+<style>
+  :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--accent:#5b9dff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  header h1{font-size:15px;margin:0;font-weight:600}
+  header .sub{color:var(--dim);font-size:12px}
+  .live{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  .pulse{width:9px;height:9px;border-radius:50%;background:#444}
+  .pulse.on{background:var(--up);animation:pp 1s infinite}
+  @keyframes pp{0%{box-shadow:0 0 0 0 rgba(46,194,126,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,126,0)}100%{box-shadow:0 0 0 0 rgba(46,194,126,0)}}
+  .wrap{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 50px)}
+  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel)}
+  .preview{padding:16px;overflow:auto}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 6px}
+  input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 10px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+  .group{margin-bottom:16px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px}
+  .presets button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12px}
+  .presets button:hover{border-color:var(--accent)}
+  .btnrow{display:flex;gap:8px}
+  .startbtn{flex:1;padding:11px;border-radius:8px;font-weight:600;font-size:14px;border:none;cursor:pointer;background:var(--accent);color:#04122e}
+  .startbtn.stop{background:var(--down);color:#2a0307}
+  .logbtn{padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:13px}
+  .status{margin-top:14px}
+  .feed{font-size:12px;color:var(--dim);margin-bottom:5px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#444;margin-right:7px}
+  .dot.ok{background:var(--up)}.dot.bad{background:var(--down)}.dot.wait{background:var(--flat)}
+  .note{font-size:11px;color:var(--dim);margin-top:12px;line-height:1.5}
+  .topgrid{display:grid;grid-template-columns:1fr 1.3fr;gap:14px;margin-bottom:14px}
+  .badge{display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+  .dir{font-size:52px;font-weight:800;letter-spacing:1px;line-height:1;transition:color .12s}
+  .dir.UP{color:var(--up)}.dir.DOWN{color:var(--down)}.dir.FLAT{color:var(--flat)}.dir.WAIT{color:var(--dim)}
+  .bmeta{display:flex;flex-direction:column;gap:7px}
+  .conv{font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--dim);width:fit-content}
+  .conv.HIGH{color:var(--up);border-color:var(--up)}.conv.MED{color:var(--flat);border-color:var(--flat)}.conv.LOW{color:var(--dim)}
+  .cd{font-size:22px;font-weight:700}.cdl{font-size:10px;color:var(--dim);text-transform:uppercase}
+  .cushbox{padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:18px}
+  .cushbox h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  .cushval{font-size:46px;font-weight:800;font-family:ui-monospace,monospace;line-height:1;transition:color .12s}
+  .cushval.pos{color:var(--up)}.cushval.neg{color:var(--down)}
+  .arrow{font-size:26px;margin-left:2px}
+  .cushsub{font-size:12px;color:var(--dim);font-family:ui-monospace,monospace;margin-top:6px}
+  .cushsub b{color:var(--txt)}
+  .metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+  .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+  .metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+  .metric .v{font-size:17px;font-weight:600;margin-top:3px;font-family:ui-monospace,monospace}
+  .pos{color:var(--up)}.neg{color:var(--down)}
+  .spark{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+  .spark .k{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:6px}
+  canvas{width:100%;height:100px;display:block}
+  .settled{padding:13px 16px;border-radius:10px;margin-bottom:12px;font-weight:600;display:none}
+  .settled.UP{background:rgba(46,194,126,.12);border:1px solid var(--up);color:var(--up)}
+  .settled.DOWN{background:rgba(255,93,108,.12);border:1px solid var(--down);color:var(--down)}
+  table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
+  th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:10px;position:sticky;top:0;background:var(--bg)}
+  th:first-child,td:first-child{text-align:left}
+  td.UP{color:var(--up)}td.DOWN{color:var(--down)}
+  .promptbox{border-top:1px solid var(--line);background:var(--panel);padding:12px 18px}
+  .promptbox .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .promptbox h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  #prompt{width:100%;min-height:50px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-family:ui-monospace,monospace;font-size:12px;resize:vertical}
+  .copy{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Up / Down — Live Cushion</h1>
+  <span class="sub">1-second REST polling · cushion (price − open) · cross zero = flip</span>
+  <div class="live"><span id="pulse" class="pulse"></span><span id="rate">idle</span></div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="group"><label>Market slug</label>
+      <input id="slug" type="text" value="btc-updown-15m-1781669700" spellcheck="false"></div>
+    <div class="group"><label>Presets — current live bar</label>
+      <div class="presets" id="presets">
+        <button data-a="btc" data-i="5m">BTC 5m</button>
+        <button data-a="btc" data-i="15m">BTC 15m</button>
+        <button data-a="eth" data-i="5m">ETH 5m</button>
+        <button data-a="eth" data-i="15m">ETH 15m</button>
+      </div></div>
+    <div class="btnrow">
+      <button id="start" class="startbtn">▶ Connect &amp; stream</button>
+      <button id="dl" class="logbtn" title="Download log JSON">⬇ Log</button>
+    </div>
+    <div class="status"><label>Feeds · 1s</label>
+      <div class="feed"><span id="dBin" class="dot"></span>Binance perp REST (price · CVD)</div>
+      <div class="feed"><span id="dPoly" class="dot"></span>Polymarket odds (REST)</div></div>
+    <div class="note" id="parsed"></div>
+    <div class="note">Watch the cushion. + = settling UP, − = settling DOWN. Ticking toward zero = a flip is coming; crossing zero = the call flips. Logs auto-save to your browser; ⬇ Log downloads them so Claude can review.</div>
+  </div>
+
+  <div class="preview">
+    <div class="settled" id="settled"></div>
+    <div class="topgrid">
+      <div class="badge">
+        <div class="dir WAIT" id="dir">—</div>
+        <div class="bmeta">
+          <div class="conv" id="conv">idle</div>
+          <div><span class="cd mono" id="cd">--:--</span> <span class="cdl">to settle</span></div>
+        </div>
+      </div>
+      <div class="cushbox">
+        <div style="flex:1">
+          <h3>Cushion — price vs open (the flip line)</h3>
+          <div><span class="cushval" id="cushval">—</span><span class="arrow" id="arrow"></span></div>
+          <div class="cushsub" id="cushsub">press Connect…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">P(up) odds</div><div class="v" id="mProb">—</div></div>
+      <div class="metric"><div class="k">CVD 30s</div><div class="v" id="mCvd">—</div></div>
+      <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div></div>
+      <div class="metric"><div class="k">Last</div><div class="v" id="mLast">—</div></div>
+      <div class="metric"><div class="k">Bar open</div><div class="v" id="mOpen">—</div></div>
+    </div>
+
+    <div class="spark"><div class="k">Cushion path — center line is the flip. Crossing it = the call flips.</div>
+      <canvas id="cv" width="900" height="100"></canvas></div>
+
+    <table>
+      <thead><tr><th>Time (UTC)</th><th>rem</th><th>P(up)</th><th>CVD30s</th><th>cushion</th><th>call</th><th>conv</th></tr></thead>
+      <tbody id="led"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="promptbox">
+  <div class="hd"><h3>Prompt — copy back into Claude</h3><button class="copy" id="copy">Copy</button></div>
+  <textarea id="prompt" readonly></textarea>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
+let parsed=null,poll=null,st=null;
+
+function parseSlug(slug){
+  const m=slug.trim().toLowerCase().match(/^([a-z]+)-updown-(\d+)([mh])-(\d+)$/);
+  if(!m)return null;const[,asset,n,unit,ts]=m,num=+n,barSec=num*(unit==='h'?3600:60);
+  return{asset,symbol:SYM[asset]||asset.toUpperCase()+'USDT',interval:num+unit,barSec,ts:+ts,end:+ts+barSec,label:`${asset.toUpperCase()} ${num}${unit}`};
+}
+const fmtClock=s=>{s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');};
+const sgn=v=>v>=0?'+':'';
+const fmtUsd=v=>(v>=0?'+':'')+Math.round(v).toLocaleString();
+async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
+
+function decide(prob,cvd,cush,rem){
+  const votes=[];
+  if(prob!=null)votes.push(prob>0.5?1:-1);
+  if(cvd!=null)votes.push(cvd>0?1:-1);
+  if(cush!=null)votes.push(cush>0?1:-1);
+  let sum=votes.reduce((a,b)=>a+b,0);
+  if(rem<90&&cush!=null)sum=cush>0?99:-99;
+  const dir=sum>0?'UP':sum<0?'DOWN':'FLAT';
+  const unan=votes.length&&Math.abs(votes.reduce((a,b)=>a+b,0))===votes.length;
+  const pgap=Math.abs((prob??0.5)-0.5);
+  let conv='LOW';
+  if(unan&&(pgap>=0.15||(cush!=null&&Math.abs(cush)>15&&rem<300)||rem<90))conv='HIGH';
+  else if(unan)conv='MED';
+  return{dir,conv};
+}
+
+// ---- one REST tick: fetch everything in parallel, render immediately ----
+async function tick(){
+  if(!st||!st.running)return;
+  const now=Date.now()/1000, rem=parsed.end-now;
+  $('#cd').textContent=fmtClock(rem);
+  if(rem<=0){await settle();return;}
+
+  // parallel fetches; each independent so one failure doesn't kill the row
+  const [kl,at,prob]=await Promise.all([
+    jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{$('#dBin').className='dot ok';return k;}).catch(()=>{$('#dBin').className='dot bad';return null;}),
+    jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`).catch(()=>null),
+    (st.token?jget('https://clob.polymarket.com/midpoint?token_id='+st.token).then(m=>{$('#dPoly').className='dot ok';return +m.mid;}).catch(()=>{$('#dPoly').className='dot bad';return null;}):Promise.resolve(null))
+  ]);
+
+  if(kl&&kl[0]){st.open=+kl[0][1];st.last=+kl[0][4];}
+  if(at){const cut=Date.now()-30000;st.cvd=at.filter(a=>a.T>=cut).reduce((s,a)=>s+(a.m?-1:1)*(+a.q)*(+a.p),0);}
+  if(prob!=null)st.prob=prob;
+  st.lastUpd=Date.now();
+  if(st.last==null||st.open==null)return;
+
+  const cush=st.last-st.open, d=decide(st.prob,st.cvd,cush,rem);
+
+  // hero cushion
+  const cvEl=$('#cushval');cvEl.textContent=sgn(cush)+cush.toFixed(1);cvEl.className='cushval '+(cush>=0?'pos':'neg');
+  const prev=st.prevCush==null?cush:st.prevCush;const delta=cush-prev;st.prevCush=cush;
+  $('#arrow').textContent=delta>0.05?'▲':delta<-0.05?'▼':'■';
+  $('#arrow').style.color=delta>0.05?'var(--up)':delta<-0.05?'var(--down)':'var(--dim)';
+  $('#cushsub').innerHTML=`heading <b>${cush>=0?'UP':'DOWN'}</b> · ${Math.abs(cush).toFixed(1)} from flip · ${Math.round(rem)}s left`;
+  $('#dir').className='dir '+d.dir;$('#dir').textContent=d.dir;
+  $('#conv').className='conv '+d.conv;$('#conv').textContent=d.conv;
+  $('#mProb').textContent=st.prob==null?'n/a':st.prob.toFixed(3);
+  const ce=$('#mCvd');ce.textContent=fmtUsd(st.cvd);ce.className='v '+(st.cvd>0?'pos':'neg');
+  const ue=$('#mCush');ue.textContent=sgn(cush)+cush.toFixed(1);ue.className='v '+(cush>0?'pos':'neg');
+  $('#mLast').textContent=st.last.toLocaleString();$('#mOpen').textContent=st.open.toLocaleString();
+  $('#pulse').className='pulse on';$('#rate').textContent='live · '+st.log.length+' ticks';
+
+  // history + ledger + log
+  st.hist.push(cush);if(st.hist.length>300)st.hist.shift();drawSpark();
+  const t=new Date().toISOString().substr(11,8);
+  const row={t,rem:Math.max(0,Math.round(rem)),prob:st.prob,cvd:Math.round(st.cvd),cushion:+cush.toFixed(2),call:d.dir,conv:d.conv};
+  st.log.push(row);saveLog();
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${t}</td><td>${row.rem}</td><td>${st.prob==null?'·':st.prob.toFixed(3)}</td>`+
+    `<td>${fmtUsd(st.cvd)}</td><td>${sgn(cush)+cush.toFixed(1)}</td><td class="${d.dir}">${d.dir}</td><td>${d.conv}</td>`;
+  const led=$('#led');led.insertBefore(tr,led.firstChild);while(led.children.length>80)led.removeChild(led.lastChild);
+  updatePrompt(d);
+}
+function drawSpark(){
+  const c=$('#cv'),x=c.getContext('2d'),W=c.width,H=c.height,h=st.hist;
+  x.clearRect(0,0,W,H);const mid=H/2,mx=Math.max(12,...h.map(Math.abs));
+  x.strokeStyle='#3a4150';x.beginPath();x.moveTo(0,mid);x.lineTo(W,mid);x.stroke();
+  if(h.length<2)return;x.lineWidth=2;
+  for(let i=1;i<h.length;i++){const x0=(i-1)/(h.length-1)*W,x1=i/(h.length-1)*W,
+    y0=mid-(h[i-1]/mx)*(mid-7),y1=mid-(h[i]/mx)*(mid-7);
+    x.strokeStyle=h[i]>=0?'#2ec27e':'#ff5d6c';x.beginPath();x.moveTo(x0,y0);x.lineTo(x1,y1);x.stroke();}
+  const last=h[h.length-1];x.fillStyle=last>=0?'#2ec27e':'#ff5d6c';
+  x.beginPath();x.arc(W-3,mid-(last/mx)*(mid-7),3,0,7);x.fill();
+}
+async function settle(){stop(true);
+  try{const k=await jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
+    const o=+k[0][1],c=+k[0][4],res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
+    el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
+    $('#dir').className='dir '+res;$('#dir').textContent=res;$('#conv').textContent='final';$('#cd').textContent='00:00';
+    st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();}catch(e){}}
+
+const logKey=()=>'updown_log_'+($('#slug').value.trim());
+function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));}catch(e){}}
+function downloadLog(){
+  const data=st&&st.log.length?st.log:JSON.parse(localStorage.getItem(logKey())||'[]');
+  const blob=new Blob([JSON.stringify({slug:$('#slug').value.trim(),rows:data},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=$('#slug').value.trim()+'_log.json';a.click();
+}
+function updatePrompt(d){const p=parsed,endUtc=new Date(p.end*1000).toISOString().substr(11,5)+' UTC';
+  let t=`Live 1s up/down read on Polymarket \`${$('#slug').value.trim()}\` (${p.label}, settles ${endUtc}) — Binance cushion (price−open) each second; crossing zero is the flip. `;
+  if(d)t+=`Now: ${d.dir} (${d.conv}).`;$('#prompt').value=t;}
+
+async function start(){
+  parsed=parseSlug($('#slug').value);
+  if(!parsed){$('#parsed').textContent='⚠ slug not recognized — e.g. btc-updown-15m-<unixts>';return;}
+  $('#parsed').textContent=`${parsed.symbol} · ${parsed.interval} · settles ${new Date(parsed.end*1000).toUTCString().substr(17,9)} UTC`;
+  $('#led').innerHTML='';$('#settled').style.display='none';
+  st={running:true,last:null,open:null,prob:null,cvd:0,token:null,hist:[],prevCush:null,log:[],lastUpd:0};
+  $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
+  $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#cushsub').textContent='connecting…';
+  // resolve Polymarket token in the background (cushion works without it)
+  jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
+    const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
+  }).catch(()=>$('#dPoly').className='dot bad');
+  tick();                       // fire immediately
+  poll=setInterval(tick,1000);  // then every second
+}
+function stop(keep){if(st)st.running=false;if(poll){clearInterval(poll);poll=null;}
+  $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
+  $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
+
+$('#start').onclick=()=>(st&&st.running)?stop():start();
+$('#dl').onclick=downloadLog;
+$('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
+  $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
+$('#copy').onclick=()=>{navigator.clipboard.writeText($('#prompt').value);const b=$('#copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);};
+$('#slug').oninput=()=>{const p=parseSlug($('#slug').value);if(p){parsed=p;updatePrompt();}};
+parsed=parseSlug($('#slug').value);updatePrompt();
+</script>
+</body>
+</html>
