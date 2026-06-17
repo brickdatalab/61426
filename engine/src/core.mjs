@@ -81,3 +81,32 @@ export function blend(perVenue) {
   const cvd = fresh.reduce((s, v) => s + v.cvd, 0);
   return { imbalance, cvd, nFresh: fresh.length };
 }
+
+const VENUES = ['binance', 'okx', 'coinbase'];
+
+export function buildTick({ asset, now, results }) {
+  const venues = {};
+  for (const name of VENUES) {
+    const r = results[name];
+    let entry = { imb: null, cvd: null, fresh: false };
+    if (r && r.ok) {
+      try {
+        const norm = NORMALIZERS[name](r.raw, asset);
+        if (!norm.book.bids.length && !norm.book.asks.length && !norm.trades.length) {
+          throw new Error('empty');
+        }
+        entry = { imb: imbalance(norm.book), cvd: cvd30s(norm.trades, now), fresh: true };
+      } catch {
+        entry = { imb: null, cvd: null, fresh: false };
+      }
+    }
+    venues[name] = entry;
+  }
+  const blended = blend(venues);
+  const health = {
+    binance: venues.binance.fresh,
+    okx: venues.okx.fresh,
+    coinbase: venues.coinbase.fresh,
+  };
+  return { asset, ts: now, venues, blended, health };
+}

@@ -118,3 +118,65 @@ test('blend: zero fresh → nulls', () => {
   assert.equal(r.cvd, null);
   assert.equal(r.nFresh, 0);
 });
+
+import { buildTick } from '../src/core.mjs';
+
+const NOW = 1000000;
+const okxRaw = fx('okx');
+
+test('buildTick: all venues ok → blended + health all true', () => {
+  const t = buildTick({
+    asset: 'BTC', now: NOW,
+    results: {
+      binance:  { ok: true, raw: fx('binance') },
+      okx:      { ok: true, raw: okxRaw },
+      coinbase: { ok: true, raw: fx('coinbase') },
+    },
+  });
+  assert.equal(t.asset, 'BTC');
+  assert.equal(t.ts, NOW);
+  assert.equal(t.blended.nFresh, 3);
+  assert.deepEqual(t.health, { binance: true, okx: true, coinbase: true });
+  assert.equal(typeof t.blended.imbalance, 'number');
+});
+
+test('buildTick: a venue with ok:false is excluded, others still produce a value', () => {
+  const t = buildTick({
+    asset: 'BTC', now: NOW,
+    results: {
+      binance:  { ok: false, raw: null },     // simulated 451
+      okx:      { ok: true,  raw: okxRaw },
+      coinbase: { ok: true,  raw: fx('coinbase') },
+    },
+  });
+  assert.equal(t.health.binance, false);
+  assert.equal(t.blended.nFresh, 2);
+  assert.ok(t.blended.imbalance !== null);
+});
+
+test('buildTick: malformed raw is caught → fresh:false, never throws', () => {
+  const t = buildTick({
+    asset: 'BTC', now: NOW,
+    results: {
+      binance:  { ok: true, raw: { book: {}, trades: [] } }, // missing bids/asks
+      okx:      { ok: true, raw: okxRaw },
+      coinbase: { ok: false, raw: null },
+    },
+  });
+  assert.equal(t.health.binance, false); // normalize threw → excluded
+  assert.equal(t.blended.nFresh, 1);     // only okx
+});
+
+test('buildTick: all stale → blended nulls', () => {
+  const t = buildTick({
+    asset: 'BTC', now: NOW,
+    results: {
+      binance:  { ok: false, raw: null },
+      okx:      { ok: false, raw: null },
+      coinbase: { ok: false, raw: null },
+    },
+  });
+  assert.equal(t.blended.imbalance, null);
+  assert.equal(t.blended.cvd, null);
+  assert.equal(t.blended.nFresh, 0);
+});
