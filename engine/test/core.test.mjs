@@ -44,3 +44,42 @@ test('cvd30s: window boundary is inclusive', () => {
   const now = 1_000_000;
   assert.equal(cvd30s([{ ts: now - 30_000, signedUSD: 42 }], now), 42);
 });
+
+import { readFileSync } from 'node:fs';
+import { normalizeBinance, normalizeOkx, normalizeCoinbase, OKX_CTVAL } from '../src/core.mjs';
+
+const fx = (n) => JSON.parse(readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url)));
+
+test('normalizeBinance: USD notional + taker sign', () => {
+  const out = normalizeBinance(fx('binance'), 'BTC');
+  assert.equal(out.book.bids[0][0], 65000);
+  assert.equal(out.book.bids[0][1], 65000 * 2.0);           // p*q USD
+  // m:false => buy aggressor => +
+  assert.equal(out.trades[0].signedUSD, 65005 * 0.5);
+  // m:true  => sell aggressor => −
+  assert.equal(out.trades[1].signedUSD, -65001 * 1.0);
+});
+
+test('normalizeOkx: contracts→USD via ctVal, side sign', () => {
+  const out = normalizeOkx(fx('okx'), 'BTC');
+  assert.equal(OKX_CTVAL.BTC, 0.01);
+  assert.equal(out.book.bids[0][1], 65000 * 200 * 0.01);    // p*contracts*ctVal
+  assert.equal(out.trades[0].signedUSD, 65005 * 10 * 0.01); // side buy => +
+  assert.equal(out.trades[1].signedUSD, -65001 * 5 * 0.01); // side sell => −
+});
+
+test('normalizeOkx: ETH uses ctVal 0.1', () => {
+  assert.equal(OKX_CTVAL.ETH, 0.1);
+  const out = normalizeOkx(fx('okx'), 'ETH');
+  assert.equal(out.book.bids[0][1], 65000 * 200 * 0.1);
+});
+
+test('normalizeCoinbase: USD notional + INVERTED maker side', () => {
+  const out = normalizeCoinbase(fx('coinbase'), 'BTC');
+  assert.equal(out.book.asks[0][1], 65010 * 3.0);
+  // Coinbase Exchange `side` is the MAKER side: side:'sell' => taker BOUGHT => +
+  assert.equal(out.trades[0].signedUSD, 65005 * 0.5);
+  // side:'buy' => taker SOLD => −
+  assert.equal(out.trades[1].signedUSD, -65001 * 1.0);
+  assert.equal(out.trades[0].ts, Date.parse('2026-06-17T13:00:00.000Z'));
+});
