@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# CodeGraph local index (machine-local)
+.codegraph/
+
+# Python (tools/ subsystem)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+
+# Editor / OS cruft
+*.swp
+Thumbs.db
