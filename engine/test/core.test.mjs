@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { imbalance } from '../src/core.mjs';
+import { cvd30s } from '../src/core.mjs';
 
 test('imbalance: bid-heavy book is positive', () => {
   // mid = (100+102)/2 = 101; band 0.0012 → window ±0.1212 around 101
@@ -23,4 +24,23 @@ test('imbalance: levels outside band are excluded', () => {
   // the 99.0 bid (5000) would dominate and make it strongly positive.
   const book = { bids: [[100.0, 1000], [99.0, 5000]], asks: [[100.10, 1000]] };
   assert.equal(imbalance(book, 0.002), 0);
+});
+
+test('cvd30s: sums only trades inside the 30s window', () => {
+  const now = 1_000_000;
+  const trades = [
+    { ts: now,         signedUSD: 500 },   // in
+    { ts: now - 29_000, signedUSD: 300 },  // in
+    { ts: now - 31_000, signedUSD: 999 },  // OUT (older than 30s)
+  ];
+  assert.equal(cvd30s(trades, now), 800);
+});
+
+test('cvd30s: empty trades returns 0', () => {
+  assert.equal(cvd30s([], 1_000_000), 0);
+});
+
+test('cvd30s: window boundary is inclusive', () => {
+  const now = 1_000_000;
+  assert.equal(cvd30s([{ ts: now - 30_000, signedUSD: 42 }], now), 42);
 });

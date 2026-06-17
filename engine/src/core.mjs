@@ -13,3 +13,10 @@ export function imbalance(book, band = 0.0012) {
   const tot = bidUSD + askUSD;
   return tot === 0 ? 0 : (bidUSD - askUSD) / tot;
 }
+
+export function cvd30s(trades, now, windowMs = 30000) {
+  const cutoff = now - windowMs;
+  let sum = 0;
+  for (const t of trades) if (t.ts >= cutoff) sum += t.signedUSD;
+  return sum;
+}
