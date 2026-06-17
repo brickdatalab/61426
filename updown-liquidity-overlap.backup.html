@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Up/Down — Liquidity Overlap [WS]</title>
+<title>Up/Down — Liquidity Overlap [separate]</title>
 <style>
   :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;}
   *{box-sizing:border-box}
@@ -97,8 +97,8 @@
       <button id="start" class="startbtn">▶ Connect &amp; stream</button>
       <button id="dl" class="logbtn">⬇ Log</button>
     </div>
-    <div class="status"><label>Feeds · WS live</label>
-      <div class="feed"><span id="dBin" class="dot"></span>Binance perp (WebSocket)</div>
+    <div class="status"><label>Feeds · 1s</label>
+      <div class="feed"><span id="dBin" class="dot"></span>Binance perp depth</div>
       <div class="feed"><span id="dPoly" class="dot"></span>Polymarket book</div></div>
     <div class="key">
       <div><span class="sw" style="background:var(--bin)"></span>Binance — real BTC price pressure</div>
@@ -186,63 +186,23 @@ function bookStats(bids,asks,mid,band,priceKey,sizeKey){
   return{imb,bd,ad,lv};
 }
 
-// ---- Binance via WebSocket: ONE persistent socket, no per-tick REST -> no rate-limit bans ----
-// Streams (combined): <sym>@depth20@100ms (top-20 book snapshot -> imbalance/mid/ladder)
-//                     · <sym>@trade (raw fills -> CVD; net signed flow == the old REST aggTrades sum)
-const BIN_WS='wss://fstream.binance.com/stream?streams=';
-function binStreams(){
-  const s=parsed.symbol.toLowerCase();
-  // NOTE: from this IP Binance fstream silently drops @aggTrade and @kline (0 msgs), but @trade and
-  // @depth20 deliver. @trade = raw individual fills; summing them == summing @aggTrade, so the CVD
-  // (net signed USDT flow over 30s) is identical to the old REST aggTrades value. Bar open comes from
-  // a single REST klines call at connect (1 req/bar, trivial).
-  return `${s}@depth20@100ms/${s}@trade`;
-}
-function openWS(){
-  if(!st||!st.running)return;
-  closeWS();
-  let ws;
-  try{ ws=new WebSocket(BIN_WS+binStreams()); }
-  catch(e){ scheduleReconnect(); return; }
-  st.ws=ws;
-  ws.onopen=()=>{ st.wsRetry=0; };                 // data dot flips green on first depth push
-  ws.onmessage=(ev)=>{
-    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
-    const s=m.stream||'', d=m.data||{};
-    if(s.indexOf('@depth')>=0&&d.b&&d.a){ st.wsDepth={bids:d.b,asks:d.a}; if(!st.binReady){st.binReady=true;$('#dBin').className='dot ok';} }
-    else if(s.indexOf('@trade')>=0){ st.trades.push({T:+d.T,p:+d.p,q:+d.q,m:d.m}); st.wsLast=+d.p; }
-  };
-  ws.onerror=()=>{ if(st)$('#dBin').className='dot bad'; };
-  ws.onclose=()=>{ if(!st)return; st.binReady=false; if(st.running){ $('#dBin').className='dot wait'; scheduleReconnect(); } };
-}
-function scheduleReconnect(){
-  if(!st||!st.running)return;
-  st.wsRetry=Math.min((st.wsRetry||0)+1,6);
-  const delay=Math.min(1000*Math.pow(2,st.wsRetry-1),8000);   // 1s..8s backoff
-  clearTimeout(st._rt); st._rt=setTimeout(()=>{ if(st&&st.running)openWS(); },delay);
-}
-function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
-
 async function tick(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
-  // Binance book from the live WebSocket snapshot (no per-tick REST -> no bans)
-  const depth=st.wsDepth;
+  const [depth,kl,at,book]=await Promise.all([
+    jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=100`).then(d=>{$('#dBin').className='dot ok';return d;}).catch(()=>{$('#dBin').className='dot bad';return null;}),
+    jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).catch(()=>null),
+    jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`).catch(()=>null),
+    (st.token?jget('https://clob.polymarket.com/book?token_id='+st.token).then(b=>{$('#dPoly').className='dot ok';return b;}).catch(()=>{$('#dPoly').className='dot bad';return null;}):Promise.resolve(null))
+  ]);
+
+  // Binance book
   let bStat=null,bmid=null;
   if(depth&&depth.bids&&depth.asks&&depth.bids.length&&depth.asks.length){
     bmid=(+depth.bids[0][0]+ +depth.asks[0][0])/2;
     bStat=bookStats(depth.bids,depth.asks,bmid,BIN_BAND,0,1);
-    $('#dBin').className='dot ok';
-  } else { $('#dBin').className='dot wait'; }
-  if(st.wsLast!=null)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
-  // CVD 30s from the live aggTrade buffer — identical metric/sign/units to the old REST aggTrades sum
-  const cut=Date.now()-30000;
-  while(st.trades.length&&st.trades[0].T<cut)st.trades.shift();        // prune old (arrive in time order)
-  st.cvd=st.trades.reduce((s,a)=>s+(a.m?-1:1)*a.q*a.p,0);
-  // Polymarket book — different host (clob.polymarket.com), kept on REST 1s; it is NOT the ban source
-  let book=null;
-  if(st.token){ try{ book=await jget('https://clob.polymarket.com/book?token_id='+st.token); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }
+  }
   // Polymarket book (price 0..1)
   let pStat=null,pmid=null;
   if(book&&book.bids&&book.asks&&book.bids.length&&book.asks.length){
@@ -250,6 +210,8 @@ async function tick(){
     pmid=(bb+ba)/2;
     pStat=bookStats(book.bids.map(b=>[b.price,b.size]),book.asks.map(a=>[a.price,a.size]),pmid,POLY_BAND,0,1);
   }
+  if(kl&&kl[0]){st.open=+kl[0][1];st.last=+kl[0][4];}
+  if(at){const cut=Date.now()-30000;st.cvd=at.filter(a=>a.T>=cut).reduce((s,a)=>s+(a.m?-1:1)*(+a.q)*(+a.p),0);}
 
   const bimb=bStat?bStat.imb:null, pimb=pStat?pStat.imb:null;
   const comb=(bimb!=null&&pimb!=null)?(bimb+pimb)/2:(bimb!=null?bimb:pimb);
@@ -349,13 +311,10 @@ function animate(){
 }
 
 async function settle(){stop(true);
-  let o=st.open,c=st.last;                                       // WS-formed candle (always available)
   try{const k=await jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
-    if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ /* IP banned — use the live WS candle */ }
-  if(o==null||c==null)return;
-  const res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
-  el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
-  st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();}
+    const o=+k[0][1],c=+k[0][4],res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
+    el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
+    st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();}catch(e){}}
 
 const logKey=()=>'updownLIQ_log_'+($('#slug').value.trim());
 function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));}catch(e){}}
@@ -369,18 +328,15 @@ function updatePrompt(sig,b,p){const pp=parsed,endUtc=new Date(pp.end*1000).toIS
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
-  st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],log:[],targetB:null,targetP:null,dispB:null,dispP:null,dispLast:null,raf:null,
-      wsDepth:null,wsOpen:null,wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null};
+  st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],log:[],targetB:null,targetP:null,dispB:null,dispP:null,dispLast:null,raf:null};
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
-  openWS();
-  jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
   jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
     const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
   }).catch(()=>$('#dPoly').className='dot bad');
   tick();poll=setInterval(tick,1000);animate();
 }
-function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();if(poll){clearInterval(poll);poll=null;}
+function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}if(poll){clearInterval(poll);poll=null;}
   $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
   $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
 
