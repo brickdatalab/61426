@@ -187,16 +187,40 @@ function bookStats(bids,asks,mid,band,priceKey,sizeKey){
 }
 
 // ---- Binance via WebSocket: ONE persistent socket, no per-tick REST -> no rate-limit bans ----
-// Streams (combined): <sym>@depth20@100ms (top-20 book snapshot -> imbalance/mid/ladder)
-//                     · <sym>@trade (raw fills -> CVD; net signed flow == the old REST aggTrades sum)
+// Streams: <sym>@depth@100ms  = order-book DIFF stream; we keep a FULL local book by combining one REST
+//                            snapshot (limit=1000) with the diff updates, so imbalance is computed over
+//                            ~100 levels — matching the original REST limit=100, not the shallow top-20.
+//          <sym>@trade        = raw fills -> CVD (net signed flow == old REST aggTrades sum).
+// At Connect: 2 one-shot REST reads (depth snapshot + klines bar-open). After that: pure WS. A watchdog
+// reseeds the 30s CVD window from REST aggTrades ONLY if @trade is silent >5s (rare safety net -> no ban).
 const BIN_WS='wss://fstream.binance.com/stream?streams=';
 function binStreams(){
   const s=parsed.symbol.toLowerCase();
-  // NOTE: from this IP Binance fstream silently drops @aggTrade and @kline (0 msgs), but @trade and
-  // @depth20 deliver. @trade = raw individual fills; summing them == summing @aggTrade, so the CVD
-  // (net signed USDT flow over 30s) is identical to the old REST aggTrades value. Bar open comes from
-  // a single REST klines call at connect (1 req/bar, trivial).
-  return `${s}@depth20@100ms/${s}@trade`;
+  return `${s}@depth@100ms/${s}@trade`;
+}
+// local order book built from snapshot + diff stream (futures pu/u sequencing)
+function newBook(){ return { bids:new Map(), asks:new Map(), lastU:0, ready:false, gap:false }; }
+function applyDiff(d){
+  const b=st.book; if(!b||!b.ready)return;
+  if(d.u<=b.lastU)return;                  // stale update (already reflected in the book)
+  if(d.pu>b.lastU){ b.gap=true; return; }  // missed updates -> force a re-snapshot
+  for(const [p,q] of d.b){const P=+p,Q=+q; if(Q===0)b.bids.delete(P); else b.bids.set(P,Q);}
+  for(const [p,q] of d.a){const P=+p,Q=+q; if(Q===0)b.asks.delete(P); else b.asks.set(P,Q);}
+  b.lastU=d.u; st.bookLastAdv=Date.now();   // heartbeat: lets tick() detect a muted diff stream
+}
+async function syncBook(){
+  if(!st||!st.running)return;
+  st.book.ready=false; st.diffBuffer=[];
+  try{
+    const j=await jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=1000`);
+    const b=st.book; b.bids.clear(); b.asks.clear();
+    for(const [p,q] of j.bids)if(+q>0)b.bids.set(+p,+q);
+    for(const [p,q] of j.asks)if(+q>0)b.asks.set(+p,+q);
+    b.lastU=j.lastUpdateId; b.ready=true;
+    for(const d of st.diffBuffer)applyDiff(d);   // flush diffs received during the snapshot fetch
+    st.diffBuffer=[]; b.gap=false; st.bookLastAdv=Date.now();
+    if(!st.binReady){st.binReady=true;$('#dBin').className='dot ok';}
+  }catch(e){ setTimeout(()=>{if(st&&st.running)syncBook();},2000); }   // snapshot failed -> retry
 }
 function openWS(){
   if(!st||!st.running)return;
@@ -205,12 +229,14 @@ function openWS(){
   try{ ws=new WebSocket(BIN_WS+binStreams()); }
   catch(e){ scheduleReconnect(); return; }
   st.ws=ws;
-  ws.onopen=()=>{ st.wsRetry=0; };                 // data dot flips green on first depth push
+  ws.onopen=()=>{ st.wsRetry=0; syncBook(); };                 // (re)build the local book on every (re)connect
   ws.onmessage=(ev)=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
     const s=m.stream||'', d=m.data||{};
-    if(s.indexOf('@depth')>=0&&d.b&&d.a){ st.wsDepth={bids:d.b,asks:d.a}; if(!st.binReady){st.binReady=true;$('#dBin').className='dot ok';} }
-    else if(s.indexOf('@trade')>=0){ st.trades.push({T:+d.T,p:+d.p,q:+d.q,m:d.m}); st.wsLast=+d.p; }
+    if(s.indexOf('@depth')>=0&&'u' in d&&d.b){                     // diff-stream update
+      if(!st.book.ready)st.diffBuffer.push(d); else { applyDiff(d); if(st.book.gap){st.book.gap=false;syncBook();} }
+    }
+    else if(s.indexOf('@trade')>=0){ st.trades.push({T:+d.T,p:+d.p,q:+d.q,m:d.m}); st.wsLast=+d.p; st.lastTradeTs=Date.now(); }
   };
   ws.onerror=()=>{ if(st)$('#dBin').className='dot bad'; };
   ws.onclose=()=>{ if(!st)return; st.binReady=false; if(st.running){ $('#dBin').className='dot wait'; scheduleReconnect(); } };
@@ -227,16 +253,42 @@ async function tick(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
-  // Binance book from the live WebSocket snapshot (no per-tick REST -> no bans)
-  const depth=st.wsDepth;
+  // Binance book: WS diff-book primary (~100 levels, matches original REST limit=100). If Binance mutes
+  // the diff stream (lastU not advancing >3s — happens intermittently from this IP), fall back to a REST
+  // depth-100 snapshot: always-reliable ground truth, exact limit=100 match, fires only when WS is silent.
+  const bk=st.book;
+  const bookStale=!bk||!bk.ready||!st.bookLastAdv||Date.now()-st.bookLastAdv>3000;
   let bStat=null,bmid=null;
-  if(depth&&depth.bids&&depth.asks&&depth.bids.length&&depth.asks.length){
-    bmid=(+depth.bids[0][0]+ +depth.asks[0][0])/2;
-    bStat=bookStats(depth.bids,depth.asks,bmid,BIN_BAND,0,1);
+  if(bookStale){
+    try{
+      const d=await jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=100`);
+      if(d&&d.bids&&d.asks&&d.bids.length&&d.asks.length){
+        const bids=d.bids.map(x=>[+x[0],+x[1]]),asks=d.asks.map(x=>[+x[0],+x[1]]);
+        bmid=(bids[0][0]+asks[0][0])/2; bStat=bookStats(bids,asks,bmid,BIN_BAND,0,1);
+        $('#dBin').className='dot ok';
+      } else $('#dBin').className='dot wait';
+    }catch(e){ $('#dBin').className='dot bad'; }
+  } else {
+    const bids=[...bk.bids.entries()].sort((a,b)=>b[0]-a[0]).slice(0,100);
+    const asks=[...bk.asks.entries()].sort((a,b)=>a[0]-b[0]).slice(0,100);
+    bmid=(bids[0][0]+asks[0][0])/2;
+    bStat=bookStats(bids,asks,bmid,BIN_BAND,0,1);
     $('#dBin').className='dot ok';
-  } else { $('#dBin').className='dot wait'; }
+    const lo=bmid*0.995,hi=bmid*1.005;                    // bound memory: drop levels far from mid
+    for(const p of bk.bids.keys())if(p<lo)bk.bids.delete(p);
+    for(const p of bk.asks.keys())if(p>hi)bk.asks.delete(p);
+  }
   if(st.wsLast!=null)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
-  // CVD 30s from the live aggTrade buffer — identical metric/sign/units to the old REST aggTrades sum
+  // CVD 30s from the live @trade buffer. Watchdog: if @trade has been silent >5s (or cold start), reseed
+  // the 30s window from REST aggTrades — rock-solid here, and used only as a rare safety net (no ban).
+  if(!st.lastTradeTs||Date.now()-st.lastTradeTs>5000){
+    try{
+      const at=await jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`);
+      const c0=Date.now()-30000;
+      st.trades=at.filter(a=>a.T>=c0).map(a=>({T:+a.T,p:+a.p,q:+a.q,m:a.m}));
+      st.lastTradeTs=Date.now();
+    }catch(e){}
+  }
   const cut=Date.now()-30000;
   while(st.trades.length&&st.trades[0].T<cut)st.trades.shift();        // prune old (arrive in time order)
   st.cvd=st.trades.reduce((s,a)=>s+(a.m?-1:1)*a.q*a.p,0);
@@ -370,7 +422,7 @@ async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
   st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],log:[],targetB:null,targetP:null,dispB:null,dispP:null,dispLast:null,raf:null,
-      wsDepth:null,wsOpen:null,wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null};
+      book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0};
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
