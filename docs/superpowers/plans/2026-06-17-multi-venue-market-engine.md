@@ -775,7 +775,7 @@ Expected: PASS — 2 tests pass.
 
 - [ ] **Step 5: Run the FULL suite**
 
-Run: `node --test engine/test/`
+Run: `node --test 'engine/test/*.mjs'`  (Node 25+ rejects the bare directory form)
 Expected: PASS — all suites green (core 17 + adapters 4 + engine 2).
 
 - [ ] **Step 6: Write the live smoke check**

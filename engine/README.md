@@ -5,7 +5,9 @@ Blends Binance + OKX + Coinbase into one imbalance (equal-weight avg) and one
 30s CVD (sum) per tick for BTC/ETH. Never breaks when a venue is stale.
 
 ## Run tests
-    node --test engine/test/
+    node --test 'engine/test/*.mjs'
+
+(On Node 25+, the directory form `node --test engine/test/` errors — use the glob above.)
 
 ## Live smoke check
     node engine/smoke.mjs BTC
