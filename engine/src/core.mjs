@@ -73,3 +73,11 @@ export const NORMALIZERS = {
   okx: normalizeOkx,
   coinbase: normalizeCoinbase,
 };
+
+export function blend(perVenue) {
+  const fresh = Object.values(perVenue).filter((v) => v.fresh);
+  if (fresh.length === 0) return { imbalance: null, cvd: null, nFresh: 0 };
+  const imbalance = fresh.reduce((s, v) => s + v.imb, 0) / fresh.length;
+  const cvd = fresh.reduce((s, v) => s + v.cvd, 0);
+  return { imbalance, cvd, nFresh: fresh.length };
+}

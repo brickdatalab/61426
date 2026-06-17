@@ -83,3 +83,38 @@ test('normalizeCoinbase: USD notional + INVERTED maker side', () => {
   assert.equal(out.trades[1].signedUSD, -65001 * 1.0);
   assert.equal(out.trades[0].ts, Date.parse('2026-06-17T13:00:00.000Z'));
 });
+
+import { blend } from '../src/core.mjs';
+
+test('blend: 3 fresh → equal-weight avg imbalance, summed cvd', () => {
+  const r = blend({
+    binance:  { imb: 0.2, cvd: 100, fresh: true },
+    okx:      { imb: -0.4, cvd: 200, fresh: true },
+    coinbase: { imb: 0.5, cvd: -50, fresh: true },
+  });
+  assert.equal(Number(r.imbalance.toFixed(6)), Number(((0.2 - 0.4 + 0.5) / 3).toFixed(6)));
+  assert.equal(r.cvd, 250);
+  assert.equal(r.nFresh, 3);
+});
+
+test('blend: 1 stale venue is excluded from avg and sum', () => {
+  const r = blend({
+    binance:  { imb: 0.2,  cvd: 100, fresh: true },
+    okx:      { imb: null, cvd: null, fresh: false }, // blocked
+    coinbase: { imb: 0.4,  cvd: 200, fresh: true },
+  });
+  assert.equal(r.imbalance, (0.2 + 0.4) / 2); // okx excluded; avg of the 2 fresh
+  assert.equal(r.cvd, 300);
+  assert.equal(r.nFresh, 2);
+});
+
+test('blend: zero fresh → nulls', () => {
+  const r = blend({
+    binance:  { imb: null, cvd: null, fresh: false },
+    okx:      { imb: null, cvd: null, fresh: false },
+    coinbase: { imb: null, cvd: null, fresh: false },
+  });
+  assert.equal(r.imbalance, null);
+  assert.equal(r.cvd, null);
+  assert.equal(r.nFresh, 0);
+});
