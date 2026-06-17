@@ -17,7 +17,10 @@ test('imbalance: empty side returns 0', () => {
 });
 
 test('imbalance: levels outside band are excluded', () => {
-  // far ask (200) is way outside band, so only the near bid counts → +1
-  const book = { bids: [[100.99, 1000]], asks: [[200, 5000]] };
-  assert.equal(imbalance(book, 0.002), 1);
+  // tight spread: mid≈100.05, ±0.2% band ≈ [99.85, 100.25].
+  // the far bid at 99.0 is outside the band → excluded; in-band bid(100.0)
+  // and ask(100.10) are equal size → balanced → 0. Without band exclusion
+  // the 99.0 bid (5000) would dominate and make it strongly positive.
+  const book = { bids: [[100.0, 1000], [99.0, 5000]], asks: [[100.10, 1000]] };
+  assert.equal(imbalance(book, 0.002), 0);
 });

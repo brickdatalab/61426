@@ -8,7 +8,7 @@ export function imbalance(book, band = 0.0012) {
   const lo = mid - mid * band;
   const hi = mid + mid * band;
   let bidUSD = 0, askUSD = 0;
-  for (const [p, usd] of bids) if (p === bestBid || (p >= lo && p <= mid)) bidUSD += usd;
+  for (const [p, usd] of bids) if (p >= lo) bidUSD += usd;
   for (const [p, usd] of asks) if (p <= hi) askUSD += usd;
   const tot = bidUSD + askUSD;
   return tot === 0 ? 0 : (bidUSD - askUSD) / tot;
