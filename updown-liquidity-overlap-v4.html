@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Up/Down — Liquidity Overlap [separate]</title>
+<title>Up/Down — Liquidity Overlap v4 [blended engine]</title>
 <style>
   :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;}
   *{box-sizing:border-box}
@@ -99,7 +99,9 @@
     </div>
     <div class="status"><label>Feeds · 1s</label>
       <div class="feed"><span id="dBin" class="dot"></span>Binance perp depth</div>
-      <div class="feed"><span id="dPoly" class="dot"></span>Polymarket book</div></div>
+      <div class="feed"><span id="dPoly" class="dot"></span>Polymarket book</div>
+      <label style="margin-top:10px">Venue health</label>
+      <div class="feed"><span id="hvB" class="dot"></span>Binance <span id="hvO" class="dot" style="margin-left:10px"></span>OKX <span id="hvC" class="dot" style="margin-left:10px"></span>Coinbase</div></div>
     <div class="key">
       <div><span class="sw" style="background:var(--bin)"></span>Binance — real BTC price pressure</div>
       <div><span class="sw" style="background:var(--poly)"></span>Polymarket — bettor positioning</div>
@@ -160,6 +162,10 @@
   <textarea id="prompt" readonly></textarea>
 </div>
 
+<script type="module">
+  import { runOnce } from './engine/src/engine.mjs';
+  window.__engineRunOnce = runOnce;
+</script>
 <script>
 const $=s=>document.querySelector(s);
 const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
@@ -190,10 +196,9 @@ async function tick(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
-  const [depth,kl,at,book]=await Promise.all([
+  const [depth,kl,book]=await Promise.all([
     jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=100`).then(d=>{$('#dBin').className='dot ok';return d;}).catch(()=>{$('#dBin').className='dot bad';return null;}),
     jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).catch(()=>null),
-    jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`).catch(()=>null),
     (st.token?jget('https://clob.polymarket.com/book?token_id='+st.token).then(b=>{$('#dPoly').className='dot ok';return b;}).catch(()=>{$('#dPoly').className='dot bad';return null;}):Promise.resolve(null))
   ]);
 
@@ -211,9 +216,18 @@ async function tick(){
     pStat=bookStats(book.bids.map(b=>[b.price,b.size]),book.asks.map(a=>[a.price,a.size]),pmid,POLY_BAND,0,1);
   }
   if(kl&&kl[0]){st.open=+kl[0][1];st.last=+kl[0][4];}
-  if(at){const cut=Date.now()-30000;st.cvd=at.filter(a=>a.T>=cut).reduce((s,a)=>s+(a.m?-1:1)*(+a.q)*(+a.p),0);}
 
-  const bimb=bStat?bStat.imb:null, pimb=pStat?pStat.imb:null;
+  // v4: blended BTC imbalance (equal-weight avg) + CVD (sum) across Binance+OKX+Coinbase
+  const eng = await window.__engineRunOnce({ asset: 'BTC' });
+  const bimb = eng.blended.imbalance;     // was: bStat ? bStat.imb : null
+  st.cvd    = eng.blended.cvd ?? 0;        // was: Binance aggTrades sum
+  window.__engineHealth = eng.health;      // for the health dots
+  const H = window.__engineHealth || {};
+  $('#hvB').className = 'dot ' + (H.binance ? 'ok' : 'bad');
+  $('#hvO').className = 'dot ' + (H.okx ? 'ok' : 'bad');
+  $('#hvC').className = 'dot ' + (H.coinbase ? 'ok' : 'bad');
+
+  const pimb=pStat?pStat.imb:null;
   const comb=(bimb!=null&&pimb!=null)?(bimb+pimb)/2:(bimb!=null?bimb:pimb);
   const cush=(st.last!=null&&st.open!=null)?st.last-st.open:null;
 
