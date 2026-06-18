@@ -149,19 +149,18 @@
 
     <div class="panels">
       <div class="card">
-        <h3>CVD flow vs price — zero line = net buy/sell · dashed = trend</h3>
+        <h3>CVD flow vs price — zero = net buy/sell · fast (15s) + slow (60s) trend</h3>
         <canvas id="cvd" width="700" height="340"></canvas>
         <div class="legend">
-          <span><b style="background:#9b8cff"></b>CVD30s (smoothed)</span>
+          <span><b style="background:#9b8cff"></b>CVD30s (raw)</span>
           <span><b style="background:rgba(91,157,255,.6)"></b>price</span>
-          <span><b style="background:#2ec27e"></b>trend ▲</span>
-          <span><b style="background:#ff5d6c"></b>trend ▼</span>
+          <span><b style="background:#2ec27e"></b>fast ▲▼</span>
+          <span><b style="background:#8a93a3"></b>slow ▲▼</span>
         </div>
       </div>
       <div class="card">
-        <h3>Imbalance over time — hover for time into bar</h3>
-        <canvas id="imb" width="520" height="120"></canvas>
-        <div class="tip" id="imbTip"></div>
+        <h3>Bar flow (CVD since open) vs price — full bar</h3>
+        <div id="imbChart" style="width:100%;height:200px"></div>
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:10px;margin-bottom:0">
           <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
           <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
@@ -199,6 +198,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script type="module">
   // Pure signal logic (testable, see v5/test/signals.test.mjs) -> exposed to the page.
   import { newSession, startBar, addTrade, tick as sigTick, decide } from './src/signals.mjs';
@@ -398,8 +398,9 @@ async function tick(){
   // histories for the two graphs
   st.imbHist.push({ b: bimb, p: pimb, rem: Math.round(rem) }); if (st.imbHist.length > 180) st.imbHist.shift();
   if (sg) {
-    st.cvdSeries.push({ cvd: st.cvd, price: st.last, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
+    st.cvdSeries.push({ t: Math.floor(Date.now()/1000), cvd: st.cvd, price: st.last, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
     if (st.cvdSeries.length > 180) st.cvdSeries.shift();
+    updateImbChart(Math.floor(Date.now()/1000), sg ? sg.cvdSinceOpen : null, cush);   // bar-flow vs price panel
   }
 
   const t = new Date().toISOString().substr(11, 8);
@@ -435,58 +436,86 @@ function linreg(vals){                          // y = a + b*i over non-null poi
   if(n<2) return null;
   const b=(n*sxy - sx*sy)/(n*sxx - sx*sx); return { a:(sy - b*sx)/n, b };
 }
+function linregXY(pts){                         // y = a + b*x over [{x,y}]
+  let n=0,sx=0,sy=0,sxx=0,sxy=0;
+  for(const p of pts){ n++; sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
+  if(n<2) return null;
+  const b=(n*sxy - sx*sy)/(n*sxx - sx*sx); return { a:(sy - b*sx)/n, b };
+}
 function drawCvdAnim(){
   const c=$('#cvd'); if(!c)return; const x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2;
-  const raw=st?st.cvdSeries:[];
+  const raw=st?st.cvdSeries:[]; const barSec=parsed?parsed.barSec:300, barTs=parsed?parsed.ts:0;
   x.clearRect(0,0,W,H);
-  // zero line (the CVD reference you asked about)
+  // zero line (CVD reference): above = net BUY, below = net SELL
   x.strokeStyle='#2a303c';x.lineWidth=1;x.setLineDash([4,4]);x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();x.setLineDash([]);
   x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('CVD 0  (above = net BUY, below = net SELL)',8,midY-5);
+  x.fillText('bar open',4,H-6); x.textAlign='right'; x.fillText('bar close →',W-4,H-6); x.textAlign='left';
   if(raw.length<2){ x.fillText('gathering flow…',8,26); return; }
-  const N=raw.length, xAt=i=>i/(N-1)*W;
-  const cvd=ema(raw.map(p=>p.cvd),0.25), price=ema(raw.map(p=>p.price),0.3);
-  // price overlay (own scale, faint) — shows if price follows flow
-  const pVals=price.filter(v=>v!=null);
+  const nowSec=raw[raw.length-1].t;
+  const pts=raw.map(p=>({t:p.t, el:Math.max(0,p.t-barTs), v:p.cvd, px:p.price}));
+  const xAt=el=>(el/barSec)*W;                    // time-anchored: past points never shift
+  // price overlay (light EMA, own scale, faint)
+  const priceE=ema(pts.map(p=>p.px),0.3);
+  const pVals=priceE.filter(v=>v!=null);
   if(pVals.length>1){
     let pmn=Math.min(...pVals),pmx=Math.max(...pVals); if(pmx-pmn<1e-6){pmn-=1;pmx+=1;}
     const py=v=>H-8-((v-pmn)/(pmx-pmn))*(H-16);
     x.strokeStyle='rgba(91,157,255,.4)';x.lineWidth=1.5;x.beginPath();let started=false;
-    price.forEach((v,i)=>{ if(v==null){started=false;return;} const px=xAt(i); const yy=py(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
+    pts.forEach((p,i)=>{ const v=priceE[i]; if(v==null){started=false;return;} const px=xAt(p.el); const yy=py(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
     x.stroke();
   }
   // CVD zero-anchored symmetric scale
-  let maxAbs=1; cvd.forEach(v=>{ if(v!=null&&Math.abs(v)>maxAbs)maxAbs=Math.abs(v); });
+  let maxAbs=1; pts.forEach(p=>{ if(p.v!=null&&Math.abs(p.v)>maxAbs)maxAbs=Math.abs(p.v); });
   const cy=v=>midY-(v/maxAbs)*(H/2-16);
-  // CVD trend line (regression) -> the slope / where it's going
-  const rg=linreg(cvd);
-  if(rg){
-    x.strokeStyle=rg.b>=0?'rgba(46,194,126,.75)':'rgba(255,93,108,.75)';
-    x.lineWidth=2;x.setLineDash([7,5]);x.beginPath();
-    x.moveTo(xAt(0),cy(rg.a)); x.lineTo(xAt(N-1),cy(rg.a+rg.b*(N-1))); x.stroke(); x.setLineDash([]);
-  }
-  // CVD main line (smoothed)
-  x.strokeStyle='#9b8cff';x.lineWidth=2.6;x.beginPath();let started=false;
-  cvd.forEach((v,i)=>{ if(v==null){started=false;return;} const px=xAt(i); const yy=cy(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
-  x.stroke();
-  // current value + trend arrow
-  const last=cvd[cvd.length-1];
-  const dir=!rg?'':(rg.b>0?' ▲ rising':rg.b<0?' ▼ falling':'');
-  x.fillStyle='#9b8cff';x.font='bold 11px ui-monospace';x.fillText('CVD '+fmtK(last)+dir,8,26);
-}
-function drawImbAnim(){
-  const c=$('#imb'),x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2,h=st?st.imbHist:[];
-  x.clearRect(0,0,W,H);x.strokeStyle='#3a4150';x.lineWidth=1;x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();
-  if(!h||h.length<2)return;x.lineWidth=2;
-  const line=(key,color)=>{
-    const pts=[];
-    for(let i=0;i<h.length;i++){const v=h[i][key];pts.push(v==null?null:{x:i/(h.length-1)*W,y:midY-v*(midY-6)});}
-    x.strokeStyle=color;x.beginPath();let prev=null,started=false;
-    for(const p of pts){if(!p){started=false;prev=null;continue;}
-      if(!started){x.moveTo(p.x,p.y);started=true;}else{x.quadraticCurveTo(prev.x,prev.y,(prev.x+p.x)/2,(prev.y+p.y)/2);}
-      prev=p;}
-    if(prev&&started)x.lineTo(prev.x,prev.y);x.stroke();
+  // recent-window regression trend (fast 15s + slow 60s) — REACTIVE, not whole-bar
+  const drawTrend=(sec,alpha,lw)=>{
+    const win=pts.filter(p=>p.t>=nowSec-sec);
+    if(win.length<2)return null;
+    const r=linregXY(win.map(p=>({x:p.el,y:p.v}))); if(!r)return null;
+    const col=r.b>=0?`rgba(46,194,126,${alpha})`:`rgba(255,93,108,${alpha})`;
+    const x0=win[0].el, x1=win[win.length-1].el;
+    x.strokeStyle=col;x.lineWidth=lw;x.setLineDash([7,5]);x.beginPath();
+    x.moveTo(xAt(x0),cy(r.a+r.b*x0)); x.lineTo(xAt(x1),cy(r.a+r.b*x1)); x.stroke(); x.setLineDash([]);
+    return r;
   };
-  line('b','#5b9dff'); line('p','#e3c75a');
+  const slow=drawTrend(60,0.5,1.5);              // muted: the bar trend
+  const fast=drawTrend(15,0.95,2.2);             // bright: turns the moment flow flips
+  // CVD main line — RAW (already a 30s aggregation; reactive, no lag)
+  x.strokeStyle='#9b8cff';x.lineWidth=2.6;x.beginPath();let started=false;
+  pts.forEach(p=>{ if(p.v==null){started=false;return;} const px=xAt(p.el); const yy=cy(p.v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
+  x.stroke();
+  const last=pts[pts.length-1].v;
+  const fd=fast?(fast.b>0?' ▲ rising':fast.b<0?' ▼ falling':''):''; 
+  x.fillStyle='#9b8cff';x.font='bold 11px ui-monospace';x.fillText('CVD '+fmtK(last)+fd+' (fast)',8,26);
+}
+// ---- Bar-flow vs price panel: TradingView Lightweight Charts (fixed bar timeline, crosshair) ----
+let imbChart=null, flowSeries=null, priceSeries=null, imbRangeSet=false;
+function addLine(chart, opts){ return chart.addSeries ? chart.addSeries(LightweightCharts.LineSeries, opts) : chart.addLineSeries(opts); }
+function initImbChart(){
+  if(imbChart||!window.LightweightCharts)return;
+  const el=$('#imbChart'); if(!el)return;
+  imbChart=LightweightCharts.createChart(el, {
+    height:200, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
+    grid:{vertLines:{color:'#1b1f27'},horzLines:{color:'#1b1f27'}},
+    leftPriceScale:{visible:true,borderColor:'#262b35'},
+    rightPriceScale:{visible:true,borderColor:'#262b35'},
+    timeScale:{timeVisible:true,secondsVisible:false,borderColor:'#262b35',fixLeftEdge:true,lockVisibleTimeRangeOnResize:true},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+  });
+  flowSeries=addLine(imbChart,{color:'#9b8cff',lineWidth:2,priceScaleId:'left'});
+  priceSeries=addLine(imbChart,{color:'rgba(91,157,255,.85)',lineWidth:2,priceScaleId:'right'});
+  flowSeries.createPriceLine({price:0,color:'#3a4150',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,title:'CVD 0'});
+}
+function resetImbChart(){
+  if(!imbChart||!parsed)return;
+  flowSeries.setData([]); priceSeries.setData([]);
+  imbRangeSet=false;                            // frame the bar on the first data point
+}
+function updateImbChart(tSec, flow, cush){
+  if(!imbChart||flow==null)return;
+  flowSeries.update({time:tSec, value:flow});
+  if(cush!=null) priceSeries.update({time:tSec, value:cush});
+  if(!imbRangeSet){ try{ imbChart.timeScale().setVisibleRange({from:parsed.ts,to:parsed.end}); }catch(e){} imbRangeSet=true; }
 }
 // hover on imbalance graph -> elapsed time into the bar
 function imbHover(ev){
@@ -504,7 +533,7 @@ function imbHover(ev){
 function animate(){
   if(!st||!st.running)return;
   st.raf=requestAnimationFrame(animate);
-  drawCvdAnim(); drawImbAnim();
+  drawCvdAnim();
 }
 
 async function settle(){stop(true);
@@ -591,6 +620,7 @@ async function start(){
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
+  initImbChart(); resetImbChart();               // bar-flow vs price panel (create once, frame to bar)
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
@@ -610,8 +640,6 @@ function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.ra
 
 $('#start').onclick=()=>(st&&st.running)?stop():start();
 $('#dl').onclick=downloadLog;
-$('#imb').addEventListener('mousemove',imbHover);
-$('#imb').addEventListener('mouseleave',()=>{ $('#imbTip').style.display='none'; });
 $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
   $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
