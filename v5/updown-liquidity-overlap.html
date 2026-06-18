@@ -149,14 +149,13 @@
 
     <div class="panels">
       <div class="card">
-        <h3>CVD — 30s flow (main) + Δ5/10/60s + rate</h3>
+        <h3>CVD flow vs price — zero line = net buy/sell · dashed = trend</h3>
         <canvas id="cvd" width="700" height="340"></canvas>
         <div class="legend">
-          <span><b style="background:#9b8cff"></b>CVD30s</span>
-          <span><b style="background:#5b9dff"></b>Δ5s</span>
-          <span><b style="background:#2ec27e"></b>Δ10s</span>
-          <span><b style="background:#e3c75a"></b>Δ60s</span>
-          <span><b style="background:#ff5d6c"></b>rate</span>
+          <span><b style="background:#9b8cff"></b>CVD30s (smoothed)</span>
+          <span><b style="background:rgba(91,157,255,.6)"></b>price</span>
+          <span><b style="background:#2ec27e"></b>trend ▲</span>
+          <span><b style="background:#ff5d6c"></b>trend ▼</span>
         </div>
       </div>
       <div class="card">
@@ -399,7 +398,7 @@ async function tick(){
   // histories for the two graphs
   st.imbHist.push({ b: bimb, p: pimb, rem: Math.round(rem) }); if (st.imbHist.length > 180) st.imbHist.shift();
   if (sg) {
-    st.cvdSeries.push({ cvd: st.cvd, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
+    st.cvdSeries.push({ cvd: st.cvd, price: st.last, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
     if (st.cvdSeries.length > 180) st.cvdSeries.shift();
   }
 
@@ -423,30 +422,56 @@ async function tick(){
   updatePrompt(sig, bimb, pimb);
 }
 
-// ---- CVD graph: main CVD30s + Δ5/10/60s + rate, each auto-scaled to its own range ----
+// ---- CVD graph: SMOOTHED CVD30s (zero-anchored: above mid = net buy, below = net sell)
+//      + faint price overlay + dashed CVD trend line (regression). Deltas live in the cards. ----
+function ema(vals, alpha=0.25){                 // exponential smoothing, preserves length
+  const out=[]; let prev=null;
+  for(const v of vals){ if(v==null){out.push(null);continue;} prev=(prev==null)?v:alpha*v+(1-alpha)*prev; out.push(prev); }
+  return out;
+}
+function linreg(vals){                          // y = a + b*i over non-null points
+  let n=0,sx=0,sy=0,sxx=0,sxy=0;
+  vals.forEach((v,i)=>{ if(v==null)return; n++; sx+=i; sy+=v; sxx+=i*i; sxy+=i*v; });
+  if(n<2) return null;
+  const b=(n*sxy - sx*sy)/(n*sxx - sx*sx); return { a:(sy - b*sx)/n, b };
+}
 function drawCvdAnim(){
   const c=$('#cvd'); if(!c)return; const x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2;
-  const s=st?st.cvdSeries:[]; 
+  const raw=st?st.cvdSeries:[];
   x.clearRect(0,0,W,H);
-  x.strokeStyle='#3a4150';x.lineWidth=1;x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();
-  x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('CVD 30s + deltas (each auto-scaled)',6,12);
-  if(!s||s.length<2)return;
-  const plot=(key,color,lw)=>{
-    const vals=s.map(p=>p[key]).filter(v=>v!=null);
-    if(vals.length<2)return;
-    let mn=Math.min(...vals),mx=Math.max(...vals); if(mn===mx){mn-=1;mx+=1;}
-    const y=v=>midY - ( (v-mn)/(mx-mn) - 0.5 )*(H-16);
-    x.strokeStyle=color;x.lineWidth=lw;x.beginPath();
-    let started=false,prev=null;
-    for(let i=0;i<s.length;i++){ const v=s[i][key]; if(v==null){started=false;continue;}
-      const px=i/(s.length-1)*W, py=y(v);
-      if(!started){x.moveTo(px,py);started=true;} else x.quadraticCurveTo(prev.x,prev.y,(prev.x+px)/2,(prev.y+py)/2);
-      prev={x:px,y:py}; }
-    if(prev&&started)x.lineTo(prev.x,prev.y);
+  // zero line (the CVD reference you asked about)
+  x.strokeStyle='#2a303c';x.lineWidth=1;x.setLineDash([4,4]);x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();x.setLineDash([]);
+  x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('CVD 0  (above = net BUY, below = net SELL)',8,midY-5);
+  if(raw.length<2){ x.fillText('gathering flow…',8,26); return; }
+  const N=raw.length, xAt=i=>i/(N-1)*W;
+  const cvd=ema(raw.map(p=>p.cvd),0.25), price=ema(raw.map(p=>p.price),0.3);
+  // price overlay (own scale, faint) — shows if price follows flow
+  const pVals=price.filter(v=>v!=null);
+  if(pVals.length>1){
+    let pmn=Math.min(...pVals),pmx=Math.max(...pVals); if(pmx-pmn<1e-6){pmn-=1;pmx+=1;}
+    const py=v=>H-8-((v-pmn)/(pmx-pmn))*(H-16);
+    x.strokeStyle='rgba(91,157,255,.4)';x.lineWidth=1.5;x.beginPath();let started=false;
+    price.forEach((v,i)=>{ if(v==null){started=false;return;} const px=xAt(i); const yy=py(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
     x.stroke();
-  };
-  plot('d60','#e3c75a',1); plot('d10','#2ec27e',1.3); plot('d5','#5b9dff',1.6); plot('rate','#ff5d6c',1.2);
-  plot('cvd','#9b8cff',2.4);   // main line on top
+  }
+  // CVD zero-anchored symmetric scale
+  let maxAbs=1; cvd.forEach(v=>{ if(v!=null&&Math.abs(v)>maxAbs)maxAbs=Math.abs(v); });
+  const cy=v=>midY-(v/maxAbs)*(H/2-16);
+  // CVD trend line (regression) -> the slope / where it's going
+  const rg=linreg(cvd);
+  if(rg){
+    x.strokeStyle=rg.b>=0?'rgba(46,194,126,.75)':'rgba(255,93,108,.75)';
+    x.lineWidth=2;x.setLineDash([7,5]);x.beginPath();
+    x.moveTo(xAt(0),cy(rg.a)); x.lineTo(xAt(N-1),cy(rg.a+rg.b*(N-1))); x.stroke(); x.setLineDash([]);
+  }
+  // CVD main line (smoothed)
+  x.strokeStyle='#9b8cff';x.lineWidth=2.6;x.beginPath();let started=false;
+  cvd.forEach((v,i)=>{ if(v==null){started=false;return;} const px=xAt(i); const yy=cy(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
+  x.stroke();
+  // current value + trend arrow
+  const last=cvd[cvd.length-1];
+  const dir=!rg?'':(rg.b>0?' ▲ rising':rg.b<0?' ▼ falling':'');
+  x.fillStyle='#9b8cff';x.font='bold 11px ui-monospace';x.fillText('CVD '+fmtK(last)+dir,8,26);
 }
 function drawImbAnim(){
   const c=$('#imb'),x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2,h=st?st.imbHist:[];
