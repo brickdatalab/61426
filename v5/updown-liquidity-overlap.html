@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Up/Down — Liquidity Overlap [WS]</title>
+<title>Up/Down — Liquidity Overlap [V5]</title>
 <style>
-  :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;}
+  :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;--cvd:#9b8cff;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  header{padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   header h1{font-size:15px;margin:0;font-weight:600}
-  header .sub{color:var(--dim);font-size:12px}
-  header .tag{color:var(--bin)} header .tag2{color:var(--poly)}
+  .vtag{font-size:10px;background:var(--bin);color:#04122e;padding:2px 6px;border-radius:5px;margin-left:6px;font-weight:700;vertical-align:middle}
+  #mBar{color:var(--dim);font-size:12px;font-family:ui-monospace,monospace}
+  #mBar b{color:var(--txt)}
   .live{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  .rem{font-family:ui-monospace,monospace;color:var(--txt);background:var(--panel2);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
   .pulse{width:9px;height:9px;border-radius:50%;background:#444}
   .pulse.on{background:var(--up);animation:pp 1s infinite}
   @keyframes pp{0%{box-shadow:0 0 0 0 rgba(46,194,126,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,126,0)}100%{box-shadow:0 0 0 0 rgba(46,194,126,0)}}
   .wrap{display:grid;grid-template-columns:290px 1fr;min-height:calc(100vh - 50px)}
-  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel)}
+  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
   .preview{padding:16px;overflow:auto}
   label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 6px}
   input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 10px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px}
@@ -35,30 +37,36 @@
   .feed{font-size:12px;color:var(--dim);margin-bottom:5px}
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#444;margin-right:7px}
   .dot.ok{background:var(--up)}.dot.bad{background:var(--down)}.dot.wait{background:var(--flat)}
-  .key{font-size:11px;color:var(--dim);margin-top:12px;line-height:1.7}
-  .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
-  .note{font-size:11px;color:var(--dim);margin-top:12px;line-height:1.5}
-  /* signal */
-  .signal{display:flex;align-items:center;gap:16px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
-  .sig{font-size:30px;font-weight:800;letter-spacing:1px}
-  .sig.UP{color:var(--up)}.sig.DOWN{color:var(--down)}.sig.MIXED{color:var(--flat)}.sig.WAIT{color:var(--dim)}
-  .siginfo{font-size:12px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.6}
+  .sep{height:1px;background:var(--line);margin:16px 0}
+  .threads{font-size:11px;color:var(--dim)}
+  .threads .thhead{text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+  .threads .thempty{color:var(--dim);opacity:.6;font-style:italic}
+  /* signal = flowing pressure bar */
+  .signal{display:flex;align-items:center;gap:18px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
+  .sigcol{min-width:130px}
+  .sigtag{font-size:26px;font-weight:800;letter-spacing:1px;line-height:1.1}
+  .sigtag.UP{color:var(--up)}.sigtag.DOWN{color:var(--down)}.sigtag.MIXED{color:var(--flat)}.sigtag.WAIT{color:var(--dim)}
+  .siginfo{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.5;margin-top:4px}
   .siginfo b{color:var(--txt)}
-  .gaugewrap{flex:1;min-width:220px}
-  .gauge{position:relative;height:40px;border-radius:8px;background:linear-gradient(90deg,rgba(255,93,108,.25),rgba(255,93,108,.04) 45%,rgba(46,194,126,.04) 55%,rgba(46,194,126,.25));border:1px solid var(--line)}
-  .gz{position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:var(--txt);opacity:.6}
-  .gm{position:absolute;top:4px;bottom:4px;width:3px;border-radius:2px;transition:left .9s cubic-bezier(.22,.61,.36,1)}
-  .gm.b{background:var(--bin)} .gm.p{background:var(--poly)} .gm.c{background:#fff;width:4px;top:0;bottom:0}
-  .glbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px}
+  .presswrap{flex:1;min-width:240px}
+  .pressbar{position:relative;height:42px;border-radius:10px;background:linear-gradient(90deg,rgba(255,93,108,.22),rgba(255,93,108,.03) 45%,rgba(46,194,126,.03) 55%,rgba(46,194,126,.22));border:1px solid var(--line);overflow:hidden}
+  .pressmid{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--txt);opacity:.45}
+  .pressfill{position:absolute;top:6px;bottom:6px;left:50%;width:0;border-radius:4px;transition:width .9s cubic-bezier(.22,.61,.36,1),left .9s cubic-bezier(.22,.61,.36,1),background .3s}
+  .pressneedle{position:absolute;top:-3px;bottom:-3px;left:50%;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .9s cubic-bezier(.22,.61,.36,1)}
+  .presslbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
   .panels{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
   .card h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
-  #depth{width:100%;height:340px;display:block}
-  #imb{width:100%;height:120px;display:block}
+  .legend{display:flex;gap:12px;font-size:10px;color:var(--dim);margin-top:6px;font-family:ui-monospace,monospace}
+  .legend span b{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
+  #cvd{width:100%;height:340px;display:block}
+  #imb{width:100%;height:120px;display:block;cursor:crosshair}
+  .tip{position:absolute;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:11px ui-monospace,monospace;color:var(--txt);pointer-events:none;display:none;z-index:5;white-space:nowrap}
   .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
   .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
   .metric .k{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
   .metric .v{font-size:16px;font-weight:600;margin-top:3px;font-family:ui-monospace,monospace}
+  .metric .kd{font-size:10px;color:var(--dim);margin-top:2px;font-family:ui-monospace,monospace}
   .pos{color:var(--up)}.neg{color:var(--down)}
   table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
   th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -77,9 +85,9 @@
 </head>
 <body>
 <header>
-  <h1>Up / Down — Liquidity Overlap</h1>
-  <span class="sub">SEPARATE · <span class="tag">Binance perp book</span> + <span class="tag2">Polymarket book</span>, centered & overlaid</span>
-  <div class="live"><span id="pulse" class="pulse"></span><span id="rate">idle</span></div>
+  <h1>Up / Down <span class="vtag">V5</span></h1>
+  <span id="mBar">BTC — · Poly —</span>
+  <div class="live"><span id="pulse" class="pulse"></span><span id="rate">idle</span><span class="rem" id="mRem">--:--</span></div>
 </header>
 
 <div class="wrap">
@@ -100,37 +108,47 @@
     <div class="status"><label>Feeds · WS live</label>
       <div class="feed"><span id="dBin" class="dot"></span>Binance perp (WebSocket)</div>
       <div class="feed"><span id="dPoly" class="dot"></span>Polymarket book</div></div>
-    <div class="key">
-      <div><span class="sw" style="background:var(--bin)"></span>Binance — real BTC price pressure</div>
-      <div><span class="sw" style="background:var(--poly)"></span>Polymarket — bettor positioning</div>
-      <div style="margin-top:6px"><span class="sw" style="background:rgba(255,93,108,.4)"></span>top = asks / resistance (the ceiling)</div>
-      <div><span class="sw" style="background:rgba(46,194,126,.4)"></span>bottom = bids / support (the floor)</div>
+    <div class="sep"></div>
+    <div class="threads" id="threads">
+      <div class="thhead">Session history</div>
+      <div class="thempty">No past sessions yet</div>
     </div>
-    <div class="note">Both books are centered on their own mid, so "up" lines up. Read it like this: a <b>void up top on both colors</b> = runway to shoot UP. A <b>wall up top</b> = ceiling. When Binance (price) and Polymarket (bets) lean the same way before price moves, that's the early tell.</div>
   </div>
 
   <div class="preview">
     <div class="settled" id="settled"></div>
 
     <div class="signal">
-      <div class="sig WAIT" id="sig">—</div>
-      <div class="siginfo" id="siginfo">press Connect…</div>
-      <div class="gaugewrap">
-        <div class="gauge">
-          <div class="gz"></div>
-          <div class="gm b" id="gmB" style="left:50%" title="Binance"></div>
-          <div class="gm p" id="gmP" style="left:50%" title="Polymarket"></div>
-          <div class="gm c" id="gmC" style="left:50%" title="combined"></div>
+      <div class="sigcol">
+        <div class="sigtag WAIT" id="sigtag">—</div>
+        <div class="siginfo" id="siginfo">press Connect…</div>
+      </div>
+      <div class="presswrap">
+        <div class="pressbar">
+          <div class="pressmid"></div>
+          <div class="pressfill" id="pressFill"></div>
+          <div class="pressneedle" id="pressNeedle" style="left:50%"></div>
         </div>
-        <div class="glbl"><span>← DOWN pressure</span><span>combined</span><span>UP pressure →</span></div>
+        <div class="presslbl"><span>← DOWN pressure</span><span>net flow + book conviction</span><span>UP pressure →</span></div>
       </div>
     </div>
 
     <div class="panels">
-      <div class="card"><h3>Liquidity depth — both books overlaid (up = top)</h3>
-        <canvas id="depth" width="700" height="340"></canvas></div>
-      <div class="card"><h3>Imbalance over time — watch them align before price moves</h3>
+      <div class="card">
+        <h3>CVD — 30s flow (main) + Δ5/10/60s + rate</h3>
+        <canvas id="cvd" width="700" height="340"></canvas>
+        <div class="legend">
+          <span><b style="background:#9b8cff"></b>CVD30s</span>
+          <span><b style="background:#5b9dff"></b>Δ5s</span>
+          <span><b style="background:#2ec27e"></b>Δ10s</span>
+          <span><b style="background:#e3c75a"></b>Δ60s</span>
+          <span><b style="background:#ff5d6c"></b>rate</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Imbalance over time — hover for time into bar</h3>
         <canvas id="imb" width="520" height="120"></canvas>
+        <div class="tip" id="imbTip"></div>
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:10px;margin-bottom:0">
           <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
           <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
@@ -140,11 +158,11 @@
     </div>
 
     <div class="metrics">
-      <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div></div>
-      <div class="metric"><div class="k">CVD 30s</div><div class="v" id="mCvd">—</div></div>
-      <div class="metric"><div class="k">BTC mid</div><div class="v" id="mBmid">—</div></div>
-      <div class="metric"><div class="k">Poly prob</div><div class="v" id="mPmid">—</div></div>
-      <div class="metric"><div class="k">Remaining</div><div class="v" id="mRem">—</div></div>
+      <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div><div class="kd" id="mCushD">Δ10s —</div></div>
+      <div class="metric"><div class="k">CVD since open</div><div class="v" id="mCvdOpen">—</div></div>
+      <div class="metric"><div class="k">CVD Δ5s</div><div class="v" id="mCvd5">—</div></div>
+      <div class="metric"><div class="k">CVD Δ10s</div><div class="v" id="mCvd10">—</div></div>
+      <div class="metric"><div class="k">CVD Δ60s</div><div class="v" id="mCvd60">—</div></div>
       <div class="metric"><div class="k">Signal</div><div class="v" id="mSig">—</div></div>
     </div>
 
@@ -160,6 +178,11 @@
   <textarea id="prompt" readonly></textarea>
 </div>
 
+<script type="module">
+  // Pure signal logic (testable, see v5/test/signals.test.mjs) -> exposed to the page.
+  import { newSession, startBar, addTrade, tick as sigTick, decide } from './src/signals.mjs';
+  window.V5 = { newSession, startBar, addTrade, sigTick, decide };
+</script>
 <script>
 const $=s=>document.querySelector(s);
 const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
@@ -175,9 +198,10 @@ function parseSlug(slug){
 const fmtClock=s=>{s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');};
 const sgn=v=>v>=0?'+':'';
 const fmtUsd=v=>(v>=0?'+':'')+Math.round(v).toLocaleString();
+const fmtK=v=>{const a=Math.abs(v);return (v>=0?'+':'-')+(a>=1000000?(a/1000000).toFixed(2)+'M':a>=1000?(a/1000).toFixed(1)+'k':''+a);};
 async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
 
-// imbalance within band, returns {imb, mid, levels:[{price,size(notional),side}]}
+// imbalance within band, returns {imb, mid, levels}
 function bookStats(bids,asks,mid,band,priceKey,sizeKey){
   let bd=0,ad=0;const lv=[];
   for(const b of bids){const p=+b[priceKey],s=+b[sizeKey]*p;if(Math.abs(p-mid)<=mid*band||Math.abs(p-mid)<=band){if(p<=mid){bd+=s;lv.push({p,s,side:-1});}}}
@@ -187,26 +211,19 @@ function bookStats(bids,asks,mid,band,priceKey,sizeKey){
 }
 
 // ---- Binance via WebSocket: ONE persistent socket, no per-tick REST -> no rate-limit bans ----
-// Streams: <sym>@depth@100ms  = order-book DIFF stream; we keep a FULL local book by combining one REST
-//                            snapshot (limit=1000) with the diff updates, so imbalance is computed over
-//                            ~100 levels — matching the original REST limit=100, not the shallow top-20.
-//          <sym>@trade        = raw fills -> CVD (net signed flow == old REST aggTrades sum).
-// At Connect: 2 one-shot REST reads (depth snapshot + klines bar-open). After that: pure WS. A watchdog
-// reseeds the 30s CVD window from REST aggTrades ONLY if @trade is silent >5s (rare safety net -> no ban).
 const BIN_WS='wss://fstream.binance.com/stream?streams=';
 function binStreams(){
   const s=parsed.symbol.toLowerCase();
   return `${s}@depth@100ms/${s}@trade`;
 }
-// local order book built from snapshot + diff stream (futures pu/u sequencing)
 function newBook(){ return { bids:new Map(), asks:new Map(), lastU:0, ready:false, gap:false }; }
 function applyDiff(d){
   const b=st.book; if(!b||!b.ready)return;
-  if(d.u<=b.lastU)return;                  // stale update (already reflected in the book)
-  if(d.pu>b.lastU){ b.gap=true; return; }  // missed updates -> force a re-snapshot
+  if(d.u<=b.lastU)return;
+  if(d.pu>b.lastU){ b.gap=true; return; }
   for(const [p,q] of d.b){const P=+p,Q=+q; if(Q===0)b.bids.delete(P); else b.bids.set(P,Q);}
   for(const [p,q] of d.a){const P=+p,Q=+q; if(Q===0)b.asks.delete(P); else b.asks.set(P,Q);}
-  b.lastU=d.u; st.bookLastAdv=Date.now();   // heartbeat: lets tick() detect a muted diff stream
+  b.lastU=d.u; st.bookLastAdv=Date.now();
 }
 async function syncBook(){
   if(!st||!st.running)return;
@@ -217,10 +234,10 @@ async function syncBook(){
     for(const [p,q] of j.bids)if(+q>0)b.bids.set(+p,+q);
     for(const [p,q] of j.asks)if(+q>0)b.asks.set(+p,+q);
     b.lastU=j.lastUpdateId; b.ready=true;
-    for(const d of st.diffBuffer)applyDiff(d);   // flush diffs received during the snapshot fetch
+    for(const d of st.diffBuffer)applyDiff(d);
     st.diffBuffer=[]; b.gap=false; st.bookLastAdv=Date.now();
     if(!st.binReady){st.binReady=true;$('#dBin').className='dot ok';}
-  }catch(e){ setTimeout(()=>{if(st&&st.running)syncBook();},2000); }   // snapshot failed -> retry
+  }catch(e){ setTimeout(()=>{if(st&&st.running)syncBook();},2000); }
 }
 function openWS(){
   if(!st||!st.running)return;
@@ -229,14 +246,21 @@ function openWS(){
   try{ ws=new WebSocket(BIN_WS+binStreams()); }
   catch(e){ scheduleReconnect(); return; }
   st.ws=ws;
-  ws.onopen=()=>{ st.wsRetry=0; syncBook(); };                 // (re)build the local book on every (re)connect
+  ws.onopen=()=>{ st.wsRetry=0; syncBook(); };
   ws.onmessage=(ev)=>{
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
     const s=m.stream||'', d=m.data||{};
-    if(s.indexOf('@depth')>=0&&'u' in d&&d.b){                     // diff-stream update
+    if(s.indexOf('@depth')>=0&&'u' in d&&d.b){
       if(!st.book.ready)st.diffBuffer.push(d); else { applyDiff(d); if(st.book.gap){st.book.gap=false;syncBook();} }
     }
-    else if(s.indexOf('@trade')>=0){ st.trades.push({T:+d.T,p:+d.p,q:+d.q,m:d.m}); st.wsLast=+d.p; st.lastTradeTs=Date.now(); }
+    else if(s.indexOf('@trade')>=0){
+      const px=+d.p, q=+d.q;
+      if(px>0 && q>0){                              // guard: drop malformed/zero prints
+        const signed=(d.m?-1:1)*px*q;
+        st.trades.push({T:+d.T,p:px,q:q,m:d.m}); st.wsLast=px; st.lastTradeTs=Date.now();
+        if(st.signals) V5.addTrade(st.signals, signed);   // accumulate CVD-since-bar-open
+      }
+    }
   };
   ws.onerror=()=>{ if(st)$('#dBin').className='dot bad'; };
   ws.onclose=()=>{ if(!st)return; st.binReady=false; if(st.running){ $('#dBin').className='dot wait'; scheduleReconnect(); } };
@@ -244,7 +268,7 @@ function openWS(){
 function scheduleReconnect(){
   if(!st||!st.running)return;
   st.wsRetry=Math.min((st.wsRetry||0)+1,6);
-  const delay=Math.min(1000*Math.pow(2,st.wsRetry-1),8000);   // 1s..8s backoff
+  const delay=Math.min(1000*Math.pow(2,st.wsRetry-1),8000);
   clearTimeout(st._rt); st._rt=setTimeout(()=>{ if(st&&st.running)openWS(); },delay);
 }
 function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
@@ -253,9 +277,6 @@ async function tick(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
-  // Binance book: WS diff-book primary (~100 levels, matches original REST limit=100). If Binance mutes
-  // the diff stream (lastU not advancing >3s — happens intermittently from this IP), fall back to a REST
-  // depth-100 snapshot: always-reliable ground truth, exact limit=100 match, fires only when WS is silent.
   const bk=st.book;
   const bookStale=!bk||!bk.ready||!st.bookLastAdv||Date.now()-st.bookLastAdv>3000;
   let bStat=null,bmid=null;
@@ -274,13 +295,12 @@ async function tick(){
     bmid=(bids[0][0]+asks[0][0])/2;
     bStat=bookStats(bids,asks,bmid,BIN_BAND,0,1);
     $('#dBin').className='dot ok';
-    const lo=bmid*0.995,hi=bmid*1.005;                    // bound memory: drop levels far from mid
+    const lo=bmid*0.995,hi=bmid*1.005;
     for(const p of bk.bids.keys())if(p<lo)bk.bids.delete(p);
     for(const p of bk.asks.keys())if(p>hi)bk.asks.delete(p);
   }
-  if(st.wsLast!=null)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
-  // CVD 30s from the live @trade buffer. Watchdog: if @trade has been silent >5s (or cold start), reseed
-  // the 30s window from REST aggTrades — rock-solid here, and used only as a rare safety net (no ban).
+  if(st.wsLast!=null&&st.wsLast>0)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
+  // CVD 30s (watchdog reseeds from REST aggTrades if @trade silent >5s)
   if(!st.lastTradeTs||Date.now()-st.lastTradeTs>5000){
     try{
       const at=await jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`);
@@ -290,12 +310,11 @@ async function tick(){
     }catch(e){}
   }
   const cut=Date.now()-30000;
-  while(st.trades.length&&st.trades[0].T<cut)st.trades.shift();        // prune old (arrive in time order)
+  while(st.trades.length&&st.trades[0].T<cut)st.trades.shift();
   st.cvd=st.trades.reduce((s,a)=>s+(a.m?-1:1)*a.q*a.p,0);
-  // Polymarket book — different host (clob.polymarket.com), kept on REST 1s; it is NOT the ban source
+  // Polymarket book
   let book=null;
   if(st.token){ try{ book=await jget('https://clob.polymarket.com/book?token_id='+st.token); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }
-  // Polymarket book (price 0..1)
   let pStat=null,pmid=null;
   if(book&&book.bids&&book.asks&&book.bids.length&&book.asks.length){
     const bb=Math.max(...book.bids.map(b=>+b.price)), ba=Math.min(...book.asks.map(a=>+a.price));
@@ -307,126 +326,173 @@ async function tick(){
   const comb=(bimb!=null&&pimb!=null)?(bimb+pimb)/2:(bimb!=null?bimb:pimb);
   const cush=(st.last!=null&&st.open!=null)?st.last-st.open:null;
 
-  // signal: both lean same way & meaningfully -> PRIMED
-  let sig='MIXED';
-  if(bimb!=null&&pimb!=null){
-    if(bimb>0.12&&pimb>0.12)sig='UP';
-    else if(bimb<-0.12&&pimb<-0.12)sig='DOWN';
-    else sig='MIXED';
-  } else if(comb!=null){ sig = comb>0.15?'UP':comb<-0.15?'DOWN':'MIXED'; }
+  // ---- V5 signal layer (pure, from signals.mjs) ----
+  const sg = st.signals ? V5.sigTick(st.signals, { now: Date.now(), cvd30: st.cvd, price: st.last }) : null;
+  const dr = sg ? V5.decide({ bimb, pimb, comb, momentum: sg.momentum }) : { sig: 'MIXED', note: '', momentum: null };
+  const sig = dr.sig;
+  // flowing pressure scalar [-1..1]: book pressure + momentum contribution
+  let pressure = 0;
+  if (sg) {
+    const z = sg.momentum.z, sd = sg.momentum.sd;
+    const momN = sd > 0 ? Math.max(-1.5, Math.min(1.5, z / 3)) : 0;
+    pressure = Math.max(-1, Math.min(1, (comb || 0) * 0.7 + (sg.momentum.dir !== 'FLAT' ? momN * 0.3 : 0)));
+  }
 
-  // render gauge
-  const toPct=v=>Math.max(2,Math.min(98,50+(v||0)*48));
-  $('#gmB').style.left=toPct(bimb)+'%';$('#gmP').style.left=toPct(pimb)+'%';$('#gmC').style.left=toPct(comb)+'%';
-  $('#sig').className='sig '+sig;$('#sig').textContent=sig==='UP'?'PRIMED UP':sig==='DOWN'?'PRIMED DOWN':'MIXED';
-  const agree=(bimb!=null&&pimb!=null&&Math.sign(bimb)===Math.sign(pimb));
-  $('#siginfo').innerHTML=`Binance <b>${bimb==null?'—':bimb.toFixed(2)}</b> · Polymarket <b>${pimb==null?'—':pimb.toFixed(2)}</b><br>`+
-    (agree?`both lean <b>${bimb>0?'UP':'DOWN'}</b> — aligned`:`books <b>disagree</b> — no edge yet`)+` · ${Math.round(rem)}s left`;
+  // ---- render: pressure bar (needle eases, doesn't snap) ----
+  const npct = 50 + pressure * 48;
+  $('#pressNeedle').style.left = npct + '%';
+  const fill = $('#pressFill');
+  if (pressure >= 0) { fill.style.left = '50%'; fill.style.width = (pressure * 48) + '%'; fill.style.background = 'rgba(46,194,126,.45)'; }
+  else { fill.style.left = (50 + pressure * 48) + '%'; fill.style.width = (-pressure * 48) + '%'; fill.style.background = 'rgba(255,93,108,.45)'; }
+  // de-bounced tag (2-tick hysteresis so it stops flapping)
+  st.sigBuf = (st.sigBuf || []).concat([sig]).slice(-3);
+  const stable = st.sigBuf.length >= 2 && st.sigBuf.every(x => x === sig);
+  const dispSig = stable ? sig : (st.dispSig || 'MIXED');
+  st.dispSig = dispSig;
+  $('#sigtag').className = 'sigtag ' + dispSig;
+  $('#sigtag').textContent = dispSig === 'UP' ? 'UP' : dispSig === 'DOWN' ? 'DOWN' : 'MIXED';
+  const flowNote = dr.note ? ' · ' + dr.note : '';
+  $('#siginfo').innerHTML = `Binance <b>${bimb == null ? '—' : bimb.toFixed(2)}</b> · Polymarket <b>${pimb == null ? '—' : pimb.toFixed(2)}</b> · mom z<b>${sg ? (sg.momentum.z >= 0 ? '+' : '') + sg.momentum.z.toFixed(1) : '—'}</b>${flowNote}<br>${Math.round(rem)}s left`;
 
-  $('#mBimb').textContent=bimb==null?'—':sgn(bimb)+bimb.toFixed(2);$('#mBimb').className='v '+(bimb>0?'pos':bimb<0?'neg':'');
-  $('#mPimb').textContent=pimb==null?'—':sgn(pimb)+pimb.toFixed(2);$('#mPimb').className='v '+(pimb>0?'pos':pimb<0?'neg':'');
-  $('#mComb').textContent=comb==null?'—':sgn(comb)+comb.toFixed(2);$('#mComb').className='v '+(comb>0?'pos':comb<0?'neg':'');
-  $('#mCush').textContent=cush==null?'—':sgn(cush)+cush.toFixed(1);$('#mCush').className='v '+(cush>0?'pos':cush<0?'neg':'');
-  const ce=$('#mCvd');ce.textContent=fmtUsd(st.cvd);ce.className='v '+(st.cvd>0?'pos':'neg');
-  $('#mBmid').textContent=bmid?bmid.toLocaleString(undefined,{maximumFractionDigits:1}):'—';
-  $('#mPmid').textContent=pmid?pmid.toFixed(3):'—';
-  $('#mRem').textContent=fmtClock(rem);$('#mSig').textContent=sig;$('#mSig').className='v '+(sig==='UP'?'pos':sig==='DOWN'?'neg':'');
-  $('#pulse').className='pulse on';$('#rate').textContent='live · '+st.log.length+' ticks';
+  // subtle sub-header: price + prob
+  $('#mBar').innerHTML = `BTC <b>${bmid ? bmid.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</b> · Poly <b>${pmid ? pmid.toFixed(2) : '—'}</b>`;
+  // remaining top-right
+  $('#mRem').textContent = fmtClock(rem);
 
-  st.targetB=binNorm(bStat,bmid,BIN_BAND);
-  st.targetP=binNorm(pStat,pmid,POLY_BAND);
-  st.imbHist.push({b:bimb,p:pimb});if(st.imbHist.length>180)st.imbHist.shift();
+  // imbalance tiles
+  $('#mBimb').textContent = bimb == null ? '—' : sgn(bimb) + bimb.toFixed(2); $('#mBimb').className = 'v ' + (bimb > 0 ? 'pos' : bimb < 0 ? 'neg' : '');
+  $('#mPimb').textContent = pimb == null ? '—' : sgn(pimb) + pimb.toFixed(2); $('#mPimb').className = 'v ' + (pimb > 0 ? 'pos' : pimb < 0 ? 'neg' : '');
+  $('#mComb').textContent = comb == null ? '—' : sgn(comb) + comb.toFixed(2); $('#mComb').className = 'v ' + (comb > 0 ? 'pos' : comb < 0 ? 'neg' : '');
+  // scorecards
+  $('#mCush').textContent = cush == null ? '—' : sgn(cush) + cush.toFixed(1); $('#mCush').className = 'v ' + (cush > 0 ? 'pos' : cush < 0 ? 'neg' : '');
+  $('#mCushD').textContent = 'Δ10s ' + (sg && sg.cush_d10 != null ? sgn(sg.cush_d10) + sg.cush_d10.toFixed(1) : '—');
+  const setV = (id, v) => { const e = $('#' + id); e.textContent = v == null ? '—' : fmtK(v); e.className = 'v ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : ''); };
+  setV('mCvdOpen', sg ? sg.cvdSinceOpen : null);
+  setV('mCvd5', sg ? sg.cvd_d5 : null);
+  setV('mCvd10', sg ? sg.cvd_d10 : null);
+  setV('mCvd60', sg ? sg.cvd_d60 : null);
+  $('#mSig').textContent = dispSig; $('#mSig').className = 'v ' + (dispSig === 'UP' ? 'pos' : dispSig === 'DOWN' ? 'neg' : '');
+  $('#pulse').className = 'pulse on'; $('#rate').textContent = 'live · ' + st.log.length + ' ticks';
 
-  const t=new Date().toISOString().substr(11,8);
-  const row={t,rem:Math.max(0,Math.round(rem)),btc_imb:bimb==null?null:+bimb.toFixed(3),poly_imb:pimb==null?null:+pimb.toFixed(3),comb:comb==null?null:+comb.toFixed(3),cushion:cush==null?null:+cush.toFixed(2),cvd:Math.round(st.cvd),signal:sig};
-  st.log.push(row);saveLog();
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${t}</td><td>${row.rem}</td><td>${bimb==null?'·':sgn(bimb)+bimb.toFixed(2)}</td>`+
-    `<td>${pimb==null?'·':sgn(pimb)+pimb.toFixed(2)}</td><td>${comb==null?'·':sgn(comb)+comb.toFixed(2)}</td>`+
-    `<td>${cush==null?'·':sgn(cush)+cush.toFixed(1)}</td><td>${fmtUsd(st.cvd)}</td><td class="${sig}">${sig}</td>`;
-  const led=$('#led');led.insertBefore(tr,led.firstChild);while(led.children.length>80)led.removeChild(led.lastChild);
-  updatePrompt(sig,bimb,pimb);
+  // histories for the two graphs
+  st.imbHist.push({ b: bimb, p: pimb, rem: Math.round(rem) }); if (st.imbHist.length > 180) st.imbHist.shift();
+  if (sg) {
+    st.cvdSeries.push({ cvd: st.cvd, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
+    if (st.cvdSeries.length > 180) st.cvdSeries.shift();
+  }
+
+  const t = new Date().toISOString().substr(11, 8);
+  const row = {
+    t, rem: Math.max(0, Math.round(rem)),
+    btc_imb: bimb == null ? null : +bimb.toFixed(3), poly_imb: pimb == null ? null : +pimb.toFixed(3), comb: comb == null ? null : +comb.toFixed(3),
+    cushion: cush == null ? null : +cush.toFixed(2), cvd: Math.round(st.cvd),
+    cvd_since_open: sg ? Math.round(sg.cvdSinceOpen) : null, cvd_d5: sg && sg.cvd_d5 != null ? Math.round(sg.cvd_d5) : null,
+    cvd_d10: sg && sg.cvd_d10 != null ? Math.round(sg.cvd_d10) : null, cvd_d60: sg && sg.cvd_d60 != null ? Math.round(sg.cvd_d60) : null,
+    cush_d10: sg && sg.cush_d10 != null ? +sg.cush_d10.toFixed(1) : null, mom_z: sg ? +sg.momentum.z.toFixed(2) : null, mom_dir: sg ? sg.momentum.dir : null,
+    signal: sig,
+  };
+  st.log.push(row); saveLog();
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${t}</td><td>${row.rem}</td><td>${bimb == null ? '·' : sgn(bimb) + bimb.toFixed(2)}</td>` +
+    `<td>${pimb == null ? '·' : sgn(pimb) + pimb.toFixed(2)}</td><td>${comb == null ? '·' : sgn(comb) + comb.toFixed(2)}</td>` +
+    `<td>${cush == null ? '·' : sgn(cush) + cush.toFixed(1)}</td><td>${fmtUsd(st.cvd)}</td><td class="${sig}">${sig}</td>`;
+  const led = $('#led'); led.insertBefore(tr, led.firstChild); while (led.children.length > 80) led.removeChild(led.lastChild);
+  updatePrompt(sig, bimb, pimb);
 }
 
-// ---- AESTHETIC ONLY: per-frame easing so the same 1s data glides instead of snapping ----
-const NBINS=44;
-// normalized depth bins (0..1, each book to its own max — same as before) so bars can be lerped
-function binNorm(stat,mid,band){
-  const arr=new Array(NBINS).fill(0);
-  if(!stat||mid==null)return arr;
-  for(const o of stat.lv){const rel=(o.p-mid)/(mid*band||band);const yi=Math.round((0.5-rel/2)*NBINS);if(yi>=0&&yi<NBINS)arr[yi]+=o.s;}
-  const mx=Math.max(1,...arr);return arr.map(v=>v/mx);
-}
-function drawDepthAnim(){
-  const c=$('#depth'),x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2,N=NBINS,bh=H/N,L=46;
+// ---- CVD graph: main CVD30s + Δ5/10/60s + rate, each auto-scaled to its own range ----
+function drawCvdAnim(){
+  const c=$('#cvd'); if(!c)return; const x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2;
+  const s=st?st.cvdSeries:[]; 
   x.clearRect(0,0,W,H);
-  x.fillStyle='rgba(255,93,108,.05)';x.fillRect(0,0,W,midY);
-  x.fillStyle='rgba(46,194,126,.05)';x.fillRect(0,midY,W,midY);
-  x.strokeStyle='#cdd3df';x.globalAlpha=.5;x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();x.globalAlpha=1;
-  x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('UP / asks (ceiling)',6,12);x.fillText('DOWN / bids (floor)',6,H-6);x.fillText('mid',6,midY-4);
-  const draw=(arr,color)=>{if(!arr)return;x.fillStyle=color;for(let i=0;i<N;i++){const v=arr[i];if(v<=0.002)continue;x.fillRect(L,i*bh+1,v*(W-L-10),bh-1.5);}};
-  draw(st&&st.dispB,'rgba(91,157,255,.55)');   // Binance
-  draw(st&&st.dispP,'rgba(227,199,90,.55)');    // Polymarket
+  x.strokeStyle='#3a4150';x.lineWidth=1;x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();
+  x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('CVD 30s + deltas (each auto-scaled)',6,12);
+  if(!s||s.length<2)return;
+  const plot=(key,color,lw)=>{
+    const vals=s.map(p=>p[key]).filter(v=>v!=null);
+    if(vals.length<2)return;
+    let mn=Math.min(...vals),mx=Math.max(...vals); if(mn===mx){mn-=1;mx+=1;}
+    const y=v=>midY - ( (v-mn)/(mx-mn) - 0.5 )*(H-16);
+    x.strokeStyle=color;x.lineWidth=lw;x.beginPath();
+    let started=false,prev=null;
+    for(let i=0;i<s.length;i++){ const v=s[i][key]; if(v==null){started=false;continue;}
+      const px=i/(s.length-1)*W, py=y(v);
+      if(!started){x.moveTo(px,py);started=true;} else x.quadraticCurveTo(prev.x,prev.y,(prev.x+px)/2,(prev.y+py)/2);
+      prev={x:px,y:py}; }
+    if(prev&&started)x.lineTo(prev.x,prev.y);
+    x.stroke();
+  };
+  plot('d60','#e3c75a',1); plot('d10','#2ec27e',1.3); plot('d5','#5b9dff',1.6); plot('rate','#ff5d6c',1.2);
+  plot('cvd','#9b8cff',2.4);   // main line on top
 }
 function drawImbAnim(){
   const c=$('#imb'),x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2,h=st?st.imbHist:[];
   x.clearRect(0,0,W,H);x.strokeStyle='#3a4150';x.lineWidth=1;x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();
   if(!h||h.length<2)return;x.lineWidth=2;
-  const line=(key,color,disp)=>{
+  const line=(key,color)=>{
     const pts=[];
-    for(let i=0;i<h.length;i++){let v=h[i][key];if(i===h.length-1&&disp!=null&&v!=null)v=disp;
-      pts.push(v==null?null:{x:i/(h.length-1)*W,y:midY-v*(midY-6)});}
+    for(let i=0;i<h.length;i++){const v=h[i][key];pts.push(v==null?null:{x:i/(h.length-1)*W,y:midY-v*(midY-6)});}
     x.strokeStyle=color;x.beginPath();let prev=null,started=false;
     for(const p of pts){if(!p){started=false;prev=null;continue;}
-      if(!started){x.moveTo(p.x,p.y);started=true;}
-      else{x.quadraticCurveTo(prev.x,prev.y,(prev.x+p.x)/2,(prev.y+p.y)/2);}
+      if(!started){x.moveTo(p.x,p.y);started=true;}else{x.quadraticCurveTo(prev.x,prev.y,(prev.x+p.x)/2,(prev.y+p.y)/2);}
       prev=p;}
-    if(prev&&started)x.lineTo(prev.x,prev.y);
-    x.stroke();
+    if(prev&&started)x.lineTo(prev.x,prev.y);x.stroke();
   };
-  line('b','#5b9dff',st.dispLast?st.dispLast.b:null);
-  line('p','#e3c75a',st.dispLast?st.dispLast.p:null);
+  line('b','#5b9dff'); line('p','#e3c75a');
+}
+// hover on imbalance graph -> elapsed time into the bar
+function imbHover(ev){
+  const c=$('#imb'),tip=$('#imbTip'),rect=c.getBoundingClientRect(),W=c.width;
+  let mx=ev.clientX-rect.left; mx=Math.max(0,Math.min(W-1,mx));
+  const h=st?st.imbHist:[]; if(h.length<2){tip.style.display='none';return;}
+  const idx=Math.round(mx/W*(h.length-1)); const pt=h[idx]; if(!pt){tip.style.display='none';return;}
+  const elapsed=parsed.barSec-pt.rem;
+  const em=Math.floor(elapsed/60),es=Math.floor(elapsed%60);
+  tip.style.display='block';
+  tip.textContent=`${em}m ${es}s in · B ${pt.b==null?'—':pt.b.toFixed(2)} · P ${pt.p==null?'—':pt.p.toFixed(2)}`;
+  const cx=rect.left-c.parentElement.getBoundingClientRect().left+mx+12, cy=ev.clientY-c.parentElement.getBoundingClientRect().top-6;
+  tip.style.left=cx+'px'; tip.style.top=cy+'px';
 }
 function animate(){
   if(!st||!st.running)return;
   st.raf=requestAnimationFrame(animate);
-  const k=0.16;                                   // easing toward the latest 1s reading
-  if(st.targetB){if(!st.dispB)st.dispB=st.targetB.slice();for(let i=0;i<st.dispB.length;i++)st.dispB[i]+=(st.targetB[i]-st.dispB[i])*k;}
-  if(st.targetP){if(!st.dispP)st.dispP=st.targetP.slice();for(let i=0;i<st.dispP.length;i++)st.dispP[i]+=(st.targetP[i]-st.dispP[i])*k;}
-  if(st.imbHist&&st.imbHist.length){const last=st.imbHist[st.imbHist.length-1];
-    if(!st.dispLast)st.dispLast={b:last.b||0,p:last.p||0};
-    if(last.b!=null)st.dispLast.b+=(last.b-st.dispLast.b)*k;
-    if(last.p!=null)st.dispLast.p+=(last.p-st.dispLast.p)*k;}
-  drawDepthAnim();drawImbAnim();
+  drawCvdAnim(); drawImbAnim();
 }
 
 async function settle(){stop(true);
-  let o=st.open,c=st.last;                                       // WS-formed candle (always available)
+  let o=st.open,c=st.last;
   try{const k=await jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
-    if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ /* IP banned — use the live WS candle */ }
+    if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ }
   if(o==null||c==null)return;
   const res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
   el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
-  st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();}
+  st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();
+}
 
-const logKey=()=>'updownLIQ_log_'+($('#slug').value.trim());
+const logKey=()=>'updownV5_log_'+($('#slug').value.trim());
 function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));}catch(e){}}
 function downloadLog(){const data=st&&st.log.length?st.log:JSON.parse(localStorage.getItem(logKey())||'[]');
   const blob=new Blob([JSON.stringify({slug:$('#slug').value.trim(),rows:data},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=$('#slug').value.trim()+'_liquidity_log.json';a.click();}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=$('#slug').value.trim()+'_v5_log.json';a.click();}
 function updatePrompt(sig,b,p){const pp=parsed,endUtc=new Date(pp.end*1000).toISOString().substr(11,5)+' UTC';
-  let t=`Live liquidity overlap on Polymarket \`${$('#slug').value.trim()}\` (${pp.label}, settles ${endUtc}) — Binance perp book imbalance + Polymarket book imbalance, centered & overlaid. PRIMED when both lean the same way before price moves. `;
+  let t=`V5 flip watch on Polymarket \`${$('#slug').value.trim()}\` (${pp.label}, settles ${endUtc}) — CVD flow-momentum + book imbalance, flowing pressure. `;
   if(sig)t+=`Now: ${sig} (Binance ${b==null?'—':b.toFixed(2)}, Polymarket ${p==null?'—':p.toFixed(2)}).`;$('#prompt').value=t;}
 
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
-  st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],log:[],targetB:null,targetP:null,dispB:null,dispP:null,dispLast:null,raf:null,
-      book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0};
+  st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
+      book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
+      signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
+  V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
   jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
+  // seed CVD-since-open from the bar open (covers mid-bar connect; one-shot, ban-safe)
+  jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&startTime=${parsed.ts*1000}&limit=1000`).then(at=>{
+    if(at&&at.length){let seed=0;for(const a of at)seed+=(a.m?-1:1)*(+a.p)*(+a.q);V5.startBar(st.signals,parsed.ts*1000,seed);}
+  }).catch(()=>{});
   jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
     const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
   }).catch(()=>$('#dPoly').className='dot bad');
@@ -438,6 +504,8 @@ function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.ra
 
 $('#start').onclick=()=>(st&&st.running)?stop():start();
 $('#dl').onclick=downloadLog;
+$('#imb').addEventListener('mousemove',imbHover);
+$('#imb').addEventListener('mouseleave',()=>{ $('#imbTip').style.display='none'; });
 $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
   $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
