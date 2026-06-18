@@ -3,6 +3,10 @@
 
 # CodeGraph local index (machine-local)
 .codegraph/
+# CodeGraph export artifacts (root-level exports — not source)
+_cards.json
+_net.json
+_tape.json
 
 # Python (tools/ subsystem)
 __pycache__/
