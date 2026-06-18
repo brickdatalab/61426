@@ -29,6 +29,15 @@ work. New work = new file.
 **Forward-looking flip detection** on Polymarket BTC/ETH up-down bars: signal that a bar is about
 to flip (e.g., "90% UP with 2 min left → will flip DOWN") *before* it happens.
 
+### Current state (as of 2026-06-18) — shell built, core pending
+Phases 1–3 are **DONE on V3's data**: pure signal logic + TDD (`v5/src/signals.mjs`, 13/13 green),
+the display restructure (flowing pressure bar, CVD graph, restructured cards, session threads), and
+the VM `v5/logd/` endpoint. **NOT done:** wiring the `ourWebSocket` 6 metrics (decided: **hybrid** —
+keep V3 Binance + add WS) and validating whether they carry real flip edge (Phase 4 truth gate).
+Until then V5 runs on the **weak V3 CVD** (validated non-edge) — a lens, not an actionable signal.
+Full status + decisions + commits: `docs/v5-plan.md`.
+**Run V5:** `cd /Users/vitolo/Desktop/61426 && python3 -m http.server 5173 & sleep 1 && open "http://localhost:5173/v5/updown-liquidity-overlap.html"`
+
 ### Data source: `ourWebSocket` (runs on this VM)
 - URL: `ws://34.89.159.108:8802/ws/v5/tape?symbol=BTCUSDT&bar=5m` (also `ETHUSDT`, `bar=15m`).
   No auth, no rate limit, on-change ~10/sec.
@@ -62,9 +71,12 @@ Backtested across 18 captured bars (`testdata/v3-logs/`):
 
 ## Where things live
 - **Local repo** (source of truth, git @ `brickdatalab/61426`): `/Users/vitolo/Desktop/61426/`
-- **VM mirror**: `/home/vincent/projects/61426/` (this dir)
+- **VM (`pm`, project `lithe-hallway-493420-r4`)**: `/home/vincent/projects/61426/` — **partial mirror** (v3 baseline copy, `testdata/`, `CONTEXT.md`, CSVs, and `v5/logd/`). The V5 dashboard/src/tests are **not** mirrored — V5 runs locally; the VM hosts `logd` (port 8803) and `ourWebSocket` (port 8802).
 - **ourWebSocket service**: `/home/vincent/ourWebSocket/` (systemd `ourwebsocket`, port 8802)
+- **V5 log receiver**: `/home/vincent/projects/61426/v5/logd/` (systemd `v5logd`, port 8803 — firewalled externally until the gcloud rule is added)
 - **Older history/detail**: `issues.md` (V3 handoff). The removed `v4.md` and `engine/` live in git history only.
 
-## Run v3 (when needed)
-`cd v3 && python3 -m http.server 8080` → open the URL (GCP firewall must allow the port).
+## Run (local)
+- **V5:** `python3 -m http.server 5173` → `http://localhost:5173/v5/updown-liquidity-overlap.html`
+- **V3:** `http://localhost:5173/v3/updown-liquidity-overlap.html` (v3 frozen, sha `5978…d849`)
+- HTTP is required (V5 loads `signals.mjs` as a module). One dashboard per port.

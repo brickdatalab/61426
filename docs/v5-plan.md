@@ -1,5 +1,23 @@
 # V5 — Official Plan
 
+> ## STATUS (as of 2026-06-18)
+> **Built & live — Phases 1–3, on V3 data** (commits `fcd6c4a`, `82a12f3`, `be0145a`):
+> - **Logic** (`v5/src/signals.mjs`, pure/browser-importable) + **TDD** (`v5/test/signals.test.mjs`, 13/13 green): `cvdSinceOpen`, `cvd_d5/d10/d60`, `cush_d10`, flow-momentum (adaptive 5s z-slope, continuation-only), `decide()` (tie-break/confirm/conflict).
+> - **Display**: flowing pressure bar (replaces snapping PRIMED), CVD graph (main CVD30s + Δ5/10/60s + rate), cards row (Cushion+Δ10s · CVD-since-open · Δ5/10/60s · Signal), Remaining→top-right, subtle BTC/Poly readout, imbalance-graph hover (elapsed time), trimmed sidebar.
+> - **Threads/logging**: session-history sidebar (one thread per market, ET titles) + click-to-view progression modal; extended log schema (`cvd_since_open`, deltas, momentum).
+> - **VM log endpoint** `v5/logd/` (standalone aiohttp, port 8803, systemd `v5logd`) — built & running on `pm`; **firewalled externally** (needs `gcloud compute firewall-rules create v5-logd-ingress --allow tcp:8803 --source-ranges 0.0.0.0/0 --network default --project lithe-hallway-493420-r4`). localStorage logging works regardless.
+>
+> **NOT done (the actual V5 goal — pending):**
+> - ❌ **Phase 4** — validate the 6 `ourWebSocket` metrics against CSV outcomes (`5m.csv`/`15mTOOL_rows.csv` have all 6 + `outcome`): truth gate before wiring.
+> - ❌ **Phase 5** — wire `ourWebSocket` (decision: **hybrid** — keep V3 Binance + add the 6 metrics).
+> - ❌ **Phase 6/7** — TLS/Vercel deploy (decision: **local-first**; `ws://` from `http://localhost` works, no mixed content).
+>
+> **Decisions locked:** hybrid data (keep V3 Binance + add ourWebSocket) · validate-first · local-first.
+>
+> **Honest state:** the *understand-what's-happening* layer (lean/pressure/CVD-flow/threads) works; the signal driving it is the **weak V3 CVD** (validated non-edge). It's a lens, not an actionable edge, until Phase 4→5.
+>
+> **Run V5:** `cd /Users/vitolo/Desktop/61426 && python3 -m http.server 5173 & sleep 1 && open "http://localhost:5173/v5/updown-liquidity-overlap.html"`  · **Run V3:** same but `/v3/…`  · v3 frozen (sha `5978…d849`).
+
 **Foundation:** V5 = the `v5/` copy of v3, edited freely. **v3 frozen** (sha-verified each milestone). V4 dead. Data sources **unchanged** this build (Binance fstream WS diff-book + `@trade` CVD; Polymarket REST) — we change *logic + display*, not feeds. `ourWebSocket` 6-metric integration is a later phase; the ✦ since-open metric below is computed locally from the existing stream (same formula as `ourWebSocket`'s `tape.cvd_candle_usd`).
 
 ## Phase 1 — Logic & numbers (TDD; no UI)
