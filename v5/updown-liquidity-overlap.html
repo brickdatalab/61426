@@ -81,6 +81,20 @@
   .promptbox h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
   #prompt{width:100%;min-height:50px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-family:ui-monospace,monospace;font-size:12px;resize:vertical}
   .copy{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+  /* session-history threads */
+  .threads .thitem{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:6px;cursor:pointer;font-size:11px;margin-bottom:5px;font-family:ui-monospace,monospace}
+  .threads .thitem:hover{border-color:var(--bin)}
+  .threads .thitem.cur{border-color:var(--bin);background:rgba(91,157,255,.12)}
+  /* thread progression modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+  .modalcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(680px,92vw)}
+  .modalhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-family:ui-monospace,monospace;font-size:13px;color:var(--txt)}
+  .thclose{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer}
+  .thstats{margin-top:10px;font-size:12px;color:var(--dim);font-family:ui-monospace,monospace}
+  .thresult{font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px}
+  .thresult.UP{color:var(--up);background:rgba(46,194,126,.15)}
+  .thresult.DOWN{color:var(--down);background:rgba(255,93,108,.15)}
+  #thCanvas{width:100%;height:160px;display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px}
 </style>
 </head>
 <body>
@@ -176,6 +190,14 @@
 <div class="promptbox">
   <div class="hd"><h3>Prompt — copy back into Claude</h3><button class="copy" id="copy">Copy</button></div>
   <textarea id="prompt" readonly></textarea>
+</div>
+
+<div class="modal" id="threadModal">
+  <div class="modalcard">
+    <div class="modalhd"><span id="thTitle"></span><button id="thClose" class="thclose">✕</button></div>
+    <canvas id="thCanvas" width="640" height="160"></canvas>
+    <div id="thStats" class="thstats"></div>
+  </div>
 </div>
 
 <script type="module">
@@ -392,6 +414,7 @@ async function tick(){
     signal: sig,
   };
   st.log.push(row); saveLog();
+  if(st.log.length%5===0)renderThreads();   // keep sidebar fresh (active thread, new threads)
   const tr = document.createElement('tr');
   tr.innerHTML = `<td>${t}</td><td>${row.rem}</td><td>${bimb == null ? '·' : sgn(bimb) + bimb.toFixed(2)}</td>` +
     `<td>${pimb == null ? '·' : sgn(pimb) + pimb.toFixed(2)}</td><td>${comb == null ? '·' : sgn(comb) + comb.toFixed(2)}</td>` +
@@ -467,6 +490,7 @@ async function settle(){stop(true);
   const res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
   el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
   st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();
+  renderThreads(); postLogToVM();   // thread marked settled + auto-save to VM
 }
 
 const logKey=()=>'updownV5_log_'+($('#slug').value.trim());
@@ -477,6 +501,63 @@ function downloadLog(){const data=st&&st.log.length?st.log:JSON.parse(localStora
 function updatePrompt(sig,b,p){const pp=parsed,endUtc=new Date(pp.end*1000).toISOString().substr(11,5)+' UTC';
   let t=`V5 flip watch on Polymarket \`${$('#slug').value.trim()}\` (${pp.label}, settles ${endUtc}) — CVD flow-momentum + book imbalance, flowing pressure. `;
   if(sig)t+=`Now: ${sig} (Binance ${b==null?'—':b.toFixed(2)}, Polymarket ${p==null?'—':p.toFixed(2)}).`;$('#prompt').value=t;}
+
+// ---- session history (threads) + VM log endpoint ----
+function etLabel(slug){
+  const p=parseSlug(slug); if(!p)return slug;
+  const d=new Date(p.ts*1000);
+  const hhmm=d.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour12:false,hour:'2-digit',minute:'2-digit'});
+  return `${p.asset.toUpperCase()} · ${p.interval} · ${hhmm} ET`;
+}
+function loadThreads(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i); if(!k||!k.startsWith('updownV5_log_'))continue;
+    const slug=k.slice('updownV5_log_'.length);
+    let rows=[]; try{rows=JSON.parse(localStorage.getItem(k)||'[]');}catch(e){}
+    const settled=rows.find(r=>r.settled); const p=parseSlug(slug);
+    out.push({slug,label:etLabel(slug),ts:p?p.ts:0,settled:settled?settled.settled:null,n:rows.length,rows});
+  }
+  out.sort((a,b)=>b.ts-a.ts); return out;
+}
+function renderThreads(){
+  const th=$('#threads'); if(!th)return; const list=loadThreads();
+  if(!list.length){th.innerHTML='<div class="thhead">Session history</div><div class="thempty">No past sessions yet</div>';return;}
+  th.innerHTML='<div class="thhead">Session history</div>'+list.map(t=>{
+    const cls=t.settled?(t.settled==='UP'?'ok':'bad'):'wait';
+    const cur=(st&&st.running&&$('#slug').value.trim()===t.slug)?' cur':'';
+    return `<button class="thitem${cur}" data-slug="${t.slug}"><span class="dot ${cls}"></span>${t.label}</button>`;
+  }).join('');
+}
+function openThread(slug){
+  const t=loadThreads().find(x=>x.slug===slug); if(!t)return;
+  const rows=(t.rows||[]).filter(r=>r.signal||r.cvd!=null||r.settled);
+  const rcls=t.settled?(t.settled==='UP'?'ok':'bad'):'wait';
+  $('#thTitle').innerHTML=`<span class="dot ${rcls}"></span>${t.label}`+(t.settled?` <span class="thresult ${t.settled}">${t.settled}</span>`:' <span style="color:var(--dim)">(no settle)</span>');
+  const c=$('#thCanvas'),x=c.getContext('2d'),W=c.width,H=c.height; x.clearRect(0,0,W,H);
+  const cush=rows.map(r=>r.cushion).filter(v=>v!=null);
+  let info='';
+  if(cush.length>1){
+    let mn=Math.min(...cush),mx=Math.max(...cush); if(mn===mx){mn-=1;mx+=1;}
+    const col=t.settled==='DOWN'?'rgba(255,93,108,.85)':t.settled==='UP'?'rgba(46,194,126,.85)':'#5b9dff';
+    x.strokeStyle=col;x.lineWidth=2;x.beginPath();
+    cush.forEach((v,i)=>{const px=i/(cush.length-1)*W,py=H-((v-mn)/(mx-mn))*(H-10)-5;i?x.lineTo(px,py):x.moveTo(px,py);});
+    x.stroke();
+    x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('cushion (price − open)',6,12);
+    info=`open→close cushion: ${sgn(cush[0])}${cush[0].toFixed(1)} → ${sgn(cush[cush.length-1])}${cush[cush.length-1].toFixed(1)} · `;
+  } else { x.fillStyle='#8a93a3';x.font='11px ui-monospace';x.fillText('no cushion data',6,H/2); }
+  const cvds=rows.map(r=>r.cvd).filter(v=>v!=null);
+  const ups=rows.filter(r=>r.signal==='UP').length, downs=rows.filter(r=>r.signal==='DOWN').length;
+  $('#thStats').innerHTML=`${info}${rows.length} ticks · final CVD ${fmtUsd(cvds.length?cvds[cvds.length-1]:0)} · signals <b class="pos">${ups} UP</b> / <b class="neg">${downs} DOWN</b>`;
+  $('#threadModal').style.display='flex';
+}
+const V5_LOG_URL='http://34.89.159.108:8803/log';
+async function postLogToVM(){
+  try{
+    await fetch(V5_LOG_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({slug:$('#slug').value.trim(),rows:st.log})});
+  }catch(e){ /* VM/firewall unreachable — localStorage still holds the log */ }
+}
 
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
@@ -511,6 +592,9 @@ $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
 $('#copy').onclick=()=>{navigator.clipboard.writeText($('#prompt').value);const b=$('#copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);};
 parsed=parseSlug($('#slug').value);updatePrompt();
+$('#threads').addEventListener('click',e=>{const b=e.target.closest('.thitem');if(b)openThread(b.dataset.slug);});
+$('#thClose').onclick=()=>{ $('#threadModal').style.display='none'; };
+renderThreads();   // show any past sessions on load
 </script>
 </body>
 </html>

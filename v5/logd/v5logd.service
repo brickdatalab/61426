@@ -1,0 +1,15 @@
+[Unit]
+Description=V5 log receiver (61426)
+After=network.target
+
+[Service]
+Type=simple
+User=vincent
+WorkingDirectory=/home/vincent/projects/61426/v5/logd
+ExecStart=/home/vincent/projects/61426/v5/logd/.venv/bin/python server.py
+Restart=always
+Environment=V5_LOG_DIR=/home/vincent/projects/61426/v5/logs
+Environment=V5_LOG_PORT=8803
+
+[Install]
+WantedBy=multi-user.target
