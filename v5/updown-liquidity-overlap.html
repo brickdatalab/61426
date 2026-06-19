@@ -54,13 +54,13 @@
   .pressfill{position:absolute;top:6px;bottom:6px;left:50%;width:0;border-radius:4px;transition:width .9s cubic-bezier(.22,.61,.36,1),left .9s cubic-bezier(.22,.61,.36,1),background .3s}
   .pressneedle{position:absolute;top:-3px;bottom:-3px;left:50%;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .9s cubic-bezier(.22,.61,.36,1)}
   .presslbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
-  .panels{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px}
+  .panels{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px}
   .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
   .card h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
   .legend{display:flex;gap:12px;font-size:10px;color:var(--dim);margin-top:6px;font-family:ui-monospace,monospace}
   .legend span b{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
-  #cvd{width:100%;height:340px;display:block}
-  #imb{width:100%;height:120px;display:block;cursor:crosshair}
+  #cvdChart,#imbChart{width:100%}
+  #cvdChart a,#imbChart a{display:none !important}
   .tip{position:absolute;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:11px ui-monospace,monospace;color:var(--txt);pointer-events:none;display:none;z-index:5;white-space:nowrap}
   .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
   .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
@@ -149,18 +149,12 @@
 
     <div class="panels">
       <div class="card">
-        <h3>CVD flow vs price — zero = net buy/sell · fast (15s) + slow (60s) trend</h3>
-        <canvas id="cvd" width="700" height="340"></canvas>
-        <div class="legend">
-          <span><b style="background:#9b8cff"></b>CVD30s (raw)</span>
-          <span><b style="background:rgba(91,157,255,.6)"></b>price</span>
-          <span><b style="background:#2ec27e"></b>fast ▲▼</span>
-          <span><b style="background:#8a93a3"></b>slow ▲▼</span>
-        </div>
+        <h3>CVD 30s — net flow</h3>
+        <div id="cvdChart" style="width:100%;height:300px"></div>
       </div>
       <div class="card">
         <h3>Bar flow (CVD since open) vs price — full bar</h3>
-        <div id="imbChart" style="width:100%;height:200px"></div>
+        <div id="imbChart" style="width:100%;height:280px"></div>
         <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:10px;margin-bottom:0">
           <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
           <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
@@ -400,7 +394,10 @@ async function tick(){
   if (sg) {
     st.cvdSeries.push({ t: Math.floor(Date.now()/1000), cvd: st.cvd, price: st.last, d5: sg.cvd_d5, d10: sg.cvd_d10, d60: sg.cvd_d60, rate: sg.momentum.slope });
     if (st.cvdSeries.length > 180) st.cvdSeries.shift();
-    updateImbChart(Math.floor(Date.now()/1000), sg ? sg.cvdSinceOpen : null, cush);   // bar-flow vs price panel
+    const tSec=Math.floor(Date.now()/1000);
+    st.cvdEma = st.cvdEma==null ? st.cvd : 0.35*st.cvd + 0.65*st.cvdEma;   // light smoothing for clean line
+    updateChart('cvdChart', tSec, st.cvdEma);                                 // CVD 30s
+    updateChart('imbChart', tSec, sg ? sg.cvdSinceOpen : null);               // cumulative bar flow
   }
 
   const t = new Date().toISOString().substr(11, 8);
@@ -423,100 +420,30 @@ async function tick(){
   updatePrompt(sig, bimb, pimb);
 }
 
-// ---- CVD graph: SMOOTHED CVD30s (zero-anchored: above mid = net buy, below = net sell)
-//      + faint price overlay + dashed CVD trend line (regression). Deltas live in the cards. ----
-function ema(vals, alpha=0.25){                 // exponential smoothing, preserves length
-  const out=[]; let prev=null;
-  for(const v of vals){ if(v==null){out.push(null);continue;} prev=(prev==null)?v:alpha*v+(1-alpha)*prev; out.push(prev); }
-  return out;
-}
-function linreg(vals){                          // y = a + b*i over non-null points
-  let n=0,sx=0,sy=0,sxx=0,sxy=0;
-  vals.forEach((v,i)=>{ if(v==null)return; n++; sx+=i; sy+=v; sxx+=i*i; sxy+=i*v; });
-  if(n<2) return null;
-  const b=(n*sxy - sx*sy)/(n*sxx - sx*sx); return { a:(sy - b*sx)/n, b };
-}
-function linregXY(pts){                         // y = a + b*x over [{x,y}]
-  let n=0,sx=0,sy=0,sxx=0,sxy=0;
-  for(const p of pts){ n++; sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
-  if(n<2) return null;
-  const b=(n*sxy - sx*sy)/(n*sxx - sx*sx); return { a:(sy - b*sx)/n, b };
-}
-function drawCvdAnim(){
-  const c=$('#cvd'); if(!c)return; const x=c.getContext('2d'),W=c.width,H=c.height,midY=H/2;
-  const raw=st?st.cvdSeries:[]; const barSec=parsed?parsed.barSec:300, barTs=parsed?parsed.ts:0;
-  x.clearRect(0,0,W,H);
-  // zero line (CVD reference): above = net BUY, below = net SELL
-  x.strokeStyle='#2a303c';x.lineWidth=1;x.setLineDash([4,4]);x.beginPath();x.moveTo(0,midY);x.lineTo(W,midY);x.stroke();x.setLineDash([]);
-  x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('CVD 0  (above = net BUY, below = net SELL)',8,midY-5);
-  x.fillText('bar open',4,H-6); x.textAlign='right'; x.fillText('bar close →',W-4,H-6); x.textAlign='left';
-  if(raw.length<2){ x.fillText('gathering flow…',8,26); return; }
-  const nowSec=raw[raw.length-1].t;
-  const pts=raw.map(p=>({t:p.t, el:Math.max(0,p.t-barTs), v:p.cvd, px:p.price}));
-  const xAt=el=>(el/barSec)*W;                    // time-anchored: past points never shift
-  // price overlay (light EMA, own scale, faint)
-  const priceE=ema(pts.map(p=>p.px),0.3);
-  const pVals=priceE.filter(v=>v!=null);
-  if(pVals.length>1){
-    let pmn=Math.min(...pVals),pmx=Math.max(...pVals); if(pmx-pmn<1e-6){pmn-=1;pmx+=1;}
-    const py=v=>H-8-((v-pmn)/(pmx-pmn))*(H-16);
-    x.strokeStyle='rgba(91,157,255,.4)';x.lineWidth=1.5;x.beginPath();let started=false;
-    pts.forEach((p,i)=>{ const v=priceE[i]; if(v==null){started=false;return;} const px=xAt(p.el); const yy=py(v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
-    x.stroke();
-  }
-  // CVD zero-anchored symmetric scale
-  let maxAbs=1; pts.forEach(p=>{ if(p.v!=null&&Math.abs(p.v)>maxAbs)maxAbs=Math.abs(p.v); });
-  const cy=v=>midY-(v/maxAbs)*(H/2-16);
-  // recent-window regression trend (fast 15s + slow 60s) — REACTIVE, not whole-bar
-  const drawTrend=(sec,alpha,lw)=>{
-    const win=pts.filter(p=>p.t>=nowSec-sec);
-    if(win.length<2)return null;
-    const r=linregXY(win.map(p=>({x:p.el,y:p.v}))); if(!r)return null;
-    const col=r.b>=0?`rgba(46,194,126,${alpha})`:`rgba(255,93,108,${alpha})`;
-    const x0=win[0].el, x1=win[win.length-1].el;
-    x.strokeStyle=col;x.lineWidth=lw;x.setLineDash([7,5]);x.beginPath();
-    x.moveTo(xAt(x0),cy(r.a+r.b*x0)); x.lineTo(xAt(x1),cy(r.a+r.b*x1)); x.stroke(); x.setLineDash([]);
-    return r;
-  };
-  const slow=drawTrend(60,0.5,1.5);              // muted: the bar trend
-  const fast=drawTrend(15,0.95,2.2);             // bright: turns the moment flow flips
-  // CVD main line — RAW (already a 30s aggregation; reactive, no lag)
-  x.strokeStyle='#9b8cff';x.lineWidth=2.6;x.beginPath();let started=false;
-  pts.forEach(p=>{ if(p.v==null){started=false;return;} const px=xAt(p.el); const yy=cy(p.v); started?x.lineTo(px,yy):x.moveTo(px,yy); started=true; });
-  x.stroke();
-  const last=pts[pts.length-1].v;
-  const fd=fast?(fast.b>0?' ▲ rising':fast.b<0?' ▼ falling':''):''; 
-  x.fillStyle='#9b8cff';x.font='bold 11px ui-monospace';x.fillText('CVD '+fmtK(last)+fd+' (fast)',8,26);
-}
-// ---- Bar-flow vs price panel: TradingView Lightweight Charts (fixed bar timeline, crosshair) ----
-let imbChart=null, flowSeries=null, priceSeries=null, imbRangeSet=false;
+// ---- charts: TradingView Lightweight Charts for BOTH panels (clean single line, fixed bar timeline) ----
+const charts={};   // id -> {chart, line, rangeSet}
 function addLine(chart, opts){ return chart.addSeries ? chart.addSeries(LightweightCharts.LineSeries, opts) : chart.addLineSeries(opts); }
-function initImbChart(){
-  if(imbChart||!window.LightweightCharts)return;
-  const el=$('#imbChart'); if(!el)return;
-  imbChart=LightweightCharts.createChart(el, {
-    height:200, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
-    grid:{vertLines:{color:'#1b1f27'},horzLines:{color:'#1b1f27'}},
-    leftPriceScale:{visible:true,borderColor:'#262b35'},
-    rightPriceScale:{visible:true,borderColor:'#262b35'},
-    timeScale:{timeVisible:true,secondsVisible:false,borderColor:'#262b35',fixLeftEdge:true,lockVisibleTimeRangeOnResize:true},
+function ensureChart(id, color){
+  if(charts[id]||!window.LightweightCharts)return;
+  const el=$('#'+id); if(!el)return;
+  const chart=LightweightCharts.createChart(el, {
+    height:280, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
+    grid:{vertLines:{color:'#1b1f27'}, horzLines:{color:'#1b1f27'}},
+    rightPriceScale:{visible:true, borderColor:'#262b35'},
+    timeScale:{timeVisible:true, secondsVisible:false, borderColor:'#262b35', fixLeftEdge:true, lockVisibleTimeRangeOnResize:true},
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
   });
-  flowSeries=addLine(imbChart,{color:'#9b8cff',lineWidth:2,priceScaleId:'left'});
-  priceSeries=addLine(imbChart,{color:'rgba(91,157,255,.85)',lineWidth:2,priceScaleId:'right'});
-  flowSeries.createPriceLine({price:0,color:'#3a4150',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,title:'CVD 0'});
+  const line=addLine(chart, {color, lineWidth:2});
+  line.createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
+  charts[id]={chart, line, rangeSet:false};
 }
-function resetImbChart(){
-  if(!imbChart||!parsed)return;
-  flowSeries.setData([]); priceSeries.setData([]);
-  imbRangeSet=false;                            // frame the bar on the first data point
+function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.line.setData([]); c.rangeSet=false; }
+function updateChart(id, tSec, val){
+  const c=charts[id]; if(!c||val==null)return;
+  c.line.update({time:tSec, value:val});
+  if(!c.rangeSet){ try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){} c.rangeSet=true; }
 }
-function updateImbChart(tSec, flow, cush){
-  if(!imbChart||flow==null)return;
-  flowSeries.update({time:tSec, value:flow});
-  if(cush!=null) priceSeries.update({time:tSec, value:cush});
-  if(!imbRangeSet){ try{ imbChart.timeScale().setVisibleRange({from:parsed.ts,to:parsed.end}); }catch(e){} imbRangeSet=true; }
-}
+// imbChart-specific functions removed — the generic ensureChart/resetChart/updateChart above handles both panels.
 // hover on imbalance graph -> elapsed time into the bar
 function imbHover(ev){
   const c=$('#imb'),tip=$('#imbTip'),rect=c.getBoundingClientRect(),W=c.width;
@@ -530,11 +457,7 @@ function imbHover(ev){
   const cx=rect.left-c.parentElement.getBoundingClientRect().left+mx+12, cy=ev.clientY-c.parentElement.getBoundingClientRect().top-6;
   tip.style.left=cx+'px'; tip.style.top=cy+'px';
 }
-function animate(){
-  if(!st||!st.running)return;
-  st.raf=requestAnimationFrame(animate);
-  drawCvdAnim();
-}
+function animate(){ /* Lightweight Charts self-render */ }
 
 async function settle(){stop(true);
   let o=st.open,c=st.last;
@@ -616,11 +539,11 @@ async function postLogToVM(){
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
-  st={running:true,last:null,open:null,cvd:0,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
+  st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
-  initImbChart(); resetImbChart();               // bar-flow vs price panel (create once, frame to bar)
+  ensureChart('cvdChart','#9b8cff'); ensureChart('imbChart','#2ec27e'); resetChart('cvdChart'); resetChart('imbChart');
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
