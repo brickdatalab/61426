@@ -444,19 +444,19 @@ function ensureChart(id, colors){
     rightPriceScale:{visible:true, borderVisible:true, borderColor:'#262b35'},
     timeScale:{timeVisible:true, secondsVisible:false, borderColor:'#262b35', lockVisibleTimeRangeOnResize:true},
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-    handleScroll:false,          // NO scrolling — view is locked
-    handleScale:false,           // NO zooming — view is locked
+    handleScroll:{mouseWheel:false,horzTouchDrag:false,vertTouchDrag:false,pressedMouseMove:false},  // NO user scroll, allow programmatic
+    handleScale:{mouseWheel:false,pinch:false,axisPressedMouseMove:false,axisDoubleClickReset:false},  // NO user zoom, but allow programmatic setVisibleRange
   });
   const lines=cs.map(c=>addLine(chart,{color:c, lineWidth:2}));
   lines[0].createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
   charts[id]={chart, lines, rangeSet:false};
 }
-function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([])); c.rangeSet=false; }
+function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts}])); c.rangeSet=false; }  // seed whitespace at bar open — anchors left edge
 function updateChart(id, tSec, val){
   const c=charts[id]; if(!c)return;
   const vals=Array.isArray(val)?val:[val];
   vals.forEach((v,i)=>{ if(v!=null&&c.lines[i]) c.lines[i].update({time:tSec, value:v}); });
-  if(!c.rangeSet){ try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){} c.rangeSet=true; }
+  try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}   // force full-bar view every tick
 }
 // imbChart-specific functions removed — the generic ensureChart/resetChart/updateChart above handles both panels.
 // hover on imbalance graph -> elapsed time into the bar
