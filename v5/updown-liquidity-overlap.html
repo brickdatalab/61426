@@ -54,13 +54,13 @@
   .pressfill{position:absolute;top:6px;bottom:6px;left:50%;width:0;border-radius:4px;transition:width .9s cubic-bezier(.22,.61,.36,1),left .9s cubic-bezier(.22,.61,.36,1),background .3s}
   .pressneedle{position:absolute;top:-3px;bottom:-3px;left:50%;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .9s cubic-bezier(.22,.61,.36,1)}
   .presslbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
-  .panels{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px}
+  .panels{display:grid;grid-template-columns:2fr 3fr;grid-template-rows:auto auto;gap:14px;margin-bottom:14px}
   .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
   .card h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
   .legend{display:flex;gap:12px;font-size:10px;color:var(--dim);margin-top:6px;font-family:ui-monospace,monospace}
   .legend span b{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
-  #cvdChart,#imbChart{width:100%}
-  #cvdChart a,#imbChart a{display:none !important}
+  #cvdChart,#cvdDeltaChart,#flowChart,#imbChart{width:100%}
+  #cvdChart a,#cvdDeltaChart a,#flowChart a,#imbChart a{display:none !important}
   .tip{position:absolute;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:11px ui-monospace,monospace;color:var(--txt);pointer-events:none;display:none;z-index:5;white-space:nowrap}
   .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
   .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
@@ -150,17 +150,26 @@
     <div class="panels">
       <div class="card">
         <h3>CVD 30s — net flow</h3>
-        <div id="cvdChart" style="width:100%;height:300px"></div>
+        <div id="cvdChart" style="width:100%;height:250px"></div>
       </div>
       <div class="card">
-        <h3>Bar flow (CVD since open) vs price — full bar</h3>
-        <div id="imbChart" style="width:100%;height:280px"></div>
-        <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-top:10px;margin-bottom:0">
-          <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
-          <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
-          <div class="metric"><div class="k">Combined</div><div class="v" id="mComb">—</div></div>
-        </div>
+        <h3>CVD 10s — delta flow</h3>
+        <div id="cvdDeltaChart" style="width:100%;height:250px"></div>
       </div>
+      <div class="card">
+        <h3>Bar flow — CVD since open</h3>
+        <div id="flowChart" style="width:100%;height:250px"></div>
+      </div>
+      <div class="card">
+        <h3>Binance imb vs Polymarket imb</h3>
+        <div id="imbChart" style="width:100%;height:250px"></div>
+      </div>
+    </div>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">
+      <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
+      <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
+      <div class="metric"><div class="k">Combined</div><div class="v" id="mComb">—</div></div>
     </div>
 
     <div class="metrics">
@@ -396,8 +405,10 @@ async function tick(){
     if (st.cvdSeries.length > 180) st.cvdSeries.shift();
     const tSec=Math.floor(Date.now()/1000);
     st.cvdEma = st.cvdEma==null ? st.cvd : 0.35*st.cvd + 0.65*st.cvdEma;   // light smoothing for clean line
-    updateChart('cvdChart', tSec, st.cvdEma);                                 // CVD 30s
-    updateChart('imbChart', tSec, sg ? sg.cvdSinceOpen : null);               // cumulative bar flow
+    updateChart('cvdChart', tSec, st.cvdEma);                                 // CVD 30s net flow
+    updateChart('cvdDeltaChart', tSec, sg ? sg.cvd_d10 : null);                // CVD 10s delta
+    updateChart('flowChart', tSec, sg ? sg.cvdSinceOpen : null);               // cumulative bar flow
+    updateChart('imbChart', tSec, [bimb, pimb]);                               // Binance imb + Poly imb
   }
 
   const t = new Date().toISOString().substr(11, 8);
@@ -420,27 +431,31 @@ async function tick(){
   updatePrompt(sig, bimb, pimb);
 }
 
-// ---- charts: TradingView Lightweight Charts for BOTH panels (clean single line, fixed bar timeline) ----
-const charts={};   // id -> {chart, line, rangeSet}
+// ---- charts: Lightweight Charts — 4 panels, locked view, no scroll/zoom ----
+const charts={};   // id -> {chart, lines, rangeSet}
 function addLine(chart, opts){ return chart.addSeries ? chart.addSeries(LightweightCharts.LineSeries, opts) : chart.addLineSeries(opts); }
-function ensureChart(id, color){
+function ensureChart(id, colors){
   if(charts[id]||!window.LightweightCharts)return;
   const el=$('#'+id); if(!el)return;
+  const cs=Array.isArray(colors)?colors:[colors];
   const chart=LightweightCharts.createChart(el, {
-    height:280, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
+    height:250, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
     grid:{vertLines:{color:'#1b1f27'}, horzLines:{color:'#1b1f27'}},
-    rightPriceScale:{visible:true, borderColor:'#262b35'},
-    timeScale:{timeVisible:true, secondsVisible:false, borderColor:'#262b35', fixLeftEdge:true, lockVisibleTimeRangeOnResize:true},
+    rightPriceScale:{visible:true, borderVisible:true, borderColor:'#262b35'},
+    timeScale:{timeVisible:true, secondsVisible:false, borderColor:'#262b35', lockVisibleTimeRangeOnResize:true},
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    handleScroll:false,          // NO scrolling — view is locked
+    handleScale:false,           // NO zooming — view is locked
   });
-  const line=addLine(chart, {color, lineWidth:2});
-  line.createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
-  charts[id]={chart, line, rangeSet:false};
+  const lines=cs.map(c=>addLine(chart,{color:c, lineWidth:2}));
+  lines[0].createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
+  charts[id]={chart, lines, rangeSet:false};
 }
-function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.line.setData([]); c.rangeSet=false; }
+function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([])); c.rangeSet=false; }
 function updateChart(id, tSec, val){
-  const c=charts[id]; if(!c||val==null)return;
-  c.line.update({time:tSec, value:val});
+  const c=charts[id]; if(!c)return;
+  const vals=Array.isArray(val)?val:[val];
+  vals.forEach((v,i)=>{ if(v!=null&&c.lines[i]) c.lines[i].update({time:tSec, value:v}); });
   if(!c.rangeSet){ try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){} c.rangeSet=true; }
 }
 // imbChart-specific functions removed — the generic ensureChart/resetChart/updateChart above handles both panels.
@@ -543,7 +558,7 @@ async function start(){
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
-  ensureChart('cvdChart','#9b8cff'); ensureChart('imbChart','#2ec27e'); resetChart('cvdChart'); resetChart('imbChart');
+  ensureChart('cvdChart','#9b8cff'); ensureChart('cvdDeltaChart','#e3c75a'); ensureChart('flowChart','#2ec27e'); ensureChart('imbChart',['#5b9dff','#e3c75a']); resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
