@@ -434,7 +434,7 @@ async function tick(){
 // ---- charts: Lightweight Charts — 4 panels, locked view, no scroll/zoom ----
 const charts={};   // id -> {chart, lines, rangeSet}
 function addLine(chart, opts){ return chart.addSeries ? chart.addSeries(LightweightCharts.LineSeries, opts) : chart.addLineSeries(opts); }
-function ensureChart(id, colors){
+function ensureChart(id, colors, pf){
   if(charts[id]||!window.LightweightCharts)return;
   const el=$('#'+id); if(!el)return;
   const cs=Array.isArray(colors)?colors:[colors];
@@ -447,7 +447,7 @@ function ensureChart(id, colors){
     handleScroll:{mouseWheel:false,horzTouchDrag:false,vertTouchDrag:false,pressedMouseMove:false},  // NO user scroll, allow programmatic
     handleScale:{mouseWheel:false,pinch:false,axisPressedMouseMove:false,axisDoubleClickReset:false},  // NO user zoom, but allow programmatic setVisibleRange
   });
-  const lines=cs.map(c=>addLine(chart,{color:c, lineWidth:2}));
+  const lines=cs.map(c=>{const o={color:c,lineWidth:2};if(pf)o.priceFormat=pf;return addLine(chart,o);});
   lines[0].createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
   charts[id]={chart, lines, rangeSet:false};
 }
@@ -558,7 +558,7 @@ async function start(){
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
-  ensureChart('cvdChart','#9b8cff'); ensureChart('cvdDeltaChart','#e3c75a'); ensureChart('flowChart','#2ec27e'); ensureChart('imbChart',['#5b9dff','#e3c75a']); resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
+  const PF={type:'price',precision:0,minMove:1}; ensureChart('cvdChart','#9b8cff',PF); ensureChart('cvdDeltaChart','#e3c75a',PF); ensureChart('flowChart','#2ec27e',PF); ensureChart('imbChart',['#5b9dff','#e3c75a']); resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS();
