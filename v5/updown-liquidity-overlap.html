@@ -451,7 +451,7 @@ function ensureChart(id, colors, pf){
   lines[0].createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
   charts[id]={chart, lines, rangeSet:false};
 }
-function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts},{time:parsed.end}])); c.rangeSet=false; }  // seed whitespace at BOTH bar open + close -> full bar framed, never stretches
+function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts}])); c.rangeSet=false; }  // seed whitespace at bar open only — setVisibleRange extends view to bar close
 function updateChart(id, tSec, val){
   const c=charts[id]; if(!c)return;
   const vals=Array.isArray(val)?val:[val];
