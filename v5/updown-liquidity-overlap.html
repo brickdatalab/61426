@@ -315,6 +315,10 @@ function openOWS(){
       st.owsSinceOpen=m.tape.cvd_candle_usd;       // cumulative since bar open
       st.owsLargePrints=m.tape.large_print_net_3m_usd;
       st.owsEfficiency=m.tape.efficiency_3m;
+      if(m.tape.price!=null) st.last=m.tape.price;         // BTC spot price from VM
+      if(m.tape.bar_open!=null) st.open=m.tape.bar_open;   // bar opening price from VM
+      st.owsImb=m.tape.binance_imb;                        // order-book imbalance from VM depth feed
+      $('#dBin').className='dot ok';                        // VM feed live
     }
     if(m.perp_spot_divergence) st.owsPerpSpotDiv=m.perp_spot_divergence.perp_cvd_minus_spot_cvd_5m_usd;
   };
@@ -333,29 +337,10 @@ async function tick(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
-  const bk=st.book;
-  const bookStale=!bk||!bk.ready||!st.bookLastAdv||Date.now()-st.bookLastAdv>3000;
-  let bStat=null,bmid=null;
-  if(bookStale){
-    try{
-      const d=await jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=100`);
-      if(d&&d.bids&&d.asks&&d.bids.length&&d.asks.length){
-        const bids=d.bids.map(x=>[+x[0],+x[1]]),asks=d.asks.map(x=>[+x[0],+x[1]]);
-        bmid=(bids[0][0]+asks[0][0])/2; bStat=bookStats(bids,asks,bmid,BIN_BAND,0,1);
-        $('#dBin').className='dot ok';
-      } else $('#dBin').className='dot wait';
-    }catch(e){ $('#dBin').className='dot bad'; }
-  } else {
-    const bids=[...bk.bids.entries()].sort((a,b)=>b[0]-a[0]).slice(0,100);
-    const asks=[...bk.asks.entries()].sort((a,b)=>a[0]-b[0]).slice(0,100);
-    bmid=(bids[0][0]+asks[0][0])/2;
-    bStat=bookStats(bids,asks,bmid,BIN_BAND,0,1);
-    $('#dBin').className='dot ok';
-    const lo=bmid*0.995,hi=bmid*1.005;
-    for(const p of bk.bids.keys())if(p<lo)bk.bids.delete(p);
-    for(const p of bk.asks.keys())if(p>hi)bk.asks.delete(p);
-  }
-  if(st.wsLast!=null&&st.wsLast>0)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
+  // Binance data comes entirely from the VM (ourWebSocket): price, bar_open, imbalance.
+  // No direct Binance connection — no CORS, no mute, no red dot, no per-tick REST spam.
+  const bimb=st.owsImb ?? null;
+  const bmid=st.last ?? null;
   // CVD: from ourWebSocket (VM-computed spot CVD) — replaces the old browser-computed perp 30s + CORS-blocked REST watchdog
   st.cvd = st.owsCvd1m ?? st.cvd ?? 0;
   // Polymarket book
@@ -368,7 +353,7 @@ async function tick(){
     pStat=bookStats(book.bids.map(b=>[b.price,b.size]),book.asks.map(a=>[a.price,a.size]),pmid,POLY_BAND,0,1);
   }
 
-  const bimb=bStat?bStat.imb:null, pimb=pStat?pStat.imb:null;
+  const pimb=pStat?pStat.imb:null;
   const comb=(bimb!=null&&pimb!=null)?(bimb+pimb)/2:(bimb!=null?bimb:pimb);
   const cush=(st.last!=null&&st.open!=null)?st.last-st.open:null;
 
