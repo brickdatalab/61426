@@ -149,7 +149,7 @@
 
     <div class="panels">
       <div class="card">
-        <h3>CVD 30s — net flow</h3>
+        <h3>CVD 1m — net flow</h3>
         <div id="cvdChart" style="width:100%;height:250px"></div>
       </div>
       <div class="card">
@@ -296,6 +296,38 @@ function scheduleReconnect(){
   clearTimeout(st._rt); st._rt=setTimeout(()=>{ if(st&&st.running)openWS(); },delay);
 }
 function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
+// ---- ourWebSocket (VM) — reliable CVD source, no browser CORS/mute ----
+const OWS_URL='ws://34.89.159.108:8802/ws/v5/tape';
+let owsRetry=0;
+function openOWS(){
+  if(!st||!st.running||!parsed)return;
+  closeOWS();
+  let w;
+  try{ w=new WebSocket(`${OWS_URL}?symbol=${parsed.symbol}&bar=${parsed.interval}`); }
+  catch(e){ scheduleOWS(); return; }
+  st.ows=w;
+  w.onopen=()=>{ owsRetry=0; };
+  w.onmessage=(ev)=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.tape){
+      st.owsCvd1m=m.tape.cvd_delta_1m;            // spot CVD over 1m (feeds signals.mjs)
+      st.owsCvd3m=m.tape.cvd_delta_3m;
+      st.owsSinceOpen=m.tape.cvd_candle_usd;       // cumulative since bar open
+      st.owsLargePrints=m.tape.large_print_net_3m_usd;
+      st.owsEfficiency=m.tape.efficiency_3m;
+    }
+    if(m.perp_spot_divergence) st.owsPerpSpotDiv=m.perp_spot_divergence.perp_cvd_minus_spot_cvd_5m_usd;
+  };
+  w.onerror=()=>{};
+  w.onclose=()=>{ if(st&&st.running) scheduleOWS(); };
+}
+function scheduleOWS(){
+  if(!st||!st.running)return;
+  owsRetry=Math.min((owsRetry||0)+1,6);
+  const d=Math.min(1000*Math.pow(2,owsRetry-1),8000);
+  clearTimeout(st._owrt); st._owrt=setTimeout(()=>{ if(st&&st.running)openOWS(); },d);
+}
+function closeOWS(){ if(!st)return; if(st._owrt){clearTimeout(st._owrt);st._owrt=null;} if(st.ows){ try{st.ows.onclose=null;st.ows.onerror=null;st.ows.close();}catch(e){} st.ows=null; } }
 
 async function tick(){
   if(!st||!st.running)return;
@@ -324,18 +356,8 @@ async function tick(){
     for(const p of bk.asks.keys())if(p>hi)bk.asks.delete(p);
   }
   if(st.wsLast!=null&&st.wsLast>0)st.last=st.wsLast; else if(bmid!=null)st.last=bmid;
-  // CVD 30s (watchdog reseeds from REST aggTrades if @trade silent >5s)
-  if(!st.lastTradeTs||Date.now()-st.lastTradeTs>5000){
-    try{
-      const at=await jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&limit=1000`);
-      const c0=Date.now()-30000;
-      st.trades=at.filter(a=>a.T>=c0).map(a=>({T:+a.T,p:+a.p,q:+a.q,m:a.m}));
-      st.lastTradeTs=Date.now();
-    }catch(e){}
-  }
-  const cut=Date.now()-30000;
-  while(st.trades.length&&st.trades[0].T<cut)st.trades.shift();
-  st.cvd=st.trades.reduce((s,a)=>s+(a.m?-1:1)*a.q*a.p,0);
+  // CVD: from ourWebSocket (VM-computed spot CVD) — replaces the old browser-computed perp 30s + CORS-blocked REST watchdog
+  st.cvd = st.owsCvd1m ?? st.cvd ?? 0;
   // Polymarket book
   let book=null;
   if(st.token){ try{ book=await jget('https://clob.polymarket.com/book?token_id='+st.token); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }
@@ -352,6 +374,7 @@ async function tick(){
 
   // ---- V5 signal layer (pure, from signals.mjs) ----
   const sg = st.signals ? V5.sigTick(st.signals, { now: Date.now(), cvd30: st.cvd, price: st.last }) : null;
+  if (sg && st.owsSinceOpen != null) sg.cvdSinceOpen = st.owsSinceOpen;   // use VM's pre-computed since-bar-open
   const dr = sg ? V5.decide({ bimb, pimb, comb, momentum: sg.momentum }) : { sig: 'MIXED', note: '', momentum: null };
   const sig = dr.sig;
   // flowing pressure scalar [-1..1]: book pressure + momentum contribution
@@ -555,13 +578,14 @@ async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
   st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
+      owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,ows:null,_owrt:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
   const PF={type:'price',precision:0,minMove:1}; ensureChart('cvdChart','#9b8cff',PF); ensureChart('cvdDeltaChart','#e3c75a',PF); ensureChart('flowChart','#2ec27e',PF); ensureChart('imbChart',['#5b9dff','#e3c75a']); resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
-  openWS();
+  openWS(); openOWS();   // Binance fstream (price+book) + ourWebSocket (CVD)
   jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
   // seed CVD-since-open from the bar open (covers mid-bar connect; one-shot, ban-safe)
   jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&startTime=${parsed.ts*1000}&limit=1000`).then(at=>{
@@ -572,7 +596,7 @@ async function start(){
   }).catch(()=>$('#dPoly').className='dot bad');
   tick();poll=setInterval(tick,1000);animate();
 }
-function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();if(poll){clearInterval(poll);poll=null;}
+function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(poll){clearInterval(poll);poll=null;}
   $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
   $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
 
