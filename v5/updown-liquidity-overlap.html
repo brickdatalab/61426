@@ -456,7 +456,7 @@ function ensureChart(id, colors, pf){
     handleScale:{mouseWheel:false,pinch:false,axisPressedMouseMove:false,axisDoubleClickReset:false},  // NO user zoom, but allow programmatic setVisibleRange
   });
   const lines=cs.map(c=>{const o={color:c,lineWidth:2};if(pf)o.priceFormat=pf;return addLine(chart,o);});
-  lines[0].createPriceLine({price:0, color:'#3a4150', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
+  lines[0].createPriceLine({price:0, color:'#ffffff', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
   charts[id]={chart, lines, rangeSet:false};
 }
 function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts}])); c.rangeSet=false; }  // seed whitespace at bar open only — setVisibleRange extends view to bar close
