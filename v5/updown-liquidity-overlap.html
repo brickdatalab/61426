@@ -114,7 +114,9 @@
         <button data-a="btc" data-i="15m">BTC 15m</button>
         <button data-a="eth" data-i="5m">ETH 5m</button>
         <button data-a="eth" data-i="15m">ETH 15m</button>
-      </div></div>
+       </div></div>
+    <div class="group" style="display:flex;align-items:center;gap:8px"><label style="margin:0">Continuous runs</label>
+      <input id="continuous" type="number" value="1" min="1" max="50" style="width:50px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px"></div>
     <div class="btnrow">
       <button id="start" class="startbtn">▶ Connect &amp; stream</button>
       <button id="dl" class="logbtn">⬇ Log</button>
@@ -212,7 +214,7 @@ const $=s=>document.querySelector(s);
 const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
 const BIN_BAND=0.0012;   // ±0.12% of price shown
 const POLY_BAND=0.06;    // ±6 cents of prob shown
-let parsed=null,poll=null,st=null;
+let parsed=null,poll=null,st=null,runsLeft=0;
 
 function parseSlug(slug){
   const m=slug.trim().toLowerCase().match(/^([a-z]+)-updown-(\d+)([mh])-(\d+)$/);
@@ -484,13 +486,21 @@ function animate(){ /* Lightweight Charts self-render */ }
 
 async function settle(){stop(true);
   let o=st.open,c=st.last;
-  try{const k=await jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
+  try{const k=await jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
     if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ }
   if(o==null||c==null)return;
   const res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
   el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
   st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();
   renderThreads(); postLogToVM();   // thread marked settled + auto-save to VM
+  // Continuous runs: auto-advance to the next market slug
+  if(runsLeft>1){
+    runsLeft--;
+    const nextTs=parsed.ts+parsed.barSec;
+    const nextSlug=`${parsed.asset}-updown-${parsed.interval}-${nextTs}`;
+    $('#slug').value=nextSlug; updatePrompt();
+    setTimeout(()=>start(),2500);   // 2.5s pause to read the SETTLED banner, then auto-start next
+  }
 }
 
 const logKey=()=>'updownV5_log_'+($('#slug').value.trim());
@@ -563,7 +573,7 @@ async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
   st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
-      owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,ows:null,_owrt:null,
+      owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,ows:null,_owrt:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession(), sigBuf:[], dispSig:'MIXED'};
   V5.startBar(st.signals, parsed.ts*1000, 0);   // reset CVD-since-open at bar open
@@ -571,7 +581,7 @@ async function start(){
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
   openWS(); openOWS();   // Binance fstream (price+book) + ourWebSocket (CVD)
-  jget(`https://fapi.binance.com/fapi/v1/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
+  jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
   // seed CVD-since-open from the bar open (covers mid-bar connect; one-shot, ban-safe)
   jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&startTime=${parsed.ts*1000}&limit=1000`).then(at=>{
     if(at&&at.length){let seed=0;for(const a of at)seed+=(a.m?-1:1)*(+a.p)*(+a.q);V5.startBar(st.signals,parsed.ts*1000,seed);}
@@ -585,7 +595,7 @@ function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.ra
   $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
   $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
 
-$('#start').onclick=()=>(st&&st.running)?stop():start();
+$('#start').onclick=()=>{ if(st&&st.running){stop();} else {runsLeft=parseInt($('#continuous').value||'1'); start();} };
 $('#dl').onclick=downloadLog;
 $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
