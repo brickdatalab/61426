@@ -305,40 +305,55 @@ function scheduleReconnect(){
 function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
 // ---- ourWebSocket (VM) — reliable CVD source, no browser CORS/mute ----
 const OWS_URL='ws://34.89.159.108:8802/ws/v5/tape';
-let owsRetry=0;
+let owsRetry=0, owsWatchdog=null, owsReconnecting=false;
 function openOWS(){
   if(!st||!st.running||!parsed)return;
   closeOWS();
+  owsReconnecting=false;
   let w;
   try{ w=new WebSocket(`${OWS_URL}?symbol=${parsed.symbol}&bar=${parsed.interval}`); }
   catch(e){ scheduleOWS(); return; }
   st.ows=w;
-  w.onopen=()=>{ owsRetry=0; };
+  w.onopen=()=>{ owsRetry=0; owsReconnecting=false; };
   w.onmessage=(ev)=>{
+    st.lastOwsMsg=Date.now();                                // watchdog heartbeat
     let m;try{m=JSON.parse(ev.data);}catch(e){return;}
     if(m.tape){
-      st.owsCvd1m=m.tape.cvd_delta_1m;            // spot CVD over 1m (feeds signals.mjs)
+      st.owsCvd1m=m.tape.cvd_delta_1m;
       st.owsCvd3m=m.tape.cvd_delta_3m;
-      st.owsSinceOpen=m.tape.cvd_candle_usd;       // cumulative since bar open
+      st.owsSinceOpen=m.tape.cvd_candle_usd;
       st.owsLargePrints=m.tape.large_print_net_3m_usd;
       st.owsEfficiency=m.tape.efficiency_3m;
-      if(m.tape.price!=null) st.last=m.tape.price;         // BTC spot price from VM
-      if(m.tape.bar_open!=null) st.open=m.tape.bar_open;   // bar opening price from VM
-      st.owsImb=m.tape.binance_imb;                        // order-book imbalance from VM depth feed
-      $('#dBin').className='dot ok';                        // VM feed live
+      if(m.tape.price!=null) st.last=m.tape.price;
+      if(m.tape.bar_open!=null) st.open=m.tape.bar_open;
+      st.owsImb=m.tape.binance_imb;
+      $('#dBin').className='dot ok';
     }
     if(m.perp_spot_divergence) st.owsPerpSpotDiv=m.perp_spot_divergence.perp_cvd_minus_spot_cvd_5m_usd;
   };
   w.onerror=()=>{};
-  w.onclose=()=>{ if(st&&st.running) scheduleOWS(); };
+  w.onclose=()=>{ if(st&&st.running){ st.ows=null; scheduleOWS(); } };
 }
 function scheduleOWS(){
-  if(!st||!st.running)return;
-  owsRetry=Math.min((owsRetry||0)+1,6);
-  const d=Math.min(1000*Math.pow(2,owsRetry-1),8000);
-  clearTimeout(st._owrt); st._owrt=setTimeout(()=>{ if(st&&st.running)openOWS(); },d);
+  if(!st||!st.running||owsReconnecting)return;
+  owsReconnecting=true;
+  clearTimeout(st._owrt); st._owrt=setTimeout(()=>{ owsReconnecting=false; if(st&&st.running)openOWS(); },500);
 }
-function closeOWS(){ if(!st)return; if(st._owrt){clearTimeout(st._owrt);st._owrt=null;} if(st.ows){ try{st.ows.onclose=null;st.ows.onerror=null;st.ows.close();}catch(e){} st.ows=null; } }
+function closeOWS(){ if(!st)return; if(st._owrt){clearTimeout(st._owrt);st._owrt=null;} if(st.ows){ try{st.ows.onclose=null;st.ows.onerror=null;st.ows.close();}catch(e){} st.ows=null; } owsReconnecting=false; }
+function startOWSWatchdog(){
+  if(owsWatchdog)clearInterval(owsWatchdog);
+  owsWatchdog=setInterval(()=>{
+    if(!st||!st.running)return;
+    if(!st.lastOwsMsg||Date.now()-st.lastOwsMsg>5000){
+      if(!owsReconnecting){ closeOWS(); scheduleOWS(); }
+    }
+  },3000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&st&&st.running){
+    if(!st.ows||st.ows.readyState!==1){ closeOWS(); scheduleOWS(); }
+  }
+});
 
 async function tick(){
   if(!st||!st.running)return;
@@ -619,7 +634,7 @@ async function postLogToVM(){
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
-  st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,
+  st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,lastOwsMsg:Date.now(),
       swapImbBin:[],swapImbPoly:[],swapCvd5:[],swapCvd60:[],swapCush:[],imbMode:'imb',
       owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,ows:null,_owrt:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
@@ -631,7 +646,7 @@ async function start(){
   resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
   $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
   $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
-  openWS(); openOWS();   // Binance fstream (price+book) + ourWebSocket (CVD)
+  openWS(); openOWS(); startOWSWatchdog();   // Binance fstream (price+book) + ourWebSocket (CVD) + watchdog
   jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
   // seed CVD-since-open from the bar open (covers mid-bar connect; one-shot, ban-safe)
   jget(`https://fapi.binance.com/fapi/v1/aggTrades?symbol=${parsed.symbol}&startTime=${parsed.ts*1000}&limit=1000`).then(at=>{
@@ -642,7 +657,7 @@ async function start(){
   }).catch(()=>$('#dPoly').className='dot bad');
   tick();poll=setInterval(tick,1000);animate();
 }
-function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(poll){clearInterval(poll);poll=null;}
+function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(owsWatchdog){clearInterval(owsWatchdog);owsWatchdog=null;}if(poll){clearInterval(poll);poll=null;}
   $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
   $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
 
