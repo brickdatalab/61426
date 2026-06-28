@@ -29,14 +29,15 @@ work. New work = new file.
 **Forward-looking flip detection** on Polymarket BTC/ETH up-down bars: signal that a bar is about
 to flip (e.g., "90% UP with 2 min left → will flip DOWN") *before* it happens.
 
-### Current state (as of 2026-06-18) — shell built, core pending
-Phases 1–3 are **DONE on V3's data**: pure signal logic + TDD (`v5/src/signals.mjs`, 13/13 green),
-the display restructure (flowing pressure bar, CVD graph, restructured cards, session threads), and
-the VM `v5/logd/` endpoint. **NOT done:** wiring the `ourWebSocket` 6 metrics (decided: **hybrid** —
-keep V3 Binance + add WS) and validating whether they carry real flip edge (Phase 4 truth gate).
-Until then V5 runs on the **weak V3 CVD** (validated non-edge) — a lens, not an actionable signal.
-Full status + decisions + commits: `docs/v5-plan.md`.
-**Run V5:** `cd /Users/vitolo/Desktop/61426 && python3 -m http.server 5173 & sleep 1 && open "http://localhost:5173/v5/updown-liquidity-overlap.html"`
+### Current state (as of 2026-06-27) — PRODUCTION
+V5 is the working dashboard on `main`. The VM (`ourWebSocket` on port 8802) is the
+single Binance data source — CVD, price, bar_open, order-book imbalance, efficiency,
+large prints, perp-spot divergence all delivered via one WebSocket. No direct browser →
+Binance connection. 4 locked Lightweight Charts (2×2 grid), dropdown swap on the 4th,
+flowing pressure bar, continuous runs, session threads, accurate settle (spot klines).
+VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartbeat 90s).
+Firewall `allow-ourwebsocket-8802` permanent. **Run V5:** `python3 -m http.server 5173`
+→ `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
 ### Data source: `ourWebSocket` (runs on this VM)
 - URL: `ws://34.89.159.108:8802/ws/v5/tape?symbol=BTCUSDT&bar=5m` (also `ETHUSDT`, `bar=15m`).

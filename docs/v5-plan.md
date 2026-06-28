@@ -1,54 +1,66 @@
-# V5 — Official Plan
+# V5 — Official Plan + Changelog
 
-> ## STATUS (as of 2026-06-18)
-> **Built & live — Phases 1–3, on V3 data** (commits `fcd6c4a`, `82a12f3`, `be0145a`):
-> - **Logic** (`v5/src/signals.mjs`, pure/browser-importable) + **TDD** (`v5/test/signals.test.mjs`, 13/13 green): `cvdSinceOpen`, `cvd_d5/d10/d60`, `cush_d10`, flow-momentum (adaptive 5s z-slope, continuation-only), `decide()` (tie-break/confirm/conflict).
-> - **Display**: flowing pressure bar (replaces snapping PRIMED), CVD graph (main CVD30s + Δ5/10/60s + rate), cards row (Cushion+Δ10s · CVD-since-open · Δ5/10/60s · Signal), Remaining→top-right, subtle BTC/Poly readout, imbalance-graph hover (elapsed time), trimmed sidebar.
-> - **Threads/logging**: session-history sidebar (one thread per market, ET titles) + click-to-view progression modal; extended log schema (`cvd_since_open`, deltas, momentum).
-> - **VM log endpoint** `v5/logd/` (standalone aiohttp, port 8803, systemd `v5logd`) — built & running on `pm`; **firewalled externally** (needs `gcloud compute firewall-rules create v5-logd-ingress --allow tcp:8803 --source-ranges 0.0.0.0/0 --network default --project lithe-hallway-493420-r4`). localStorage logging works regardless.
+> ## STATUS (as of 2026-06-27) — PRODUCTION on `main`
+> **V5 is the working dashboard. VM is the single Binance data source.**
 >
-> **NOT done (the actual V5 goal — pending):**
-> - ❌ **Phase 4** — validate the 6 `ourWebSocket` metrics against CSV outcomes (`5m.csv`/`15mTOOL_rows.csv` have all 6 + `outcome`): truth gate before wiring.
-> - ❌ **Phase 5** — wire `ourWebSocket` (decision: **hybrid** — keep V3 Binance + add the 6 metrics).
-> - ❌ **Phase 6/7** — TLS/Vercel deploy (decision: **local-first**; `ws://` from `http://localhost` works, no mixed content).
+> **Architecture:** Browser → `ws://34.89.159.108:8802` (VM ourWebSocket: CVD, price, bar_open, imbalance, efficiency, large_prints, perp-spot divergence) + Polymarket REST. No direct Binance from the browser.
 >
-> **Decisions locked:** hybrid data (keep V3 Binance + add ourWebSocket) · validate-first · local-first.
+> **4 Lightweight Charts** (locked view, no scroll/zoom, white zero baseline):
+> 1. CVD 1m — net flow (purple)
+> 2. CVD 10s — delta flow (yellow)
+> 3. Bar flow — CVD since open (green)
+> 4. **Dropdown swap chart** — Binance imb vs Poly imb (default) / CVD 5s delta / CVD 60s delta / Cushion
 >
-> **Honest state:** the *understand-what's-happening* layer (lean/pressure/CVD-flow/threads) works; the signal driving it is the **weak V3 CVD** (validated non-edge). It's a lens, not an actionable edge, until Phase 4→5.
+> **Cards:** Cushion(+Δ10s) · CVD since open · CVD Δ5/10/60s · Signal
+> **Pressure bar:** flowing (eased), driven by book imbalance + CVD momentum
+> **Threads:** session-history sidebar + click-to-view progression modal
+> **Continuous runs:** auto-advance N markets on settle
+> **Settle accuracy:** spot klines (`api.binance.com`, CORS-open)
 >
-> **Run V5:** `cd /Users/vitolo/Desktop/61426 && python3 -m http.server 5173 & sleep 1 && open "http://localhost:5173/v5/updown-liquidity-overlap.html"`  · **Run V3:** same but `/v3/…`  · v3 frozen (sha `5978…d849`).
+> **VM changes deployed:**
+> - `compute.py`: added `price`, `bar_open`, `binance_imb` to the payload
+> - `feeds.py`: added `DepthTape` + `DepthFeed` (Binance spot `@depth20@100ms`, imbalance formula)
+> - `server.py`: wired DepthFeed + heartbeat 30s→90s
+> - Firewall `allow-ourwebsocket-8802` created (permanent)
+>
+> **Run V5:** `cd /Users/vitolo/Desktop/61426 && python3 -m http.server 5173 & sleep 1 && open "http://localhost:5173/v5/updown-liquidity-overlap.html"`
+> **v3 frozen** (sha `5978…d849`). V4 dead.
 
-**Foundation:** V5 = the `v5/` copy of v3, edited freely. **v3 frozen** (sha-verified each milestone). V4 dead. Data sources **unchanged** this build (Binance fstream WS diff-book + `@trade` CVD; Polymarket REST) — we change *logic + display*, not feeds. `ourWebSocket` 6-metric integration is a later phase; the ✦ since-open metric below is computed locally from the existing stream (same formula as `ourWebSocket`'s `tape.cvd_candle_usd`).
+---
 
-## Phase 1 — Logic & numbers (TDD; no UI)
-- **P1.1 Rolling buffers**: CVD history ≥60s, price history ≥15s, imb history with per-sample `rem`.
-- **P1.2 ✦ CVD-since-bar-open** (`cvd_candle_usd` equivalent): running accumulator of each trade's signed USD from bar open; reset on new bar; seeded on mid-bar connect via one `aggTrades` pull from `bar_start`.
-- **P1.3 Deltas**: `cvd_d5/d10/d60` = `CVD30s(t) − CVD30s(t−window)`; `cush_d10` = `cushion(t) − cushion(t−10s)`.
-- **P1.4 Forward CVD flow-momentum**: adaptive 5s slope z-scored vs recent slope volatility → **continuation** conviction (steep **and** price-aligned). Refuted signals excluded (no rollover→reversal, no simple divergence as primary). Regime-adaptive, honest confidence.
-- **P1.5 Fold CVD into the call**: tie-break (books MIXED) / confirm (aligned) / conflict (flow vs book → stand down).
-- **P1.6 TDD**: replay `testdata/v3-logs/`; assert deltas + momentum-fires-on-validated-pattern + signal integration. ✦ synthetic unit tests + trend-compare vs CSV `tape_cvd_candle_usd` (spot vs perp caveat).
+## Changelog (reverse chronological)
 
-Pure logic lives in `v5/src/signals.mjs` (browser-importable ES module, no Node APIs); tests in `v5/test/signals.test.mjs` (node:test + fixtures).
+### 2026-06-27 — `697a4fa` on `main` (merged from `ws-reliability`)
+- **WS reliability fix:** watchdog (every 3s, reconnect if stale >5s), 500ms fixed reconnect (was exponential 1-8s), `visibilitychange` handler (reconnect on tab focus), `owsReconnecting` flag (prevents double-reconnect). VM heartbeat 30s→90s.
+- **Chart swap flicker fix:** removed `applyOptions()` from swap — `swapImbChart()` now only calls `setData()` on existing lines. No destroy/recreate, no option changes, no flicker.
+- **Chart swap feature:** dropdown on 4th chart to switch between Binance imb vs Poly imb / CVD 5s delta / CVD 60s delta / Cushion. Full history loads on swap (mid-market, all data from bar start).
 
-## Phase 2 — Display restructure
-- **Cards row**: `[Cushion + Δ10s] [✦ CVD since open] [CVD Δ5s] [CVD Δ10s] [CVD Δ60s] [Signal]`.
-- **Remaining → top-right** header.
-- **BTCmid + Polyprob → subtle actionable read**: slim live sub-header (`BTC $65,316 · Poly 0.62`).
-- **Replace the depth graph** with a **CVD graph**: main line `CVD30s` + overlaid `Δ5/10/60s` + rate line; ✦ optional secondary = CVD-since-open. Fluid/eased. (Book-stats calc stays internal; only the ladder render is removed.)
-- **Imbalance graph hover tooltip** = elapsed time into the bar (`2m 14s in`, 24h).
-- **Flowing pressure bar** replaces the snapping PRIMED label (continuous eased left(DOWN)↔right(UP); discrete call as secondary smoothed tag).
-- **Table**: untouched (Signal column reflects new logic).
+### 2026-06-27 — `d57f97b` on `main` (merged from `chart-swap`)
+- **Chart swap (initial):** dropdown replacing the 4th chart heading. `destroyChart()` + `ensureChart()` approach (later replaced by `swapImbChart()` data-only approach).
 
-## Phase 3 — Threads & logging
-- **Sidebar**: delete the explanatory text; keep `Feeds · WS live` dots; separator beneath.
-- **Chat-history thread list**: one thread per market session (auto-created on start, even mid-run). Title = `BTC · 5m · HH:MM ET` (24h, Eastern, from slug Unix ts).
-- **Click thread → basic progression view** (price vs prediction + end result).
-- **VM log endpoint (build now)**: standalone log-receiver on the VM (`v5/logd/`, **not** touching `ourWebSocket`) — `POST /log` writes `<slug>.json` to `v5/logs/`; systemd + firewall. V5 POSTs each run with extended schema (existing rows + `cvd_d5/d10/d60`, `cush_d10`, ✦ `cvd_since_open`, momentum, conviction, final `{settled,open,close}`). ⚠️ Needs TLS once on Vercel (HTTPS→VM POST is mixed content).
+### 2026-06-27 — `4ff7fca` on `main` (merged from `continuous-runs`)
+- **Continuous runs:** auto-advance N markets on settle. Module-level `runsLeft` counter (set on user click, decremented per settle). 2.5s pause to read SETTLED banner.
+- **Settle accuracy fix:** `fapi.binance.com` (perp, CORS-blocked) → `api.binance.com` (spot, CORS-open). SETTLED UP/DOWN now uses authoritative spot open+close.
 
-## Cross-cutting
-- **Accuracy**: every number/signal TDD-validated; honest confidence, no over-tuning.
-- **Never-break**: v3 untouched (sha-verified each milestone).
-- **`ourWebSocket`** out of scope this build — ✦ proves we replicate its key bar-level metric locally without consuming it.
+### 2026-06-27 — `225c8ec` on `main` (merged from `vm-single-connector`)
+- **VM single-connector:** ALL Binance data from the VM. Dashboard `tick()` reads `bimb=st.owsImb`, `bmid=st.last`. Removed the entire fstream book computation (bookStale check, REST depth fallback, diff-stream book, bookStats). Killed per-tick CORS spam.
+- **VM deploy:** `compute.py` + `feeds.py` (DepthFeed) + `server.py` (heartbeat wiring) updated on the VM.
+- **White zero baseline:** `#3a4150` → `#ffffff` on all 4 charts.
 
-## Execution order
-Phase 1 (logic/TDD, incl. ✦) → Phase 2 (display) → Phase 3 (threads + log endpoint). Checkpoint after each.
+### 2026-06-27 — `9561845` on `main` (merged from `charts-v2`)
+- **ourWebSocket CVD wiring:** CVD source swapped from browser-computed perp 30s → VM spot 1m. `openOWS()`/`closeOWS()` added. Removed CORS-blocked aggTrades watchdog. `@trade` fstream kept for price only.
+- **4-chart redesign:** 2×2 grid, Lightweight Charts (CVD 1m, CVD 10s delta, bar flow since open, Binance imb vs Poly imb). Locked view (`handleScroll/handleScale` disabled). Full bar timeline (`setVisibleRange`). TradingView logo hidden via CSS. Integer y-axis on CVD charts.
+
+### 2026-06-18 — Phases 1–3 (`fcd6c4a`, `82a12f3`, `be0145a`)
+- **Phase 1:** Pure signal logic (`v5/src/signals.mjs`) + TDD (`v5/test/signals.test.mjs`, 13/13). `cvdSinceOpen`, deltas, flow-momentum, `decide()`.
+- **Phase 2:** Display restructure — flowing pressure bar, CVD graph, restructured cards, remaining→top-right, subtle price/prob, trimmed sidebar.
+- **Phase 3:** Session threads + VM log endpoint (`v5/logd/`, port 8803, systemd).
+
+---
+
+## Honest assessment (unchanged)
+- CVD-since-open and Cushion: **10/10** accuracy.
+- CVD 1m net flow: **9/10**.
+- Binance imb: **3/10** (proven 1s noise).
+- CVD as a flip predictor: **weak** (validated across 18 fixtures). V5 is a lens, not an actionable edge, until new metrics are validated (Phase 4, pending).
+- The dashboard's UP/DOWN signal matched outcome only ~29% historically; CVD sign ~65%.
