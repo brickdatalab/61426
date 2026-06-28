@@ -513,17 +513,13 @@ function swapImbChart(mode){
   if(!parsed||!st)return;
   const c=charts['imbChart']; if(!c)return;
   st.imbMode=mode;
-  // load FULL history — NO destroy/recreate, just setData on existing lines
+  // swap data only — NO applyOptions, NO chart recreation = no flicker
   if(mode==='imb'){
     c.lines[0].setData(st.swapImbBin.filter(p=>p.value!=null));
     if(c.lines[1]) c.lines[1].setData(st.swapImbPoly.filter(p=>p.value!=null));
-    c.lines[0].applyOptions({color:SWAP_MODES.imb.colors[0],priceFormat:undefined});
-    if(c.lines[1]) c.lines[1].applyOptions({color:SWAP_MODES.imb.colors[1]});
   } else {
     const hist = mode==='cvd5' ? st.swapCvd5 : mode==='cvd60' ? st.swapCvd60 : st.swapCush;
-    const cfg = SWAP_MODES[mode]||SWAP_MODES.cush;
     c.lines[0].setData(hist.filter(p=>p.value!=null));
-    c.lines[0].applyOptions({color:cfg.colors[0], priceFormat:cfg.pf||undefined});
     if(c.lines[1]) c.lines[1].setData([]);   // hide second line
   }
   try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}
