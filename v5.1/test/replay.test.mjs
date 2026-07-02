@@ -58,3 +58,16 @@ for (const file of LOGS) {
     assert.ok(alerts <= 1, `alert episodes=${alerts}`);
   });
 }
+
+test('replay btc-updown-5m-1782974100 (DOWN-settling clean trend): mirror of the UP regressions', () => {
+  const { out, settled } = replay('btc-updown-5m-1782974100_v51.json');
+  assert.equal(settled, 'DOWN');
+  const sigs = out.map(r => r.decision.sig);
+  const transitions = sigs.filter((x, i) => i > 0 && x !== sigs[i - 1]).length;
+  assert.ok(transitions <= 15, `transitions=${transitions}`);
+  // mirror of the DOWN-episode bound: UP false-alarm episodes on a DOWN bar
+  const upEpisodes = sigs.filter((x, i) => x === 'UP' && sigs[i - 1] !== 'UP').length;
+  assert.ok(upEpisodes <= 2, `UP episodes=${upEpisodes}`);
+  const alerts = out.filter((r, i) => r.flip.alert && !(out[i - 1] && out[i - 1].flip.alert)).length;
+  assert.ok(alerts <= 1, `alert episodes=${alerts}`);
+});
