@@ -304,7 +304,7 @@ function scheduleReconnect(){
 }
 function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
 // ---- ourWebSocket (VM) — reliable CVD source, no browser CORS/mute ----
-const OWS_URL='ws://34.89.159.108:8802/ws/v5/tape';
+const OWS_URL='ws://34.89.159.108/ws/v5/tape';
 let owsRetry=0, owsWatchdog=null, owsReconnecting=false;
 function openOWS(){
   if(!st||!st.running||!parsed)return;
@@ -616,7 +616,7 @@ function openThread(slug){
   $('#thStats').innerHTML=`${info}${rows.length} ticks · final CVD ${fmtUsd(cvds.length?cvds[cvds.length-1]:0)} · signals <b class="pos">${ups} UP</b> / <b class="neg">${downs} DOWN</b>`;
   $('#threadModal').style.display='flex';
 }
-const V5_LOG_URL='http://34.89.159.108:8803/log';
+const V5_LOG_URL='http://34.89.159.108/log';
 async function postLogToVM(){
   try{
     await fetch(V5_LOG_URL,{method:'POST',headers:{'Content-Type':'application/json'},
