@@ -114,7 +114,7 @@ test('sustained strong imbalance enters UP only after EWMA>ENTER plus DWELL tick
     if (r.sig === 'UP' && firstUp == null) firstUp = i;
   }
   assert.ok(firstUp != null, 'never entered UP');
-  assert.ok(firstUp >= 7, `entered too fast: tick ${firstUp}`);   // dwell respected
+  assert.ok(firstUp >= 6, `entered too fast: tick ${firstUp}`);   // 7th consecutive tick, 0-indexed
 });
 
 test('once UP, drifting back inside the band holds UP; only a real exit clears it', () => {

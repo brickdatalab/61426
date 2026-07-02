@@ -95,7 +95,7 @@ export function decideDebounced(s, { bimb, pimb }, momentum) {
   if (cand !== s.sig) {
     s.pendingCount = (s.pendingSig === cand) ? s.pendingCount + 1 : 1;
     s.pendingSig = cand;
-    if (s.pendingCount > CFG.DWELL_TICKS) { s.sig = cand; s.pendingSig = null; s.pendingCount = 0; }
+    if (s.pendingCount >= CFG.DWELL_TICKS) { s.sig = cand; s.pendingSig = null; s.pendingCount = 0; }
   } else { s.pendingSig = null; s.pendingCount = 0; }
   return { sig: s.sig, imbEwma: e, note };
 }
