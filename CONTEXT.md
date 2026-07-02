@@ -39,6 +39,11 @@ VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartb
 GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **Run V5:** `python3 -m http.server 5173`
 → `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
+### V5.3 (2026-07-02) — TUNED SIGNAL VERSION (current)
+- **V5.3** = fork of **v5.1** (not v5.2) with the first tuned signal logic — three measured rules in `decideDebounced` (`v5.3/src/signals.mjs`): cushion-aligned entry (`ALIGNED_ENTER 0.14`), counter-cushion confirmation (counter entries need momentum or whale-print backing), hold-release (`HOLD_RELEASE 15` — uncorroborated counter-cushion holds decay to MIXED). Everything else identical to v5.1.
+- **Measured (replay, Polymarket-verified bars):** tuning set (20 bars) acc 70.8%→80.1%, wrongEp 26→17; out-of-sample (8 bars) acc 50.2%→**80.8%**, wrongEp 9→5. Gate tool: `v5.3/analysis/replay-compare.mjs` (GATE PASS). Design: `docs/superpowers/specs/2026-07-02-v5.3-max-accuracy-design.md`.
+- **Run V5.3:** `http://localhost:5173/v5.3/updown-liquidity-overlap.html`. Logs `<slug>_v53.json` via the legacy open `/log` (no secret machinery — v5.1-style).
+
 ### V5.1 → V5.2 (2026-07-02)
 - **V5.1** = the forward-looking flip-detection variation (pure `v5.1/src/signals.mjs`: clean flow, debounced decision, stabilized momentum, P(flip) score). **Frozen as the 20-bar deep-dive baseline** — see `v5.1/FINDINGS.md` + `v5.1/analysis/2026-07-02-deepdive-20bars.md`. Logs tagged `_v51`, all 20 Polymarket-resolution-verified.
 - **V5.2** = the current **runnable** version: v5.1 signal logic **byte-identical** (no signal change yet — those are discuss-first) + hardening (localStorage prune to 50 sessions, `_v52` log namespace, authed `POST /v51/log` with `X-V5-Secret`, VM disk cap). **Run V5.2:** `http://localhost:5173/v5.2/updown-liquidity-overlap.html`. Logs land as `<slug>_v52.json`.

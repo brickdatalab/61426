@@ -166,6 +166,16 @@ keep-transitions-low + no-stealth-gating constraints).
 - **Not recommended:** momentum re-parameterization (no tag effect — it's a confirmer, not a catcher), d10 dead-zone tie-break (worse), flip-weight tuning (too few events).
 - **Structural gap found (bar …5000):** the flip-prior `Φ(−|cushion|/vol·√t)` collapses late-bar, so flow-led snap-back flips can't alert even when d60/cvd_3m/whale prints all lean the right way for a full minute. Design work, needs more late-flip examples.
 
+## 10b. v5.3 shipped (2026-07-02) — the deep-dive candidates, gated
+
+v5.3 (fork of v5.1) implements the user-chosen **max-accuracy profile**: counter-cushion
+confirmation + aligned entry 0.14 + hold-release 15 (the third rule discovered from OOS bar
+`btc-updown-5m-1782985200`, where the book stayed decoupled from a +$275 rally for a full bar).
+Acceptance gate (`v5.3/analysis/replay-compare.mjs`, real modules, 28 bars): tuning 80.1%
+acc / 17 wrongEp (exactly reproducing the harness prediction); out-of-sample (8 bars)
+**80.8% vs v5.1's 50.2%**, wrongEp 9→5. v5.1 remains frozen as the baseline; §10's 50-bar
+re-measurement list still applies to v5.3's constants (now data-fit, no longer priors).
+
 ## 10. What to re-measure at 50+ bars before any tweak
 
 1. Late-bar tag behavior — does the 43% final-60s number hold? (drives the
