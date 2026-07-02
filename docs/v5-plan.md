@@ -30,6 +30,13 @@
 
 ## Changelog (reverse chronological)
 
+### 2026-07-02 — v5.1 dashboard live (branch `v5.1`)
+- **v5.1** exists at `v5.1/updown-liquidity-overlap.html` — a variation of v5 (v5 untouched, per the version-isolation rule) with: clean flow input (short deltas derived from `cvd_candle_usd`, no rolling-window contamination), debounced decision (17s EWMA imbalance, 0.20/0.08 hysteresis, 7-tick dwell), stabilized momentum (EWMA variance, sd floor, 60s warmup, adaptive price gate), and a continuous **P(flip)** score (`Φ(−cushion/σ√t)` prior, logit-shifted by d60 flow / whale prints / absorption / perp-spot divergence) with a 10-tick persistence alert and model-vs-market edge readout.
+- Signal math is a pure module `v5.1/src/signals.mjs`; tests: `node --test v5.1/test/signals.test.mjs v5.1/test/replay.test.mjs` (20 tests incl. a regression replay of the two flip-flopping v5 logs — transitions 5/5 vs v5's 64/89).
+- **VM:** additive `tape.vol_1m_usd` deployed to ourWebSocket (`compute.py`; backup `compute.py.bak-pre-v51` on the VM). All pre-existing fields unchanged; v5 verified unaffected.
+- **Logs:** v5.1 sessions POST to the same `/log` endpoint as `<slug>_v51.json` (localStorage prefix `updownV51_log_`); rows add `imb_ewma, large_prints, efficiency, perp_spot_div, cvd_d3m, vol_1m, poly_mid, p_flip, flip_alert`.
+- First live bar (`btc-updown-5m-1782969600`, settled DOWN): 5 signal transitions, decisive correct DOWN call, 0 false flip alerts.
+
 ### 2026-06-27 — `697a4fa` on `main` (merged from `ws-reliability`)
 - **WS reliability fix:** watchdog (every 3s, reconnect if stale >5s), 500ms fixed reconnect (was exponential 1-8s), `visibilitychange` handler (reconnect on tab focus), `owsReconnecting` flag (prevents double-reconnect). VM heartbeat 30s→90s.
 - **Chart swap flicker fix:** removed `applyOptions()` from swap — `swapImbChart()` now only calls `setData()` on existing lines. No destroy/recreate, no option changes, no flicker.
