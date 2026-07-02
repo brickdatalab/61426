@@ -15,6 +15,11 @@ Object.assign(CFG, {
   Z_FIRE: 2.0,
   PRICE_Z_GATE: 1.0,       // 6s price move must be > 1 sd of its own recent moves
   PRICE_SD_FLOOR: 0.5,     // $; BTC never has < $0.5 of 6s noise
+  // decision debounce
+  ALPHA_IMB: 0.06,     // EWMA of combined imbalance, ~17s mean lifetime at 1 tick/s
+  ENTER: 0.20,         // |imbEwma| must exceed this to take a side
+  EXIT: 0.08,          // must fall inside this to give the side back
+  DWELL_TICKS: 7,      // a new state must persist 7 consecutive ticks to stick
 });
 
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
@@ -24,6 +29,8 @@ export function newSession() {
     openHist: [], priceHist: [], firstMs: null,
     slopeMean: null, slopeVar: null,   // EWMA moments of the 5s flow slope
     pMean: null, pVar: null,           // EWMA moments of the 6s price move
+    imbEwma: null,
+    sig: 'MIXED', pendingSig: null, pendingCount: 0,
   };
 }
 
@@ -66,6 +73,33 @@ export function momentumOf(s, now) {
   return { slope, z, sd, priceZ, dir, warm };
 }
 
+export function decideDebounced(s, { bimb, pimb }, momentum) {
+  const comb = (bimb != null && pimb != null) ? (bimb + pimb) / 2 : (bimb ?? pimb);
+  if (comb != null) s.imbEwma = ewma(s.imbEwma, comb, CFG.ALPHA_IMB);
+  const e = s.imbEwma;
+  // hysteresis candidate on the SMOOTHED imbalance (between EXIT and ENTER: hold)
+  let cand = s.sig, note = '';
+  if (e != null) {
+    if (e > CFG.ENTER) cand = 'UP';
+    else if (e < -CFG.ENTER) cand = 'DOWN';
+    else if (Math.abs(e) < CFG.EXIT) cand = 'MIXED';
+  }
+  // fold momentum (same semantics as v5 decide, but on the debounced call)
+  const mdir = momentum?.dir ?? 'FLAT';
+  if (mdir !== 'FLAT') {
+    if (cand === 'MIXED') { cand = mdir; note = 'flow-led'; }
+    else if (cand === mdir) { note = 'flow-confirm'; }
+    else { cand = 'MIXED'; note = 'flow-vs-book'; }
+  }
+  // dwell: a change must persist DWELL_TICKS consecutive ticks before it sticks
+  if (cand !== s.sig) {
+    s.pendingCount = (s.pendingSig === cand) ? s.pendingCount + 1 : 1;
+    s.pendingSig = cand;
+    if (s.pendingCount > CFG.DWELL_TICKS) { s.sig = cand; s.pendingSig = null; s.pendingCount = 0; }
+  } else { s.pendingSig = null; s.pendingCount = 0; }
+  return { sig: s.sig, imbEwma: e, note };
+}
+
 function prune(hist, now, keepMs) {
   const cut = now - keepMs;
   while (hist.length > 1 && hist[0].t < cut) hist.shift();
@@ -84,11 +118,12 @@ export function tick(s, inp) {
     d10: deltaAt(s.openHist, now, 10_000),
     d60: deltaAt(s.openHist, now, 60_000),
   };
+  const momentum = momentumOf(s, now);
   return {
     flow,
     cush_d10: deltaAt(s.priceHist, now, 10_000),
-    momentum: momentumOf(s, now),
-    decision: null,   // Task 3
+    momentum,
+    decision: decideDebounced(s, inp, momentum),
     flip: null,       // Task 4
   };
 }

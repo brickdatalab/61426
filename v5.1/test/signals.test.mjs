@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newSession, tick, valAt, deltaAt } from '../src/signals.mjs';
+import { newSession, tick, valAt, deltaAt, decideDebounced } from '../src/signals.mjs';
 
 const T0 = 1700000000000;
 // feed a session one sample per second from arrays of sinceOpen/price values
@@ -90,4 +90,52 @@ test('sd floor prevents z explosion in dead-quiet tape', () => {
   // slope=8k, floor=5k -> z=1.6 < Z_FIRE(2.0): must not fire
   assert.equal(r.momentum.dir, 'FLAT');
   assert.ok(Math.abs(r.momentum.z) < 2, `z=${r.momentum.z}`);
+});
+
+const FLAT_MOM = { dir: 'FLAT' };
+
+test('raw 1s imbalance jitter around the threshold does NOT flip the signal', () => {
+  const s = newSession();
+  // comb oscillates 0.10 <-> 0.14 every tick (the v5 killer): EWMA ~0.12 stays
+  // inside the hysteresis band -> signal must stay MIXED throughout
+  const sigs = new Set();
+  for (let i = 0; i < 60; i++) {
+    const v = i % 2 ? 0.14 : 0.10;
+    sigs.add(decideDebounced(s, { bimb: v, pimb: v }, FLAT_MOM).sig);
+  }
+  assert.deepEqual([...sigs], ['MIXED']);
+});
+
+test('sustained strong imbalance enters UP only after EWMA>ENTER plus DWELL ticks', () => {
+  const s = newSession();
+  let firstUp = null;
+  for (let i = 0; i < 60; i++) {
+    const r = decideDebounced(s, { bimb: 0.5, pimb: 0.5 }, FLAT_MOM);
+    if (r.sig === 'UP' && firstUp == null) firstUp = i;
+  }
+  assert.ok(firstUp != null, 'never entered UP');
+  assert.ok(firstUp >= 7, `entered too fast: tick ${firstUp}`);   // dwell respected
+});
+
+test('once UP, drifting back inside the band holds UP; only a real exit clears it', () => {
+  const s = newSession();
+  for (let i = 0; i < 60; i++) decideDebounced(s, { bimb: 0.5, pimb: 0.5 }, FLAT_MOM);
+  // drift to 0.12 — between EXIT(0.08) and ENTER(0.20): must hold UP
+  let r;
+  for (let i = 0; i < 40; i++) r = decideDebounced(s, { bimb: 0.12, pimb: 0.12 }, FLAT_MOM);
+  assert.equal(r.sig, 'UP');
+  // collapse to 0 — inside EXIT: clears to MIXED (after dwell)
+  for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: 0, pimb: 0 }, FLAT_MOM);
+  assert.equal(r.sig, 'MIXED');
+});
+
+test('momentum folds in: breaks MIXED ties, conflicts stand down — both through the dwell', () => {
+  const s = newSession();
+  // neutral book, momentum UP long enough to pass dwell -> flow-led UP
+  let r;
+  for (let i = 0; i < 10; i++) r = decideDebounced(s, { bimb: 0, pimb: 0 }, { dir: 'UP' });
+  assert.equal(r.sig, 'UP');
+  // now book goes hard DOWN while momentum still UP -> conflict -> MIXED
+  for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.6, pimb: -0.6 }, { dir: 'UP' });
+  assert.equal(r.sig, 'MIXED');
 });
