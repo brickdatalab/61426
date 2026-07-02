@@ -577,7 +577,16 @@ async function settle(){stop(true);
 }
 
 const logKey=()=>'updownV51_log_'+($('#slug').value.trim());
-function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));}catch(e){}}
+const MAX_SESSIONS=50;   // keep the 50 most-recent sessions in localStorage
+function pruneSessions(){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('updownV51_log_'))keys.push(k);}
+  if(keys.length<=MAX_SESSIONS)return;
+  const ts=k=>{const p=parseSlug(k.slice('updownV51_log_'.length));return p?p.ts:0;};
+  keys.sort((a,b)=>ts(b)-ts(a));                 // newest first
+  for(const k of keys.slice(MAX_SESSIONS)){try{localStorage.removeItem(k);}catch(e){}}
+}
+function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));pruneSessions();}catch(e){}}
 function downloadLog(){const data=st&&st.log.length?st.log:JSON.parse(localStorage.getItem(logKey())||'[]');
   const blob=new Blob([JSON.stringify({slug:$('#slug').value.trim(),rows:data},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=$('#slug').value.trim()+'_v5.1_log.json';a.click();}
