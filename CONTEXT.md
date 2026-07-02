@@ -39,6 +39,11 @@ VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartb
 GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **Run V5:** `python3 -m http.server 5173`
 → `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
+### V5.1 → V5.2 (2026-07-02)
+- **V5.1** = the forward-looking flip-detection variation (pure `v5.1/src/signals.mjs`: clean flow, debounced decision, stabilized momentum, P(flip) score). **Frozen as the 20-bar deep-dive baseline** — see `v5.1/FINDINGS.md` + `v5.1/analysis/2026-07-02-deepdive-20bars.md`. Logs tagged `_v51`, all 20 Polymarket-resolution-verified.
+- **V5.2** = the current **runnable** version: v5.1 signal logic **byte-identical** (no signal change yet — those are discuss-first) + hardening (localStorage prune to 50 sessions, `_v52` log namespace, authed `POST /v51/log` with `X-V5-Secret`, VM disk cap). **Run V5.2:** `http://localhost:5173/v5.2/updown-liquidity-overlap.html`. Logs land as `<slug>_v52.json`.
+- **VM `/log` hardening deployed:** `_disk_guard` (500MB / 5000-file cap) on both routes; authed `/v51/log` route (secret **unset → open** for now, dormant auth; set `OWS_LOG_SECRET` on the VM + a `v5.2/secret.js` with `window.V52_SECRET` to enable). Legacy open `/log` preserved so frozen v5/v5.1 keep working. Backups on VM: `server.py.bak-pre-harden`, `config.py.bak-pre-harden`.
+
 ### Data source: `ourWebSocket` (runs on this VM)
 - URL: `ws://34.89.159.108/ws/v5/tape?symbol=BTCUSDT&bar=5m` (also `ETHUSDT`, `bar=15m`).
   No auth, no rate limit, on-change ~10/sec.
