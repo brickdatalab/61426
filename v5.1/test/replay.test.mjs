@@ -26,7 +26,11 @@ function replay(file) {
       price: r.cushion != null ? settle.open + r.cushion : null,
       bimb: r.btc_imb, pimb: r.poly_imb,
       cushion: r.cushion, remS: r.rem,
-      vol1m: null, largePrints: null, efficiency: null, perpSpotDiv: null,
+      vol1m: r.vol_1m ?? null,
+      largePrints: r.large_prints ?? null,
+      efficiency: r.efficiency ?? null,
+      perpSpotDiv: r.perp_spot_div ?? null,
+      cvd3m: r.cvd_d3m ?? null,
     });
     if (res) out.push(res);
   }
