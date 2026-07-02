@@ -39,7 +39,11 @@ VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartb
 GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **Run V5:** `python3 -m http.server 5173`
 → `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
-### V5.3 (2026-07-02) — TUNED SIGNAL VERSION (current)
+### V5.4 (2026-07-02) — CURRENT TUNED VERSION
+- **V5.4** = fork of v5.3 + one gate-validated rule: **BAFO** (book-against flow override — a fat cushion `>= max($30, 3x vol_1m)` with agreeing d60+cvd_3m flow overrides an opposing book EWMA). From the 52-bar full-ledger audit (`v5.4/analysis/2026-07-02-lhf-52bars.md`): correct fires +482 (+8.8%), wrong -9, missed -473, 0/52 bars lose a correct tick, LOBO 52/52. All other rules identical to v5.3. Conviction-lock now also requires a real price lead (thin locks were 58% vs fat 91%).
+- **Run V5.4:** `http://localhost:5173/v5.4/updown-liquidity-overlap.html`. Logs `<slug>_v54.json` via legacy `/log`. v5.3 -> frozen predecessor.
+
+### V5.3 (2026-07-02) — TUNED SIGNAL VERSION (frozen predecessor)
 - **V5.3** = fork of **v5.1** (not v5.2) with the first tuned signal logic — three measured rules in `decideDebounced` (`v5.3/src/signals.mjs`): cushion-aligned entry (`ALIGNED_ENTER 0.14`), counter-cushion confirmation (counter entries need momentum or whale-print backing), hold-release (`HOLD_RELEASE 15` — uncorroborated counter-cushion holds decay to MIXED). Everything else identical to v5.1.
 - **Measured (replay, Polymarket-verified bars):** tuning set (20 bars) acc 70.8%→80.1%, wrongEp 26→17; out-of-sample (8 bars) acc 50.2%→**80.8%**, wrongEp 9→5. Gate tool: `v5.3/analysis/replay-compare.mjs` (GATE PASS). Design: `docs/superpowers/specs/2026-07-02-v5.3-max-accuracy-design.md`.
 - **Run V5.3:** `http://localhost:5173/v5.3/updown-liquidity-overlap.html`. Logs `<slug>_v53.json` via the legacy open `/log` (no secret machinery — v5.1-style).

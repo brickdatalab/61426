@@ -186,3 +186,14 @@ re-measurement list still applies to v5.3's constants (now data-fit, no longer p
 5. Persistence composite (run age × cushion agreement) out-of-sample (§3)
 6. Boundary bleed with enough flip-after-trend boundaries to matter (§7)
 7. Component lead/lag on actual flip bars — which input moves first (§8)
+
+## 10c. v5.4 shipped (2026-07-02) — the 52-bar low-hanging-fruit audit
+
+Full findings: `v5.4/analysis/2026-07-02-lhf-52bars.md`. Method: per-tick ledger (14,618 ticks,
+52 Polymarket-verified bars) -> 4 parallel evidence agents -> 33 counterfactual variants ->
+binary dominance filter + LOBO. ONE winner: **BAFO** (+482 correct / -9 wrong / -473 missed /
+0 bars hurt / LOBO 52/52). Notable rejections with numbers: dwell-shortening (statically
+predicted 7.5:1, dynamically -2.6% correct, 20 bars hurt); lp-corroborator suppressors
+(aggregate inversion is REAL — lp-corroborated counter fires run 9-14% — but removal erases
+100% of correct ticks on 3 late-flip bars); DZ_RESCUE/DUAL_CORR/HZ10 stacks (near-misses,
+fail LOBO wrong-not-increased by 1-3 ticks — retest when the dataset doubles).
