@@ -452,7 +452,9 @@ async function tick(){
   const convDir = dispSig === 'UP' || dispSig === 'DOWN';
   const convAgrees = convDir && cush != null && cush !== 0 && ((dispSig === 'UP') === (cush > 0));
   const convFighting = convDir && cush != null && cush !== 0 && !convAgrees;
-  const convLocked = convAgrees && st.sigRun >= CONV_TICKS;
+  // v5.4: lock also requires a REAL price lead — thin-cushion locks measured 58% vs fat 91% on 52 bars
+  const convFat = cush != null && Math.abs(cush) >= Math.max(10, 0.5 * (st.owsVol1m ?? 20));
+  const convLocked = convAgrees && convFat && st.sigRun >= CONV_TICKS;
   convCard.classList.toggle('conv-up', convLocked && dispSig === 'UP');
   convCard.classList.toggle('conv-down', convLocked && dispSig === 'DOWN');
   convCard.classList.toggle('conv-flash', convLocked);
@@ -465,7 +467,7 @@ async function tick(){
   runEl.textContent = convLocked ? 'HIGH CONVICTION · ×' + st.sigRun
                     : convFighting ? '×' + st.sigRun + ' · fighting price'
                     : '×' + st.sigRun + ' ticks';
-  runEl.title = convLocked ? 'Run ≥31 ticks agreeing with price — 96% accurate on the first 28 verified bars' : '';
+  runEl.title = convLocked ? 'Run ≥31 ticks agreeing with a real price lead — ≈90% on 52 verified bars' : '';
   $('#pulse').className = 'pulse on'; $('#rate').textContent = 'live · ' + st.log.length + ' ticks';
 
   // histories for the two graphs
