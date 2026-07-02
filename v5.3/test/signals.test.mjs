@@ -191,3 +191,57 @@ test('volFromHist: $2/s alternating jitter -> sane 1-minute vol estimate', () =>
   const v = volFromHist(hist);
   assert.ok(v > 5 && v < 40, `vol=${v}`);   // ~$2 diffs * sqrt(60) ~= $15
 });
+
+// ---- v5.3: cushion-aligned entry + counter-cushion confirmation + hold-release ----
+const LP0 = { dir: 'FLAT' };
+
+test('v5.3 aligned entry: EWMA 0.16 enters UP when cushion agrees, stays MIXED when cushion is null', () => {
+  const a = newSession();
+  let ra; for (let i = 0; i < 40; i++) ra = decideDebounced(a, { bimb: 0.16, pimb: 0.16, cushion: 25 }, LP0);
+  assert.equal(ra.sig, 'UP');                     // 0.14 <= 0.16 < 0.20, cushion-aligned -> enters
+  const b = newSession();
+  let rb; for (let i = 0; i < 40; i++) rb = decideDebounced(b, { bimb: 0.16, pimb: 0.16 }, LP0);
+  assert.equal(rb.sig, 'MIXED');                  // no cushion -> stock ENTER 0.20 -> never enters
+});
+
+test('v5.3 aligned entry does NOT lower the bar for the counter-cushion direction', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 40; i++) r = decideDebounced(s, { bimb: -0.16, pimb: -0.16, cushion: 25, largePrints: -900000 }, LP0);
+  assert.equal(r.sig, 'MIXED');                   // |-0.16| < ENTER 0.20 for the against-cushion side
+});
+
+test('v5.3 counter-confirm: strong counter-cushion book alone cannot enter', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25 }, LP0);
+  assert.equal(r.sig, 'MIXED');                   // DOWN vs +cushion, FLAT momentum, no whale prints -> blocked
+});
+
+test('v5.3 counter-confirm: momentum agreement unlocks the counter entry', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25 }, { dir: 'DOWN' });
+  assert.equal(r.sig, 'DOWN');
+});
+
+test('v5.3 counter-confirm: whale prints agreement unlocks the counter entry', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25, largePrints: -500000 }, LP0);
+  assert.equal(r.sig, 'DOWN');
+});
+
+test('v5.3 hold-release: an uncorroborated counter-cushion hold decays to MIXED after HOLD_RELEASE+dwell', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: -25 }, LP0);
+  assert.equal(r.sig, 'DOWN');                    // entered WITH the cushion...
+  for (let i = 0; i < 10; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25 }, LP0);
+  assert.equal(r.sig, 'DOWN');                    // ...short counter-hold still allowed (10 < 15)
+  for (let i = 0; i < 15; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25 }, LP0);
+  assert.equal(r.sig, 'MIXED');                   // 15-tick uncorroborated counter-hold + 7-tick dwell -> released
+});
+
+test('v5.3 hold-release: whale-print backing keeps the counter-hold alive', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: -25 }, LP0);
+  assert.equal(r.sig, 'DOWN');
+  for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25, largePrints: -400000 }, LP0);
+  assert.equal(r.sig, 'DOWN');                    // lp backs the held DOWN -> counterHold resets every tick, no release
+});

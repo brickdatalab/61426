@@ -20,6 +20,12 @@ Object.assign(CFG, {
   ENTER: 0.20,         // |imbEwma| must exceed this to take a side
   EXIT: 0.08,          // must fall inside this to give the side back
   DWELL_TICKS: 7,      // a new state must persist 7 consecutive ticks to stick
+  ALIGNED_ENTER: 0.14, // v5.3: entry threshold when the direction agrees with the cushion sign.
+                       // FIT to the 20-bar replay set (deep-dive 2026-07-02, acc 70.8%->80.1%),
+                       // validated out-of-sample — NOT an untuned prior like the rest of CFG.
+  HOLD_RELEASE: 15,    // v5.3: ticks an uncorroborated counter-cushion HOLD survives before decaying
+                       // to MIXED. From bar 1782985200 (288 wrong ticks -> 67); OOS acc 58.1%->75.2%
+                       // (n=6). Zero effect on the 20 tuning bars (never triggers there).
   // flip-risk flow adjustment. DIRECTIONAL PRIORS — not tuned. Revisit only with
   // a body of captured v5.1 logs; do not fit to the 2 existing v5 samples.
   D60_SCALE: 400_000,    // $ of 60s net flow for tanh saturation
@@ -39,7 +45,7 @@ export function newSession() {
     slopeMean: null, slopeVar: null,   // EWMA moments of the 5s flow slope
     pMean: null, pVar: null,           // EWMA moments of the 6s price move
     imbEwma: null,
-    sig: 'MIXED', pendingSig: null, pendingCount: 0,
+    sig: 'MIXED', pendingSig: null, pendingCount: 0, counterHold: 0,
     alertCount: 0, alert: null,
   };
 }
@@ -83,15 +89,19 @@ export function momentumOf(s, now) {
   return { slope, z, sd, priceZ, dir, warm };
 }
 
-export function decideDebounced(s, { bimb, pimb }, momentum) {
+export function decideDebounced(s, inp, momentum) {
+  const { bimb, pimb, cushion, largePrints } = inp;
   const comb = (bimb != null && pimb != null) ? (bimb + pimb) / 2 : (bimb ?? pimb);
   if (comb != null) s.imbEwma = ewma(s.imbEwma, comb, CFG.ALPHA_IMB);
   const e = s.imbEwma;
+  const cushSign = cushion == null ? 0 : Math.sign(cushion);
+  // v5.3 rule 1: aligned entry — lower bar only for the cushion-agreeing direction
+  const enterFor = dir => (cushSign !== 0 && ((dir === 'UP') === (cushSign > 0))) ? CFG.ALIGNED_ENTER : CFG.ENTER;
   // hysteresis candidate on the SMOOTHED imbalance (between EXIT and ENTER: hold)
   let cand = s.sig, note = '';
   if (e != null) {
-    if (e > CFG.ENTER) cand = 'UP';
-    else if (e < -CFG.ENTER) cand = 'DOWN';
+    if (e > enterFor('UP')) cand = 'UP';
+    else if (e < -enterFor('DOWN')) cand = 'DOWN';
     else if (Math.abs(e) < CFG.EXIT) cand = 'MIXED';
   }
   // fold momentum (same semantics as v5 decide, but on the debounced call)
@@ -101,6 +111,25 @@ export function decideDebounced(s, { bimb, pimb }, momentum) {
     else if (cand === mdir) { note = 'flow-confirm'; }
     else { cand = 'MIXED'; note = 'flow-vs-book'; }
   }
+  // v5.3 rule 2: counter-cushion confirmation — a NEW entry against the cushion needs corroboration
+  if (cand !== 'MIXED' && cand !== s.sig && cushSign !== 0) {
+    const against = (cand === 'UP') !== (cushSign > 0);
+    if (against) {
+      const momAgrees = mdir === cand;
+      const lpAgrees = largePrints != null && largePrints !== 0 && ((largePrints > 0) === (cand === 'UP'));
+      if (!momAgrees && !lpAgrees) { cand = s.sig; note = 'counter-unconfirmed'; }
+    }
+  }
+  // v5.3 rule 3: hold-release — an uncorroborated counter-cushion HOLD decays to MIXED
+  if (s.sig !== 'MIXED' && cushSign !== 0) {
+    const heldAgainst = (s.sig === 'UP') !== (cushSign > 0);
+    const momBacks = mdir === s.sig;
+    const lpBacks = largePrints != null && largePrints !== 0 && ((largePrints > 0) === (s.sig === 'UP'));
+    if (heldAgainst && !momBacks && !lpBacks) {
+      s.counterHold++;
+      if (s.counterHold >= CFG.HOLD_RELEASE && cand === s.sig) { cand = 'MIXED'; note = 'counter-hold-release'; }
+    } else s.counterHold = 0;
+  } else s.counterHold = 0;
   // dwell: a change must persist DWELL_TICKS consecutive ticks before it sticks
   if (cand !== s.sig) {
     s.pendingCount = (s.pendingSig === cand) ? s.pendingCount + 1 : 1;
