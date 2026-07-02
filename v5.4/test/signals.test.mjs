@@ -245,3 +245,34 @@ test('v5.3 hold-release: whale-print backing keeps the counter-hold alive', () =
   for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.5, pimb: -0.5, cushion: 25, largePrints: -400000 }, LP0);
   assert.equal(r.sig, 'DOWN');                    // lp backs the held DOWN -> counterHold resets every tick, no release
 });
+
+// ---- v5.4: BAFO (book-against flow override) — 52-bar LHF winner ----
+// Feed: book EWMA firmly negative while cushion is fat-positive and flow agrees with cushion.
+function bafoInp(over = {}) {
+  return { bimb: -0.3, pimb: -0.3, cushion: 150, vol1m: 20, cvd3m: 800000, ...over };
+}
+const BFLOW = { d60: 50000 };
+
+test('v5.4 BAFO: fat cushion + agreeing flow overrides an opposing book (fires cushion side)', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 20; i++) r = decideDebounced(s, bafoInp(), { dir: 'FLAT' }, BFLOW);
+  assert.equal(r.sig, 'UP');           // without BAFO this feed is counter-blocked -> MIXED forever
+});
+
+test('v5.4 BAFO guard: flow disagreement means no override (counter-blocked as before)', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 20; i++) r = decideDebounced(s, bafoInp({ cvd3m: -800000 }), { dir: 'FLAT' }, BFLOW);
+  assert.equal(r.sig, 'MIXED');
+});
+
+test('v5.4 BAFO guard: thin cushion (below max(30, 3*vol)) means no override', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 20; i++) r = decideDebounced(s, bafoInp({ cushion: 40 }), { dir: 'FLAT' }, BFLOW);
+  assert.equal(r.sig, 'MIXED');        // 40 < max(30, 3*20)=60
+});
+
+test('v5.4 BAFO guard: without a flow argument the rule is inert (back-compat)', () => {
+  const s = newSession();
+  let r; for (let i = 0; i < 20; i++) r = decideDebounced(s, bafoInp(), { dir: 'FLAT' });
+  assert.equal(r.sig, 'MIXED');
+});

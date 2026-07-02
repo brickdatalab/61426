@@ -23,6 +23,8 @@ Object.assign(CFG, {
   ALIGNED_ENTER: 0.14, // v5.3: entry threshold when the direction agrees with the cushion sign.
                        // FIT to the 20-bar replay set (deep-dive 2026-07-02, acc 70.8%->80.1%),
                        // validated out-of-sample — NOT an untuned prior like the rest of CFG.
+  BAFO_ABS: 30,        // v5.4 BAFO: absolute cushion floor ($) for the book-against override
+  BAFO_MULT: 3.0,      // v5.4 BAFO: vol multiple for the cushion floor (fit to the 52-bar set)
   HOLD_RELEASE: 15,    // v5.3: ticks an uncorroborated counter-cushion HOLD survives before decaying
                        // to MIXED. From bar 1782985200 (288 wrong ticks -> 67); OOS acc 58.1%->75.2%
                        // (n=6). Zero effect on the 20 tuning bars (never triggers there).
@@ -89,8 +91,8 @@ export function momentumOf(s, now) {
   return { slope, z, sd, priceZ, dir, warm };
 }
 
-export function decideDebounced(s, inp, momentum) {
-  const { bimb, pimb, cushion, largePrints } = inp;
+export function decideDebounced(s, inp, momentum, flow) {
+  const { bimb, pimb, cushion, largePrints, vol1m, cvd3m } = inp;
   const comb = (bimb != null && pimb != null) ? (bimb + pimb) / 2 : (bimb ?? pimb);
   if (comb != null) s.imbEwma = ewma(s.imbEwma, comb, CFG.ALPHA_IMB);
   const e = s.imbEwma;
@@ -103,6 +105,18 @@ export function decideDebounced(s, inp, momentum) {
     if (e > enterFor('UP')) cand = 'UP';
     else if (e < -enterFor('DOWN')) cand = 'DOWN';
     else if (Math.abs(e) < CFG.EXIT) cand = 'MIXED';
+  }
+  // v5.4 rule 4: BAFO (book-against flow override) — a fat cushion with agreeing flow
+  // overrides a stale/opposing book EWMA. 52-bar LHF winner (2026-07-02): +482 correct,
+  // -9 wrong, -473 missed, 0 of 52 bars lose a correct tick, LOBO 52/52. FIT to that set.
+  if (flow && cushSign !== 0) {
+    const cushDir = cushSign > 0 ? 'UP' : 'DOWN';
+    if (cand !== cushDir && e != null && Math.sign(e) !== 0 && Math.sign(e) !== cushSign
+      && Math.abs(cushion) >= Math.max(CFG.BAFO_ABS, CFG.BAFO_MULT * (vol1m ?? 20))
+      && flow.d60 != null && cvd3m != null
+      && Math.sign(flow.d60) === cushSign && Math.sign(cvd3m) === cushSign) {
+      cand = cushDir; note = 'bafo';
+    }
   }
   // fold momentum (same semantics as v5 decide, but on the debounced call)
   const mdir = momentum?.dir ?? 'FLAT';
@@ -203,7 +217,7 @@ export function tick(s, inp) {
     flow,
     cush_d10: deltaAt(s.priceHist, now, 10_000),
     momentum,
-    decision: decideDebounced(s, inp, momentum),
+    decision: decideDebounced(s, inp, momentum, flow),
     flip: flipRisk(s, inp, flow),
   };
 }
