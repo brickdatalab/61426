@@ -185,7 +185,7 @@
       <div class="metric"><div class="k">CVD Δ5s</div><div class="v" id="mCvd5">—</div></div>
       <div class="metric"><div class="k">CVD Δ10s</div><div class="v" id="mCvd10">—</div></div>
       <div class="metric"><div class="k">CVD Δ60s</div><div class="v" id="mCvd60">—</div></div>
-      <div class="metric"><div class="k">Signal</div><div class="v" id="mSig">—</div></div>
+      <div class="metric"><div class="k">Signal</div><div class="v" id="mSig">—</div><div class="kd" id="mSigRun">×—</div></div>
     </div>
 
     <table>
@@ -404,6 +404,8 @@ async function tick(){
   if (pressure >= 0) { fill.style.left = '50%'; fill.style.width = (pressure * 48) + '%'; fill.style.background = 'rgba(46,194,126,.45)'; }
   else { fill.style.left = (50 + pressure * 48) + '%'; fill.style.width = (-pressure * 48) + '%'; fill.style.background = 'rgba(255,93,108,.45)'; }
   const dispSig = sig;
+  st.sigRun = (dispSig === st.sigRunVal) ? (st.sigRun || 0) + 1 : 1;   // consecutive ticks at this value
+  st.sigRunVal = dispSig;
   $('#sigtag').className = 'sigtag ' + dispSig;
   $('#sigtag').textContent = dispSig === 'UP' ? 'UP' : dispSig === 'DOWN' ? 'DOWN' : 'MIXED';
   const flowNote = dr.note ? ' · ' + dr.note : '';
@@ -432,6 +434,7 @@ async function tick(){
   setV('mCvd10', sg ? sg.flow.d10 : null);
   setV('mCvd60', sg ? sg.flow.d60 : null);
   $('#mSig').textContent = dispSig; $('#mSig').className = 'v ' + (dispSig === 'UP' ? 'pos' : dispSig === 'DOWN' ? 'neg' : '');
+  $('#mSigRun').textContent = '×' + st.sigRun + ' ticks';
   $('#pulse').className = 'pulse on'; $('#rate').textContent = 'live · ' + st.log.length + ' ticks';
 
   // histories for the two graphs
