@@ -12,7 +12,7 @@ const LOGS = [
 ];
 
 function replay(file) {
-  const d = JSON.parse(readFileSync(join(here, '../../v5/logs', file), 'utf8'));
+  const d = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
   const settle = d.rows.find(r => r.settled);
   const rows = d.rows.filter(r => !r.settled);
   const s = newSession();
