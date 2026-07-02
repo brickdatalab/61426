@@ -20,6 +20,15 @@ Object.assign(CFG, {
   ENTER: 0.20,         // |imbEwma| must exceed this to take a side
   EXIT: 0.08,          // must fall inside this to give the side back
   DWELL_TICKS: 7,      // a new state must persist 7 consecutive ticks to stick
+  // flip-risk flow adjustment. DIRECTIONAL PRIORS — not tuned. Revisit only with
+  // a body of captured v5.1 logs; do not fit to the 2 existing v5 samples.
+  D60_SCALE: 400_000,    // $ of 60s net flow for tanh saturation
+  LP_SCALE: 300_000,     // $ of 3m whale-print net
+  PS_SCALE: 500_000,     // $ of perp-minus-spot 5m divergence
+  EFF_LOW: 0.5,          // efficiency_3m below this = flow being absorbed
+  ABSORB_BOOST: 0.5,     // extra opposing weight when absorption + opposing flow
+  W_FLOW: 1.2,           // logit-space weight of the opposing score
+  ALERT_P: 0.6, ALERT_CLEAR: 0.5, ALERT_TICKS: 10,
 });
 
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
@@ -31,6 +40,7 @@ export function newSession() {
     pMean: null, pVar: null,           // EWMA moments of the 6s price move
     imbEwma: null,
     sig: 'MIXED', pendingSig: null, pendingCount: 0,
+    alertCount: 0, alert: null,
   };
 }
 
@@ -100,6 +110,47 @@ export function decideDebounced(s, { bimb, pimb }, momentum) {
   return { sig: s.sig, imbEwma: e, note };
 }
 
+// standard normal CDF (Abramowitz-Stegun 26.2.17, |err| < 7.5e-8)
+export function phi(x) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989422804014327 * Math.exp(-x * x / 2);
+  const p = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return x >= 0 ? 1 - p : p;
+}
+
+// fallback realized vol when the VM field is absent: sd of 1s price diffs * sqrt(60)
+export function volFromHist(priceHist) {
+  if (priceHist.length < 10) return 30;   // conservative $30 1-min move default
+  const diffs = [];
+  for (let i = 1; i < priceHist.length; i++) diffs.push(priceHist[i].v - priceHist[i - 1].v);
+  const m = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  const v = diffs.reduce((a, b) => a + (b - m) ** 2, 0) / diffs.length;
+  return Math.sqrt(v) * Math.sqrt(60) || 30;
+}
+
+export function flipRisk(s, inp, flow) {
+  const { cushion, remS, vol1m, largePrints, efficiency, perpSpotDiv } = inp;
+  if (cushion == null || remS == null) return { p: null, side: null, alert: s.alert ?? null };
+  const side = cushion > 0 ? 1 : cushion < 0 ? -1 : 0;
+  if (side === 0) return { p: 0.5, base: 0.5, opposing: 0, side, expMove: null, alert: s.alert ?? null };
+  const vol = Math.max(vol1m ?? volFromHist(s.priceHist), 1);
+  const expMove = vol * Math.sqrt(Math.max(remS, 1) / 60);
+  const base = phi(-Math.abs(cushion) / expMove);          // driftless-walk flip prob, <= 0.5
+  const nz = (x, sc) => x == null ? 0 : Math.tanh(x / sc); // saturating normalizer
+  const fFlow = -side * nz(flow?.d60, CFG.D60_SCALE);
+  const fWhale = -side * nz(largePrints, CFG.LP_SCALE);
+  const fPerp = -side * nz(perpSpotDiv, CFG.PS_SCALE);
+  const absorb = (efficiency != null && efficiency < CFG.EFF_LOW && fFlow > 0.3) ? CFG.ABSORB_BOOST : 0;
+  const opposing = Math.max(-1, Math.min(1, (fFlow + fWhale + fPerp + absorb) / 3));
+  const logit = Math.log(base / (1 - base)) + CFG.W_FLOW * opposing;
+  const p = 1 / (1 + Math.exp(-logit));
+  // persistence: alert only after ALERT_TICKS consecutive ticks above ALERT_P
+  if (p > CFG.ALERT_P) s.alertCount = (s.alertCount ?? 0) + 1;
+  else if (p < CFG.ALERT_CLEAR) { s.alertCount = 0; s.alert = null; }
+  if (s.alertCount >= CFG.ALERT_TICKS) s.alert = side > 0 ? 'FLIP→DOWN' : 'FLIP→UP';
+  return { p, base, opposing, side, expMove, alert: s.alert ?? null };
+}
+
 function prune(hist, now, keepMs) {
   const cut = now - keepMs;
   while (hist.length > 1 && hist[0].t < cut) hist.shift();
@@ -124,6 +175,6 @@ export function tick(s, inp) {
     cush_d10: deltaAt(s.priceHist, now, 10_000),
     momentum,
     decision: decideDebounced(s, inp, momentum),
-    flip: null,       // Task 4
+    flip: flipRisk(s, inp, flow),
   };
 }

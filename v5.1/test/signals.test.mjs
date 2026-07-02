@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newSession, tick, valAt, deltaAt, decideDebounced } from '../src/signals.mjs';
+import { newSession, tick, valAt, deltaAt, decideDebounced, flipRisk, volFromHist, phi } from '../src/signals.mjs';
 
 const T0 = 1700000000000;
 // feed a session one sample per second from arrays of sinceOpen/price values
@@ -138,4 +138,56 @@ test('momentum folds in: breaks MIXED ties, conflicts stand down — both throug
   // now book goes hard DOWN while momentum still UP -> conflict -> MIXED
   for (let i = 0; i < 60; i++) r = decideDebounced(s, { bimb: -0.6, pimb: -0.6 }, { dir: 'UP' });
   assert.equal(r.sig, 'MIXED');
+});
+
+test('phi: standard normal CDF sanity', () => {
+  assert.ok(Math.abs(phi(0) - 0.5) < 1e-4);
+  assert.ok(Math.abs(phi(-1.645) - 0.05) < 2e-3);
+  assert.ok(Math.abs(phi(1.645) - 0.95) < 2e-3);
+});
+
+test('big cushion + little time + calm vol -> tiny flip risk; base never exceeds 0.5', () => {
+  const s = newSession();
+  const r = flipRisk(s, { cushion: 80, remS: 30, vol1m: 20 }, { d60: 0 });
+  assert.ok(r.p < 0.05, `p=${r.p}`);
+  assert.equal(r.side, 1);
+  const s2 = newSession();
+  const r2 = flipRisk(s2, { cushion: 1, remS: 280, vol1m: 40 }, { d60: 0 });
+  assert.ok(r2.base <= 0.5 && r2.base > 0.4, `base=${r2.base}`);
+});
+
+test('opposing whale flow + perp divergence raise flip risk above the neutral base', () => {
+  const inp = { cushion: 25, remS: 120, vol1m: 30 };
+  const neutral = flipRisk(newSession(), { ...inp }, { d60: 0 });
+  const opposed = flipRisk(newSession(),
+    { ...inp, largePrints: -600_000, perpSpotDiv: -900_000 }, { d60: -500_000 });
+  assert.ok(opposed.p > neutral.p + 0.1, `${opposed.p} vs ${neutral.p}`);
+  assert.ok(opposed.opposing > 0.3);
+});
+
+test('aligned (supporting) flow LOWERS flip risk', () => {
+  const inp = { cushion: 25, remS: 120, vol1m: 30 };
+  const neutral = flipRisk(newSession(), { ...inp }, { d60: 0 });
+  const backed = flipRisk(newSession(),
+    { ...inp, largePrints: 600_000, perpSpotDiv: 900_000 }, { d60: 500_000 });
+  assert.ok(backed.p < neutral.p);
+});
+
+test('alert requires persistence: fires only after ALERT_TICKS consecutive high-p ticks', () => {
+  const s = newSession();
+  const hi = { cushion: 5, remS: 200, vol1m: 60, largePrints: -800_000, perpSpotDiv: -900_000 };
+  let r;
+  for (let i = 0; i < 9; i++) r = flipRisk(s, hi, { d60: -600_000 });
+  assert.equal(r.alert, null);
+  r = flipRisk(s, hi, { d60: -600_000 });          // 10th consecutive tick
+  assert.equal(r.alert, 'FLIP→DOWN');               // UP side flipping down
+  // p dropping below ALERT_CLEAR resets the alert
+  for (let i = 0; i < 3; i++) r = flipRisk(s, { cushion: 80, remS: 30, vol1m: 15 }, { d60: 0 });
+  assert.equal(r.alert, null);
+});
+
+test('volFromHist: $2/s alternating jitter -> sane 1-minute vol estimate', () => {
+  const hist = Array.from({ length: 60 }, (_, i) => ({ t: T0 + i * 1000, v: 60000 + (i % 2) * 2 }));
+  const v = volFromHist(hist);
+  assert.ok(v > 5 && v < 40, `vol=${v}`);   // ~$2 diffs * sqrt(60) ~= $15
 });
