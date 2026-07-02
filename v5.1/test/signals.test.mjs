@@ -48,3 +48,46 @@ test('cush_d10 is the 10s price change', () => {
   const r = feed(s, so, prices);
   assert.equal(r.cush_d10, 20);
 });
+
+test('momentum is FLAT during warmup no matter how steep the flow', () => {
+  const s = newSession();
+  // 30s of violent flow + rising price — inside the 60s warmup
+  const so = Array.from({ length: 30 }, (_, i) => (i + 1) * 500_000);
+  const prices = Array.from({ length: 30 }, (_, i) => 60000 + i * 10);
+  const r = feed(s, so, prices);
+  assert.equal(r.momentum.warm, false);
+  assert.equal(r.momentum.dir, 'FLAT');
+  assert.equal(r.momentum.z, 0);
+});
+
+test('after warmup, sustained steep flow + aligned price fires UP', () => {
+  const s = newSession();
+  const so = [], prices = [];
+  for (let i = 0; i < 70; i++) { so.push(i * 5_000); prices.push(60000); }        // quiet baseline past warmup
+  for (let i = 0; i < 15; i++) { so.push(350_000 + (i + 1) * 100_000); prices.push(60000 + (i + 1) * 4); } // surge, price follows
+  const r = feed(s, so, prices);
+  assert.equal(r.momentum.warm, true);
+  assert.equal(r.momentum.dir, 'UP');
+  assert.ok(r.momentum.z > 2, `z=${r.momentum.z}`);
+});
+
+test('steep flow WITHOUT a real price move does not fire (adaptive gate)', () => {
+  const s = newSession();
+  const so = [], prices = [];
+  for (let i = 0; i < 70; i++) { so.push(i * 5_000); prices.push(60000 + (i % 2)); } // $1 jitter baseline
+  for (let i = 0; i < 15; i++) { so.push(350_000 + (i + 1) * 100_000); prices.push(60000 + (i % 2)); } // surge, price flat
+  const r = feed(s, so, prices);
+  assert.equal(r.momentum.dir, 'FLAT');
+});
+
+test('sd floor prevents z explosion in dead-quiet tape', () => {
+  const s = newSession();
+  // 70s of ZERO flow (sd would be 0), then one modest 5s print of $8k
+  const so = [], prices = [];
+  for (let i = 0; i < 70; i++) { so.push(0); prices.push(60000); }
+  for (let i = 0; i < 5; i++) { so.push((i + 1) * 1600); prices.push(60000 + i * 3); }
+  const r = feed(s, so, prices);
+  // slope=8k, floor=5k -> z=1.6 < Z_FIRE(2.0): must not fire
+  assert.equal(r.momentum.dir, 'FLAT');
+  assert.ok(Math.abs(r.momentum.z) < 2, `z=${r.momentum.z}`);
+});

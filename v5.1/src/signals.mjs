@@ -7,13 +7,23 @@
 
 export const CFG = {};        // populated by the momentum/decision/flip layers
 
+Object.assign(CFG, {
+  // momentum
+  ALPHA_SLOPE: 0.05,       // EWMA half-life ~13s at 1 tick/s
+  SD_FLOOR_USD: 5_000,     // slope-sd floor: quiet tape can't produce infinite z
+  WARMUP_MS: 60_000,       // no firing until 60s of real samples
+  Z_FIRE: 2.0,
+  PRICE_Z_GATE: 1.0,       // 6s price move must be > 1 sd of its own recent moves
+  PRICE_SD_FLOOR: 0.5,     // $; BTC never has < $0.5 of 6s noise
+});
+
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
 
 export function newSession() {
   return {
-    openHist: [],   // {t, v: sinceOpen}
-    priceHist: [],  // {t, v: price}
-    firstMs: null,  // first real sample (warmup anchor)
+    openHist: [], priceHist: [], firstMs: null,
+    slopeMean: null, slopeVar: null,   // EWMA moments of the 5s flow slope
+    pMean: null, pVar: null,           // EWMA moments of the 6s price move
   };
 }
 
@@ -34,6 +44,26 @@ export function deltaAt(hist, now, ms) {
   const cur = valAt(hist, now);
   if (cur == null || past == null) return null;
   return cur - past;
+}
+
+function ewma(prev, x, a) { return prev == null ? x : a * x + (1 - a) * prev; }
+
+export function momentumOf(s, now) {
+  const slope = deltaAt(s.openHist, now, 5000) ?? 0;         // exact 5s net flow
+  s.slopeMean = ewma(s.slopeMean, slope, CFG.ALPHA_SLOPE);
+  s.slopeVar = ewma(s.slopeVar, (slope - s.slopeMean) ** 2, CFG.ALPHA_SLOPE);
+  const sd = Math.max(Math.sqrt(s.slopeVar ?? 0), CFG.SD_FLOOR_USD);
+  const pm = deltaAt(s.priceHist, now, 6000) ?? 0;
+  s.pMean = ewma(s.pMean, pm, CFG.ALPHA_SLOPE);
+  s.pVar = ewma(s.pVar, (pm - s.pMean) ** 2, CFG.ALPHA_SLOPE);
+  const psd = Math.max(Math.sqrt(s.pVar ?? 0), CFG.PRICE_SD_FLOOR);
+  const warm = s.firstMs != null && now - s.firstMs >= CFG.WARMUP_MS;
+  const z = warm ? slope / sd : 0;
+  const priceZ = warm ? pm / psd : 0;
+  let dir = 'FLAT';   // CONTINUATION only: steep flow AND price genuinely moving with it
+  if (z > CFG.Z_FIRE && priceZ > CFG.PRICE_Z_GATE) dir = 'UP';
+  else if (z < -CFG.Z_FIRE && priceZ < -CFG.PRICE_Z_GATE) dir = 'DOWN';
+  return { slope, z, sd, priceZ, dir, warm };
 }
 
 function prune(hist, now, keepMs) {
@@ -57,7 +87,7 @@ export function tick(s, inp) {
   return {
     flow,
     cush_d10: deltaAt(s.priceHist, now, 10_000),
-    momentum: null,   // Task 2
+    momentum: momentumOf(s, now),
     decision: null,   // Task 3
     flip: null,       // Task 4
   };
