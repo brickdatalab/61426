@@ -48,6 +48,17 @@ def _cvd_candle_base(view: RingView, bar_start_ms: int) -> Optional[float]:
     return None
 
 
+def _vol_1m_usd(price_ring, now: int) -> Optional[float]:
+    """Realized vol: sd of 1s price diffs over the last 60s, scaled to a 1-min move (x sqrt60)."""
+    pts = [p for t, p in price_ring if t >= now - 60_000 and p is not None]
+    if len(pts) < 10:
+        return None
+    diffs = [pts[i] - pts[i - 1] for i in range(1, len(pts))]
+    m = sum(diffs) / len(diffs)
+    var = sum((d - m) ** 2 for d in diffs) / len(diffs)
+    return round((var ** 0.5) * (60 ** 0.5), 2)
+
+
 def snapshot(spot, perp, now: int, bar_ms: int = BAR_MS, depth=None) -> dict:
     bar_start = (now // bar_ms) * bar_ms
     out = {
@@ -60,6 +71,7 @@ def snapshot(spot, perp, now: int, bar_ms: int = BAR_MS, depth=None) -> dict:
             "price": spot.last_price,                                           # NEW: current spot price
             "bar_open": _series_at(spot.price_1s, bar_start),                    # NEW: price at bar open
             "binance_imb": getattr(depth, 'last_imb', None) if depth else None,  # NEW: order-book imbalance
+            "vol_1m_usd": None,   # NEW (v5.1): realized 1-min vol, filled below
         },
         "perp_spot_divergence": {"perp_cvd_minus_spot_cvd_5m_usd": None},
     }
@@ -72,6 +84,7 @@ def snapshot(spot, perp, now: int, bar_ms: int = BAR_MS, depth=None) -> dict:
         v = view.at(now - ms)
         if v is not None:
             out["tape"][key] = _usd(spot.cum_cvd_usd - v)
+    out["tape"]["vol_1m_usd"] = _vol_1m_usd(spot.price_1s, now)
     out["tape"]["large_print_net_3m_usd"] = _usd(
         sum(usd for t, usd in spot.large_prints if t >= now - 180_000))
     p_now = spot.last_price
