@@ -71,3 +71,17 @@ test('replay btc-updown-5m-1782974100 (DOWN-settling clean trend): mirror of the
   const alerts = out.filter((r, i) => r.flip.alert && !(out[i - 1] && out[i - 1].flip.alert)).length;
   assert.ok(alerts <= 1, `alert episodes=${alerts}`);
 });
+
+test('replay btc-updown-5m-1782970800 (flip bar): alert fires AND matches settle (true positive)', () => {
+  const { out, settled } = replay('btc-updown-5m-1782970800_v51.json');
+  assert.equal(settled, 'DOWN');
+  // an alert episode must occur — this bar genuinely flipped and the engine caught it live
+  const alertEps = out.filter((r, i) => r.flip.alert && !(out[i - 1] && out[i - 1].flip.alert));
+  assert.ok(alertEps.length >= 1, `expected >=1 alert episode, got ${alertEps.length}`);
+  // direction must agree with settle: DOWN bar -> FLIP->DOWN (U+2192 arrow)
+  const firstAlert = out.find(r => r.flip.alert);
+  assert.equal(firstAlert.flip.alert, 'FLIP→DOWN');
+  // and it must lead the settle, not fire in the last few seconds (position proxy for lead time)
+  const idx = out.findIndex(r => r.flip.alert);
+  assert.ok(idx < out.length - 30, `alert fired too late: idx ${idx}/${out.length}`);
+});
