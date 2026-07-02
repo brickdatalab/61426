@@ -34,3 +34,8 @@ WS_BACKOFF_MAX = 30.0
 
 LOG_DIR = os.environ.get("OWS_LOG_DIR", "/home/vincent/ourWebSocket/logs")
 LOG_FILE = os.path.join(LOG_DIR, "service.log")
+
+# v5.1 /log hardening
+LOG_SECRET = os.environ.get("OWS_LOG_SECRET", "")          # required for /v51/log when non-empty
+LOG_DIR_MAX_BYTES = int(os.environ.get("OWS_LOG_DIR_MAX_BYTES", str(500 * 1024 * 1024)))  # 500MB
+LOG_DIR_MAX_FILES = int(os.environ.get("OWS_LOG_DIR_MAX_FILES", "5000"))

@@ -136,6 +136,27 @@ async def log_options(request: web.Request) -> web.Response:
     return _cors(web.Response(status=204))
 
 
+def _disk_guard(dir_path: str, max_bytes: int = None, max_files: int = None) -> bool:
+    """True if a NEW file write is allowed under the dir's size/file-count caps."""
+    mb = C.LOG_DIR_MAX_BYTES if max_bytes is None else max_bytes
+    mf = C.LOG_DIR_MAX_FILES if max_files is None else max_files
+    try:
+        entries = [e for e in os.scandir(dir_path) if e.is_file()]
+    except FileNotFoundError:
+        return True
+    if len(entries) >= mf:
+        return False
+    total = sum(e.stat().st_size for e in entries)
+    return total < mb
+
+
+def _secret_ok(supplied, expected: str) -> bool:
+    import hmac
+    if not expected:
+        return True                       # empty secret => open (back-compat / dev)
+    return hmac.compare_digest(supplied or "", expected)
+
+
 async def log_handler(request: web.Request) -> web.Response:
     if request.method == "OPTIONS":
         return _cors(web.Response(status=204))
@@ -147,12 +168,23 @@ async def log_handler(request: web.Request) -> web.Response:
     rows = (data or {}).get("rows", [])
     os.makedirs(V5_LOG_DIR, exist_ok=True)
     p = pathlib.Path(V5_LOG_DIR) / f"{_safe_slug(slug)}.json"
+    if not p.exists() and not _disk_guard(V5_LOG_DIR):   # only NEW files count against the cap
+        log.warning("v5-log REJECTED (disk cap) slug=%s", slug)
+        return _cors(web.json_response({"ok": False, "error": "log store full"}, status=507))
     tmp = p.with_suffix(".json.tmp")
     with open(tmp, "w") as f:
         json.dump(data, f, indent=2)
     os.replace(tmp, p)
     log.info("v5-log saved slug=%s rows=%d -> %s", slug, len(rows), p.name)
     return _cors(web.json_response({"ok": True, "slug": slug, "rows": len(rows), "path": str(p)}))
+
+
+async def log_v51_handler(request: web.Request) -> web.Response:
+    if request.method == "OPTIONS":
+        return _cors(web.Response(status=204))
+    if not _secret_ok(request.headers.get("X-V5-Secret"), C.LOG_SECRET):
+        return _cors(web.json_response({"ok": False, "error": "unauthorized"}, status=401))
+    return await log_handler(request)      # shared body + disk guard
 
 
 async def broadcast_loop(hub: SymbolHub) -> None:
@@ -220,6 +252,8 @@ def main() -> None:
     app.router.add_get("/ws/v5/tape", ws_handler)
     app.router.add_route("OPTIONS", "/log", log_handler)
     app.router.add_post("/log", log_handler)
+    app.router.add_route("OPTIONS", "/v51/log", log_v51_handler)
+    app.router.add_post("/v51/log", log_v51_handler)
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
     web.run_app(app, host=C.HOST, port=C.PORT, access_log=None)
