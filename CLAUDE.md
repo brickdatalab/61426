@@ -1,0 +1,50 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Read first
+
+`CONTEXT.md` at the repo root is the current-state brief (architecture, data source, validation findings, VM layout). `docs/v5-plan.md` is the V5 plan + changelog. Read CONTEXT.md before making changes — it is kept current and overrides anything stale here.
+
+## Hard rule — version isolation
+
+**A new version must never affect a previous working version.** `v1/`, `v2/`, `v3/` are frozen lineage and are never edited by v4/v5 work. New work = new files. v4 is dead (removed from tree, git history only) — do not resurrect it.
+
+## Version ladder (as of 2026-07-02)
+
+`v5.4/` is the **current tuned version**; each vX.Y is a full fork of its predecessor (dashboard + `src/signals.mjs` + tests + `ourWebSocket/` copy) and predecessors are frozen:
+- **v5.4** — current. v5.3 + the BAFO rule (book-against flow override; gate-validated on 52 Polymarket-verified bars: +482 correct/−9 wrong/0 bars hurt) + conviction-lock magnitude gate. Logs `<slug>_v54.json`.
+- **v5.3** — first tuned engine (aligned entry 0.14, counter-cushion confirmation, hold-release 15). Frozen. Logs `_v53`.
+- **v5.1 / v5.2** — untuned baseline engine (v5.2 = v5.1 + hardening). Frozen. Logs `_v51`/`_v52`.
+- Session logs live on the VM at `/home/vincent/projects/61426/v5/logs/`; `mirrors/` there holds `_v53m` **counterfactual replays** (never treat as live sessions). Analysis reports: `v5.1/FINDINGS.md` (running findings home), `v5.1/analysis/`, `v5.4/analysis/2026-07-02-lhf-52bars.md` (latest, incl. rejected candidates + near-misses to retest at ~100 bars).
+- **Signal-logic changes are discussion-first**: analyze logs, present measured findings, get explicit approval, then ship as a NEW version fork with the dominance-gate pattern (`v5.4/analysis/replay-compare.mjs`).
+
+## Commands
+
+There is no build step, package.json, or linter. Dashboards are single-file HTML (no framework); signal logic is a pure ES module; the VM service is Python.
+
+- **Run current dashboard:** `python3 -m http.server 5173` from the repo root, then open `http://localhost:5173/v5.4/updown-liquidity-overlap.html` (v5 lives at `/v5/...`, etc.). HTTP is required (ES-module import — `file://` won't work). One dashboard per port.
+- **Run tests (current version):** `node --test v5.4/test/signals.test.mjs v5.4/test/replay.test.mjs` (node:test, no deps). Pass file paths — the directory form fails.
+- **Acceptance gate:** `node v5.4/analysis/replay-compare.mjs <dir-of-session-logs>` (replays new engine vs predecessor over all logs; binary GATE PASS/FAIL).
+- **VM service tests:** `cd <version>/ourWebSocket && python3 -m unittest test_compute test_server -v`.
+
+## Architecture
+
+BTC/ETH Polymarket up/down live dashboards + the signal logic behind them. V5 (the production dashboard) does **forward-looking flip detection**: signal that a bar about to settle one way will flip, before it happens.
+
+Data flow (V5): Browser → `ws://34.89.159.108/ws/v5/tape?symbol=BTCUSDT&bar=5m` (the VM's `ourWebSocket` service on port 80) + Polymarket REST. The VM is the **single Binance data source** — CVD, price, bar_open, order-book imbalance, efficiency, large prints, perp-spot divergence all arrive on that one socket. The browser never talks to Binance directly except for settle accuracy (spot klines from `api.binance.com`). This exists because polling Binance REST from the browser earned an IP ban (HTTP 418).
+
+Key pieces:
+- `v5/updown-liquidity-overlap.html` — the production dashboard. Single file: 4 locked Lightweight Charts (2×2), dropdown swap on the 4th, pressure bar, session threads, continuous runs.
+- `v5/src/signals.mjs` — pure signal math (no DOM, no network) so it is both browser-importable and node-testable. All V5 signal logic goes here, not in the HTML.
+- `v5/test/signals.test.mjs` — node:test suite for signals.mjs.
+- `v5/ourWebSocket/` — local copy of the VM service (`server.py`, `feeds.py`, `compute.py`, `config.py`). Deployed at `/home/vincent/ourWebSocket/` on the GCP VM `pm` (project `lithe-hallway-493420-r4`), systemd unit `ourwebsocket`, port 80. Its `CONNECT.md` on the VM is the source of truth for the wire protocol. `POST /log` on the same port receives dashboard session logs (the old `v5/logd/` standalone service is retired).
+- `testdata/v3-logs/` — 18 captured bars used as TDD fixtures. Canonical flip case: `btc-updown-5m-1781724300`.
+- `v1/`, `v2/`, `v3/` — frozen predecessor dashboards (see hard rule).
+
+## Working discipline (from CONTEXT.md)
+
+- **TDD:** replay a fixture from `testdata/v3-logs/`, assert whether/when the signal fires, before writing signal code.
+- **Don't over-fit:** n=18 fixtures is small and noisy. Use regime-adaptive measures (z-scores, relative slopes) and honest confidence; treat edge as directional until confirmed on new data.
+- Signals must stay **forward-looking** — the value is lead time on a flip, not confirming a move that already happened.
+- Validation findings not to re-litigate: CVD-30s alone is weak (~65% late-bar sign match); 1s order-book imbalance is noise; the promising unvalidated signals are `large_print_net_3m_usd`, `efficiency_3m`, and perp−spot CVD divergence.
