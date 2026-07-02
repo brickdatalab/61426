@@ -29,18 +29,18 @@ work. New work = new file.
 **Forward-looking flip detection** on Polymarket BTC/ETH up-down bars: signal that a bar is about
 to flip (e.g., "90% UP with 2 min left → will flip DOWN") *before* it happens.
 
-### Current state (as of 2026-06-27) — PRODUCTION
-V5 is the working dashboard on `main`. The VM (`ourWebSocket` on port 8802) is the
+### Current state (as of 2026-07-02) — PRODUCTION
+V5 is the working dashboard on `main`. The VM (`ourWebSocket` on port **80**) is the
 single Binance data source — CVD, price, bar_open, order-book imbalance, efficiency,
 large prints, perp-spot divergence all delivered via one WebSocket. No direct browser →
 Binance connection. 4 locked Lightweight Charts (2×2 grid), dropdown swap on the 4th,
 flowing pressure bar, continuous runs, session threads, accurate settle (spot klines).
 VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartbeat 90s).
-Firewall `allow-ourwebsocket-8802` permanent. **Run V5:** `python3 -m http.server 5173`
+GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **Run V5:** `python3 -m http.server 5173`
 → `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
 ### Data source: `ourWebSocket` (runs on this VM)
-- URL: `ws://34.89.159.108:8802/ws/v5/tape?symbol=BTCUSDT&bar=5m` (also `ETHUSDT`, `bar=15m`).
+- URL: `ws://34.89.159.108/ws/v5/tape?symbol=BTCUSDT&bar=5m` (also `ETHUSDT`, `bar=15m`).
   No auth, no rate limit, on-change ~10/sec.
 - Single source of truth: `/home/vincent/ourWebSocket/CONNECT.md`.
 - Emits **6 metrics** (sign: `+` = net aggressive buy):
@@ -50,6 +50,7 @@ Firewall `allow-ourwebsocket-8802` permanent. **Run V5:** `python3 -m http.serve
   - `tape.efficiency_3m` — |Δprice 3m| / |net BTC 3m| (**absorption efficiency**).
   - `perp_spot_divergence.perp_cvd_minus_spot_cvd_5m_usd` — perp CVD Δ5m − spot CVD Δ5m.
 - Scope (decided): **single-venue Binance**, spot-CVD primary + the perp/spot divergence field.
+- **CORS:** open (`Access-Control-Allow-Origin: *` on `/log`).
 
 ### What the validation already proved (do NOT re-litigate, but don't over-trust either)
 Backtested across 18 captured bars (`testdata/v3-logs/`):
@@ -72,9 +73,9 @@ Backtested across 18 captured bars (`testdata/v3-logs/`):
 
 ## Where things live
 - **Local repo** (source of truth, git @ `brickdatalab/61426`): `/Users/vitolo/Desktop/61426/`
-- **VM (`pm`, project `lithe-hallway-493420-r4`)**: `/home/vincent/projects/61426/` — **partial mirror** (v3 baseline copy, `testdata/`, `CONTEXT.md`, CSVs, and `v5/logd/`). The V5 dashboard/src/tests are **not** mirrored — V5 runs locally; the VM hosts `logd` (port 8803) and `ourWebSocket` (port 8802).
-- **ourWebSocket service**: `/home/vincent/ourWebSocket/` (systemd `ourwebsocket`, port 8802)
-- **V5 log receiver**: `/home/vincent/projects/61426/v5/logd/` (systemd `v5logd`, port 8803 — firewalled externally until the gcloud rule is added)
+- **VM (`pm`, project `lithe-hallway-493420-r4`)**: `/home/vincent/projects/61426/` — **partial mirror** (v3 baseline copy, `testdata/`, `CONTEXT.md`, CSVs, and `v5/logd/`). The V5 dashboard/src/tests are **not** mirrored — V5 runs locally; the VM hosts `ourWebSocket` (port **80**, with `/log` endpoint for session logging).
+- **ourWebSocket service**: `/home/vincent/ourWebSocket/` (systemd `ourwebsocket`, port **80**, `AmbientCapabilities=CAP_NET_BIND_SERVICE`)
+- **V5 log receiver**: handled by ourWebSocket's `POST /log` route (port 80). The old standalone `v5logd` (port 8803) is retired — same atomic-write logic now runs inside ourWebSocket.
 - **Older history/detail**: `issues.md` (V3 handoff). The removed `v4.md` and `engine/` live in git history only.
 
 ## Run (local)
