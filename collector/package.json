@@ -1,0 +1,10 @@
+{
+  "name": "tick-collector",
+  "private": true,
+  "type": "module",
+  "description": "24/7 dual-engine tick collector: 4 streams -> BigQuery raw_d",
+  "dependencies": {
+    "@google-cloud/bigquery": "^7.9.0",
+    "ws": "^8.18.0"
+  }
+}

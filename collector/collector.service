@@ -1,0 +1,15 @@
+[Unit]
+Description=24/7 tick collector (BTC/ETH x 5m/15m -> BigQuery raw_d, dual engine v5.3+v5.4)
+After=network-online.target ourwebsocket.service
+Wants=network-online.target
+
+[Service]
+User=vincent
+WorkingDirectory=/home/vincent/collector
+ExecStart=/usr/bin/node /home/vincent/collector/collector.mjs
+Restart=always
+RestartSec=5
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
