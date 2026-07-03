@@ -43,10 +43,10 @@
   .threads .thempty{color:var(--dim);opacity:.6;font-style:italic}
   /* signal = flowing pressure bar */
   .signal{display:flex;align-items:center;gap:18px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
-  .sigcol{min-width:130px}
+  .sigcol{flex:0 0 430px;max-width:430px;min-width:0}   /* fixed column: text changes can never move the pressure bar */
   .sigtag{font-size:26px;font-weight:800;letter-spacing:1px;line-height:1.1}
   .sigtag.UP{color:var(--up)}.sigtag.DOWN{color:var(--down)}.sigtag.MIXED{color:var(--flat)}.sigtag.WAIT{color:var(--dim)}
-  .siginfo{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.5;margin-top:4px}
+  .siginfo{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.5;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .siginfo b{color:var(--txt)}
   .presswrap{flex:1;min-width:240px}
   .pressbar{position:relative;height:42px;border-radius:10px;background:linear-gradient(90deg,rgba(255,93,108,.22),rgba(255,93,108,.03) 45%,rgba(46,194,126,.03) 55%,rgba(46,194,126,.22));border:1px solid var(--line);overflow:hidden}
@@ -184,12 +184,6 @@
       </div>
     </div>
 
-    <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">
-      <div class="metric"><div class="k" style="color:var(--bin)">Binance imb</div><div class="v" id="mBimb">—</div></div>
-      <div class="metric"><div class="k" style="color:var(--poly)">Polymarket imb</div><div class="v" id="mPimb">—</div></div>
-      <div class="metric"><div class="k">Combined</div><div class="v" id="mComb">—</div></div>
-    </div>
-
     <div class="metrics">
       <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div><div class="kd" id="mCushD">Δ10s —</div></div>
       <div class="metric"><div class="k">CVD since open</div><div class="v" id="mCvdOpen">—</div></div>
@@ -242,6 +236,8 @@ const sgn=v=>v>=0?'+':'';
 const fmtUsd=v=>(v>=0?'+':'')+Math.round(v).toLocaleString();
 const fmtK=v=>{const a=Math.abs(v);return (v>=0?'+':'-')+(a>=1000000?(a/1000000).toFixed(2)+'M':a>=1000?(a/1000).toFixed(1)+'k':''+a);};
 async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
+async function jgetT(u,ms){const ac=new AbortController();const t=setTimeout(()=>ac.abort(),ms);
+  try{const r=await fetch(u,{signal:ac.signal});if(!r.ok)throw new Error(r.status);return await r.json();}finally{clearTimeout(t);}}
 
 // imbalance within band, returns {imb, mid, levels}
 function bookStats(bids,asks,mid,band,priceKey,sizeKey){
@@ -366,6 +362,11 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 async function tick(){
+  if(!st||!st.running||st._inTick)return;   // async ticks must never overlap
+  st._inTick=true;
+  try{ await tickBody(); } finally { if(st)st._inTick=false; }
+}
+async function tickBody(){
   if(!st||!st.running)return;
   const now=Date.now()/1000, rem=parsed.end-now;
   if(rem<=0){await settle();return;}
@@ -377,7 +378,7 @@ async function tick(){
   st.cvd = st.owsCvd1m ?? st.cvd ?? 0;   // chart display only; NOT a signal input
   // Polymarket book
   let book=null;
-  if(st.token){ try{ book=await jget('https://clob.polymarket.com/book?token_id='+st.token); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }
+  if(st.token){ try{ book=await jgetT('https://clob.polymarket.com/book?token_id='+st.token,900); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }  // 900ms cap: a slow Polymarket can cost poly fields, never the tick cadence
   let pStat=null,pmid=null;
   if(book&&book.bids&&book.asks&&book.bids.length&&book.asks.length){
     const bb=Math.max(...book.bids.map(b=>+b.price)), ba=Math.min(...book.asks.map(a=>+a.price));
@@ -432,10 +433,6 @@ async function tick(){
   // remaining top-right
   $('#mRem').textContent = fmtClock(rem);
 
-  // imbalance tiles
-  $('#mBimb').textContent = bimb == null ? '—' : sgn(bimb) + bimb.toFixed(2); $('#mBimb').className = 'v ' + (bimb > 0 ? 'pos' : bimb < 0 ? 'neg' : '');
-  $('#mPimb').textContent = pimb == null ? '—' : sgn(pimb) + pimb.toFixed(2); $('#mPimb').className = 'v ' + (pimb > 0 ? 'pos' : pimb < 0 ? 'neg' : '');
-  $('#mComb').textContent = comb == null ? '—' : sgn(comb) + comb.toFixed(2); $('#mComb').className = 'v ' + (comb > 0 ? 'pos' : comb < 0 ? 'neg' : '');
   // scorecards
   $('#mCush').textContent = cush == null ? '—' : sgn(cush) + cush.toFixed(1); $('#mCush').className = 'v ' + (cush > 0 ? 'pos' : cush < 0 ? 'neg' : '');
   $('#mCushD').textContent = 'Δ10s ' + (sg && sg.cush_d10 != null ? sgn(sg.cush_d10) + sg.cush_d10.toFixed(1) : '—');
@@ -481,10 +478,11 @@ async function tick(){
     updateChart('imbChart', tSec, st.imbMode==='imb'?[bimb,pimb]:st.imbMode==='cvd5'?(sg?sg.flow.d5:null):st.imbMode==='cvd60'?(sg?sg.flow.d60:null):(cush!=null?cush:null));
     // push ALL swap histories (so a mid-market swap shows full bar data)
     const sw={time:tSec};
-    st.swapImbBin.push({...sw,value:bimb}); st.swapImbPoly.push({...sw,value:pimb});
-    st.swapCvd5.push({...sw,value:sg?sg.flow.d5:null});
-    st.swapCvd60.push({...sw,value:sg?sg.flow.d60:null});
-    st.swapCush.push({...sw,value:cush});
+    const pushT=(a,p)=>{const L=a[a.length-1]; if(L&&L.time===p.time)a[a.length-1]=p; else a.push(p);};  // strictly-ascending times (setData requirement)
+    pushT(st.swapImbBin,{...sw,value:bimb}); pushT(st.swapImbPoly,{...sw,value:pimb});
+    pushT(st.swapCvd5,{...sw,value:sg?sg.flow.d5:null});
+    pushT(st.swapCvd60,{...sw,value:sg?sg.flow.d60:null});
+    pushT(st.swapCush,{...sw,value:cush});
     const cap=300;
     if(st.swapImbBin.length>cap)st.swapImbBin.shift();
     if(st.swapImbPoly.length>cap)st.swapImbPoly.shift();
@@ -549,7 +547,7 @@ function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forE
 function updateChart(id, tSec, val){
   const c=charts[id]; if(!c)return;
   const vals=Array.isArray(val)?val:[val];
-  vals.forEach((v,i)=>{ if(v!=null&&c.lines[i]) c.lines[i].update({time:tSec, value:v}); });
+  vals.forEach((v,i)=>{ if(v!=null&&c.lines[i]){ try{ c.lines[i].update({time:tSec, value:v}); }catch(e){} } });   // a bad point must never kill the tick
   try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}   // force full-bar view every tick
 }
 // imbChart-specific functions removed — the generic ensureChart/resetChart/updateChart above handles both panels.
@@ -566,14 +564,17 @@ function swapImbChart(mode){
   const c=charts['imbChart']; if(!c)return;
   st.imbMode=mode;
   // swap data only — NO applyOptions, NO chart recreation = no flicker
-  if(mode==='imb'){
-    c.lines[0].setData(st.swapImbBin.filter(p=>p.value!=null));
-    if(c.lines[1]) c.lines[1].setData(st.swapImbPoly.filter(p=>p.value!=null));
-  } else {
-    const hist = mode==='cvd5' ? st.swapCvd5 : mode==='cvd60' ? st.swapCvd60 : st.swapCush;
-    c.lines[0].setData(hist.filter(p=>p.value!=null));
-    if(c.lines[1]) c.lines[1].setData([]);   // hide second line
-  }
+  const clean=a=>a.filter(p=>p.value!=null).filter((p,i,x)=>!i||p.time>x[i-1].time);  // null-free + strictly ascending or setData throws
+  try{
+    if(mode==='imb'){
+      c.lines[0].setData(clean(st.swapImbBin));
+      if(c.lines[1]) c.lines[1].setData(clean(st.swapImbPoly));
+    } else {
+      const hist = mode==='cvd5' ? st.swapCvd5 : mode==='cvd60' ? st.swapCvd60 : st.swapCush;
+      c.lines[0].setData(clean(hist));
+      if(c.lines[1]) c.lines[1].setData([{time:parsed.ts}]);   // hide second line: whitespace point — a truly EMPTY series breaks the pane's render loop (LWC 4.2.3 'Value is null' every frame = blank panel)
+    }
+  }catch(e){ console.warn('chart swap:', e.message); }
   try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}
 }
 // hover on imbalance graph -> elapsed time into the bar
@@ -591,7 +592,9 @@ function imbHover(ev){
 }
 function animate(){ /* Lightweight Charts self-render */ }
 
-async function settle(){stop(true);
+async function settle(){
+  if(st&&st._settled)return; if(st)st._settled=true;   // concurrent in-flight ticks must settle once
+  stop(true);
   let o=st.open,c=st.last;
   try{const k=await jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
     if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ }
@@ -688,7 +691,7 @@ async function postLogToVM(){
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   $('#led').innerHTML='';$('#settled').style.display='none';
-  st={running:true,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,lastOwsMsg:Date.now(),
+  st={running:true,_settled:false,_inTick:false,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,lastOwsMsg:Date.now(),
       swapImbBin:[],swapImbPoly:[],swapCvd5:[],swapCvd60:[],swapCush:[],imbMode:'imb',
       owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,owsVol1m:null,ows:null,_owrt:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
@@ -705,6 +708,7 @@ async function start(){
   jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
     const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
   }).catch(()=>$('#dPoly').className='dot bad');
+  if(poll){clearInterval(poll);poll=null;}   // never stack tick loops (continuous-runs rollover leak)
   tick();poll=setInterval(tick,1000);animate();
 }
 function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(owsWatchdog){clearInterval(owsWatchdog);owsWatchdog=null;}if(poll){clearInterval(poll);poll=null;}
@@ -717,7 +721,7 @@ $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
   $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
 $('#copy').onclick=()=>{navigator.clipboard.writeText($('#prompt').value);const b=$('#copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);};
-$('#imbSelect').onchange=()=>{ if(st&&st.running){ swapImbChart($('#imbSelect').value); } };
+$('#imbSelect').onchange=()=>{ if(st){ swapImbChart($('#imbSelect').value); } };
 parsed=parseSlug($('#slug').value);updatePrompt();
 $('#threads').addEventListener('click',e=>{const b=e.target.closest('.thitem');if(b)openThread(b.dataset.slug);});
 $('#thClose').onclick=()=>{ $('#threadModal').style.display='none'; };
