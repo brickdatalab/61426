@@ -1,9 +1,18 @@
-# SUMMARY.md — Full Project State (written 2026-07-02, end of the v5.1→v5.4 session)
+# SUMMARY.md — Full Project State (updated 2026-07-04; original 2026-07-02)
 
 **Purpose:** complete handoff so a compacted/future session knows exactly where we left off. Read this + `CLAUDE.md` + `CONTEXT.md` first. When the user says "v1/v2/v3/v4" in conversation they usually mean **v5.1/v5.2/v5.3/v5.4** (the historical `v4/` multi-venue experiment is dead — never resurrect, never name anything v4).
 
-## WHERE WE ARE RIGHT NOW
+## WHERE WE ARE RIGHT NOW (2026-07-04)
 
+- **Dashboard fixes SHIPPED to v5.3 + v5.4** (2026-07-03, commit `dd83717`, both live-verified in browser):
+  1. **Tick-loop stacking killed** — async ticks + continuous-runs rollover used to leak 1s intervals (3 rows/sec, duplicate VM log rows, duplicate session POSTs). Now: interval cleared in `start()`, settle re-entry guard, ticks never overlap. Measured 1.00 ticks/s.
+  2. **Chart-swap blank fixed** — root cause: hiding the 2nd line with `setData([])` — a truly EMPTY series breaks the Lightweight Charts 4.2.3 pane render loop (`Value is null` every frame = blank panel). Fix: whitespace point `[{time:parsed.ts}]` instead. Plus: swap history deduped-on-push (strictly ascending times), null-free ascending `setData`, try/catch so no chart error can kill a tick, swap works while stopped.
+  3. **Polymarket book fetch capped at 900ms** (`jgetT`) — slow Polymarket costs poly fields for a tick, never cadence.
+  4. **Pressure bar pinned** — `.sigcol` fixed 430px flex-basis; long siginfo text ellipsizes; bar pixel-stable.
+  5. **Binance IMB / Polymarket IMB / Combined tile row removed** (markup + setters).
+  - **DATA CAVEAT:** session logs recorded BEFORE this fix that crossed continuous-runs rollovers contain duplicated rows (up to 3/sec). Dedupe or exclude when grading older `_v53` logs.
+- **BigQuery collector (World 2) built and PAUSED at the IAM grant** — full state + resume commands in `rawddataset.md`. Tables `strange-mason-474823-e0:raw_d.ticks/bars` exist; collector deployed to VM `/home/vincent/collector/` (NOT started); blocked only on the user running the dataset-ACL grant for the VM service account.
+- **VM cleanup (2026-07-02):** `dboard-listener` (unrelated copy-trading process, wedged since Jun 29, 1.4 cores + 3.6GB) stopped AND disabled at user's order. VM now ~15% CPU / ~2.4GB used; remaining consumers: `payload_v6` (~0.6 core) + `ourwebsocket` (~3.5%).
 - **The user is running v5.3 live** (`http://localhost:5173/v5.3/updown-liquidity-overlap.html`). They do **not yet trust v5.4** — its only live A/B (bar `1783004400`) was invalidated by Chrome background-tab throttling (2.24s/tick vs 1.13s, half the ticks), which distorted v5.4's inputs and produced a wrong 70-tick UP via the known-bad lp-corroborator door (NOT via the new BAFO rule, which never fired). Building trust in v5.4 = the next piece of work: collect clean `_v54` logs (focused tab or solo run) and grade live firing vs the gate prediction at 30–50 fair bars.
 - Serve everything with `python3 -m http.server 5173` from the repo root. One dashboard per port; each version is its own subdir.
 
@@ -75,6 +84,7 @@ Signal card UI (v5.3+): run counter `×N ticks`, conviction charge bar to 31 tic
 
 ## NEXT STEPS (agreed direction)
 
-1. Collect clean v5.4 bars (focused tab / solo) → grade live vs the gate prediction → user decides trust.
-2. At ~100 bars: rerun the LHF pipeline; retest the near-miss rescue stacks, the lp-corroborator problem, and the tick-vs-time hardening (queue in memory: `v54-state-and-retest-queue`).
-3. The FINDINGS §10 re-measurement list (alerts by |cushion|, p_flip calibration, late-bar tag gating).
+1. **Resume the BigQuery collector** when the user runs the IAM grant (exact command in `rawddataset.md`): smoke insert → single-stream soak → 4 streams under systemd → docs. Its dual-engine columns then answer the v5.4 trust question as a free byproduct.
+2. Collect clean v5.4 bars (focused tab / solo) → grade live vs the gate prediction → user decides trust.
+3. At ~100 bars: rerun the LHF pipeline; retest the near-miss rescue stacks, the lp-corroborator problem, and the tick-vs-time hardening (queue in memory: `v54-state-and-retest-queue`). Dedupe pre-2026-07-03 logs that crossed rollovers before grading.
+4. The FINDINGS §10 re-measurement list (alerts by |cushion|, p_flip calibration, late-bar tag gating).

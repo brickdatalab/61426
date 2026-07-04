@@ -39,6 +39,10 @@ VM changes deployed (`compute.py`/`feeds.py`/`server.py` with DepthFeed + heartb
 GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **Run V5:** `python3 -m http.server 5173`
 → `http://localhost:5173/v5/updown-liquidity-overlap.html`
 
+### Dashboard fixes (2026-07-03, v5.3 + v5.4, commit `dd83717`) — display/plumbing only, engines untouched
+- Tick loop can no longer stack (was 3 rows/sec after continuous-runs rollovers → duplicate log rows; now guarded, measured 1.00/s). Chart-swap blank fixed (empty `setData([])` on the hidden 2nd series breaks LWC 4.2.3 pane rendering — whitespace point instead; swap history deduped/ascending). Polymarket book fetch capped 900ms. Pressure bar pinned (`.sigcol` fixed 430px). Binance/Polymarket/Combined tile row removed.
+- **Grading caveat:** pre-fix session logs that crossed rollovers contain duplicated rows — dedupe before analysis.
+
 ### V5.4 (2026-07-02) — CURRENT TUNED VERSION
 - **V5.4** = fork of v5.3 + one gate-validated rule: **BAFO** (book-against flow override — a fat cushion `>= max($30, 3x vol_1m)` with agreeing d60+cvd_3m flow overrides an opposing book EWMA). From the 52-bar full-ledger audit (`v5.4/analysis/2026-07-02-lhf-52bars.md`): correct fires +482 (+8.8%), wrong -9, missed -473, 0/52 bars lose a correct tick, LOBO 52/52. All other rules identical to v5.3. Conviction-lock now also requires a real price lead (thin locks were 58% vs fat 91%).
 - **Run V5.4:** `http://localhost:5173/v5.4/updown-liquidity-overlap.html`. Logs `<slug>_v54.json` via legacy `/log`. v5.3 -> frozen predecessor.
