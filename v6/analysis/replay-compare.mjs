@@ -108,10 +108,13 @@ const oldC = rows.reduce((a, x) => a + x.old.hit, 0);
 const neuC = rows.reduce((a, x) => a + x.neu.hit, 0);
 // Tie clause: v6's lean stream is intentionally byte-identical to v5.4 (the early-call
 // channel is additive and read-only), so a perfect tie — identical correct, wrong,
-// missed, and transition counts — is the expected no-regression outcome and PASSES.
-// The strict-improvement clause below remains the contract for real rule-change candidates.
+// missed, and transition counts, with zero per-bar hurt (so a pooled tie hiding a
+// per-bar redistribution cannot slip through) — is the expected no-regression outcome
+// and PASSES. The strict-improvement clause below remains the contract for real
+// rule-change candidates.
 const tie = neuC === oldC && neuW === oldW && neuMissed === oldMissed
-  && all.neu.trAvg === all.old.trAvg && all.neu.trMax === all.old.trMax;
+  && all.neu.trAvg === all.old.trAvg && all.neu.trMax === all.old.trMax
+  && perBarHurt.length === 0;
 const pass = tie || (neuC / oldC >= 0.99 && perBarHurt.length === 0
   && ((neuW < oldW) || (neuMissed < oldMissed && neuW <= oldW))
   && all.neu.trAvg <= all.old.trAvg + 0.5 && all.neu.trMax <= all.old.trMax);
