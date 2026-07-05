@@ -186,8 +186,16 @@ function buildBar(slug, barStart, indices) {
   const { spot, perp, book, polyBySlug } = indices;
   const barEnd = barStart + 300;
 
+  // A second is "present" only if a spot row exists AND has a usable close.
+  // NO_TRADES rows before carry-forward initializes (e.g. right after ingestion
+  // start/restart) have close=null — treat them exactly like absent seconds:
+  // excluded from the coverage tally AND from row emission.
   let present = 0;
-  for (let t = barStart; t < barEnd; t++) if (spot.has(t)) present++;
+  for (let t = barStart; t < barEnd; t++) {
+    const r = spot.get(t);
+    if (r && r.close !== null) present++;
+  }
+  const gaps = 300 - present;
 
   const barOpen = resolveBarOpen(spot, barStart);
   if (present < 290 || barOpen === null) {
@@ -207,7 +215,7 @@ function buildBar(slug, barStart, indices) {
 
   for (let ts = barStart; ts < barEnd; ts++) {
     const spotRow = spot.get(ts);
-    if (!spotRow) continue; // sub-second gap inside an otherwise-qualifying bar
+    if (!spotRow || spotRow.close === null) continue; // missing or null-close second inside an otherwise-qualifying bar
 
     const cvdSinceOpen = sumOverWindow(spot, barStart - 1, ts, (r) => r.buyUsd - r.sellUsd);
     const cvdD3m = sumOverWindow(spot, ts - 180, ts, (r) => r.buyUsd - r.sellUsd);
@@ -274,7 +282,7 @@ function buildBar(slug, barStart, indices) {
     status: 'exported',
     doc: {
       slug: `${slug}_bq`,
-      bq: { source: 'bin dataset pm', generated_at: new Date().toISOString() },
+      bq: { source: 'bin dataset pm', generated_at: new Date().toISOString(), gaps },
       rows,
     },
   };
