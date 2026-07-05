@@ -290,7 +290,7 @@ describe('v6 early call', () => {
     const s = newSession();
     s.sig = 'UP';
     const early = earlyCallOf(s, { remS: 210, cushion: 60, vol1m: 40 });
-    assert.deepEqual(early, { side: 'UP', tier: 'strong', ratio: 3, rem: 210 });
+    assert.deepEqual(early, { side: 'UP', tier: 'strong', ratio: 3, rem: 210, late: false });
   });
 
   test('ratio exactly 2.0 -> qualified tier (boundary: >=)', () => {
@@ -369,5 +369,21 @@ describe('v6 early call', () => {
     assert.ok(r.flow && r.momentum && r.decision && r.flip, 'additive schema: existing keys must still be present');
     assert.ok(r.early);
     assert.equal(r.early.side, 'UP');
+  });
+
+  test('late connect: session\'s first tick already sits at/after the mark (rem 150) -> late:true', () => {
+    const s = newSession();
+    const r = tick(s, { now: T0, sinceOpen: 1000, price: 60000, cushion: 20, vol1m: 40, remS: 150 });
+    assert.ok(r.early);
+    assert.equal(r.early.late, true);
+  });
+
+  test('normal connect: session starts pre-mark (rem 280) and crosses the mark normally -> late:false', () => {
+    const s = newSession();
+    const pre = tick(s, { now: T0, sinceOpen: 1000, price: 60000, cushion: 5, vol1m: 40, remS: 280 });
+    assert.equal(pre.early, null);   // pre-mark, nothing latched yet
+    const r = tick(s, { now: T0 + 1000, sinceOpen: 2000, price: 60000, cushion: 20, vol1m: 40, remS: 205 });
+    assert.ok(r.early);
+    assert.equal(r.early.late, false);
   });
 });

@@ -67,6 +67,11 @@ const bars = [
   ...loadBars(liveDir, /_v5[34]\.json$/, /_v5[34]$/),
   ...loadBars(bqDir, /_bq\.json$/, /_bq$/),
 ];
+if (bars.length === 0) {
+  console.error(`ERROR: no bars loaded (liveDir=${liveDir ?? '(none)'}, bqDir=${bqDir ?? '(none)'}) -- refusing to pass an empty set.`);
+  console.log('\nGATE: FAIL');
+  process.exit(1);
+}
 const rows = bars.map(bar => ({ bar, old: score(bar, replay(OLD, bar)), neu: score(bar, replay(NEW, bar)) }));
 
 function pool(sel) {

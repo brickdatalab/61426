@@ -226,8 +226,14 @@ const $=s=>document.querySelector(s);
 const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
 const BIN_BAND=0.0012;   // ±0.12% of price shown
 const POLY_BAND=0.06;    // ±6 cents of prob shown
-// measured 2026-07-05 (145-bar study); lean tier measured 2026-07-05 over 204 bars (live+BQ)
-const EARLY_TIER_ACC = { strong:'96%', qualified:'92%', lean:'60' };
+// pooled (LIVE+BQ) measured accuracy per tier, BTC 5m only, measured 2026-07-05, late:false calls only —
+// v6/analysis/2026-07-05-v6-basis.md §5 pooled row: strong 87.0% (n=46), qualified 80.0% (n=30), lean 59.6% (n=198)
+const EARLY_TIER_ACC = { strong:'87%', qualified:'80%', lean:'60%' };
+// tooltip: the live/BQ-OOS split behind the pooled numbers above (same §5 table)
+const EARLY_TIER_TIP = 'measured BTC 5m only, pooled LIVE+BQ, late:false calls only (v6/analysis/2026-07-05-v6-basis.md §5): '
+  + 'strong 96.2% live n=26 / 75.0% BQ-OOS n=20 (pooled 87.0% n=46); '
+  + 'qualified 84.6% live n=13 / 76.5% BQ-OOS n=17 (pooled 80.0% n=30); '
+  + 'lean 62.0% live n=100 / 57.1% BQ-OOS n=98 (pooled 59.6% n=198)';
 let parsed=null,poll=null,st=null,runsLeft=0;
 
 function parseSlug(slug){
@@ -436,10 +442,12 @@ async function tickBody(){
   const eb = $('#earlyBadge');
   if (sg && sg.early) {
     const arrow = sg.early.side === 'UP' ? '▲' : '▼';
-    const tierTxt = sg.early.tier === 'strong' ? `≥3× floor (${EARLY_TIER_ACC.strong})`
-                  : sg.early.tier === 'qualified' ? `≥2× floor (${EARLY_TIER_ACC.qualified})`
-                  : `lean (${EARLY_TIER_ACC.lean}%)`;
+    const tierLabel = sg.early.tier === 'strong' ? '≥3× floor'
+                     : sg.early.tier === 'qualified' ? '≥2× floor'
+                     : 'lean';
+    const tierTxt = sg.early.late ? `${tierLabel} (late connect — unmeasured)` : `${tierLabel} (${EARLY_TIER_ACC[sg.early.tier]})`;
     eb.textContent = `EARLY CALL ${arrow} ${sg.early.side} · ${tierTxt}`;
+    eb.title = EARLY_TIER_TIP;
     eb.className = 'earlybadge ' + (sg.early.side === 'UP' ? 'pos' : 'neg');
     eb.style.display = 'block';
   } else {

@@ -57,7 +57,7 @@ function replayBar(bar) {
     if (r.rem != null && r.rem <= 210) reachedMark = true;
     if (!latch && res.early) latch = { ...res.early, polyMid: r.poly_mid ?? null };
   }
-  return { bar, latch, studySnapshot, reachedMark };
+  return { bar, latch, studySnapshot, reachedMark, firstRem: s.firstRem };
 }
 
 function median(xs) {
@@ -81,11 +81,15 @@ sets.POOLED = [...sets.LIVE, ...sets.BQ];
 console.log(`bars: LIVE=${liveBars.length} BQ=${bqBars.length} POOLED=${liveBars.length + bqBars.length}\n`);
 
 // ---- TIER TABLE ----
+// Tier rows count ONLY late:false calls — the full-pre-mark-history condition the
+// badge percentages quote. late:true calls (session's first tick already at/after
+// the mark, i.e. a mid-bar session start) go in a separate `late` row so nothing
+// is silently dropped. Coverage counts ALL calls (a late call is still a call).
 function tierTable(recs) {
   const tiers = ['strong', 'qualified', 'lean'];
   const out = {};
   for (const tier of tiers) {
-    const withCall = recs.filter(x => x.latch && x.latch.tier === tier);
+    const withCall = recs.filter(x => x.latch && !x.latch.late && x.latch.tier === tier);
     const correct = withCall.filter(x => x.latch.side === x.bar.settle).length;
     out[tier] = {
       n: withCall.length,
@@ -93,13 +97,20 @@ function tierTable(recs) {
       medRem: median(withCall.map(x => x.latch.rem)),
     };
   }
+  const lateCalls = recs.filter(x => x.latch && x.latch.late);
+  const lateCorrect = lateCalls.filter(x => x.latch.side === x.bar.settle).length;
+  out.late = {
+    n: lateCalls.length,
+    acc: lateCalls.length ? lateCorrect / lateCalls.length : null,
+    medFirstRem: median(lateCalls.map(x => x.firstRem).filter(v => v != null)),
+  };
   const reached = recs.filter(x => x.reachedMark);
   const called = reached.filter(x => x.latch);
   const noCall = reached.filter(x => !x.latch);
   return { tiers: out, coverage: { called: called.length, reached: reached.length }, noCall };
 }
 
-console.log('=== TIER TABLE ===');
+console.log('=== TIER TABLE (tier rows: late:false calls only; late calls in their own row) ===');
 for (const [name, recs] of Object.entries(sets)) {
   const t = tierTable(recs);
   console.log(`\n${name} (n=${recs.length}):`);
@@ -107,6 +118,8 @@ for (const [name, recs] of Object.entries(sets)) {
     const r = t.tiers[tier];
     console.log(`  ${tier.padEnd(10)} n=${String(r.n).padEnd(4)} acc=${r.acc == null ? '—' : (100 * r.acc).toFixed(1) + '%'.padEnd(1)}  median rem-at-latch=${r.medRem == null ? '—' : r.medRem + 's'}`);
   }
+  const L = t.tiers.late;
+  console.log(`  ${'late'.padEnd(10)} n=${String(L.n).padEnd(4)} acc=${L.acc == null ? '—' : (100 * L.acc).toFixed(1) + '%'.padEnd(1)}  median firstRem=${L.medFirstRem == null ? '—' : L.medFirstRem + 's'}`);
   console.log(`  coverage: ${t.coverage.called}/${t.coverage.reached} bars with ≥1 tick at rem<=210 got a call (${t.coverage.reached ? (100 * t.coverage.called / t.coverage.reached).toFixed(1) : '—'}%)`);
   if (t.noCall.length) console.log(`  NO-CALL bars: ${t.noCall.map(x => x.bar.slug).join(', ')}`);
 }

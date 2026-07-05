@@ -39,15 +39,16 @@ Object.assign(CFG, {
   ALERT_P: 0.6, ALERT_CLEAR: 0.5, ALERT_TICKS: 10,
   // v6 early-call channel: one tiered, latched directional call per bar.
   EARLY_MARK_REM: 210,     // early-call mark: 90s into a 5m bar; dashboard overrides to barS-90. Basis: 145-bar study 2026-07-05
-  EARLY_RATIO: 2,          // qualified tier: cushion >= 2x vol floor at the mark -- 36/39 = 92.3% on v5.4 stream
-  EARLY_RATIO_STRONG: 3,   // strong tier -- 25/26 = 96.2%
+  EARLY_RATIO: 2,          // qualified tier: cushion >= 2x vol floor at the mark. 92.3% (36/39) is the INCLUSIVE
+                           // ratio>=2 study number (contains strong); exclusive qualified tier measured 84.6% live / 80.0% pooled.
+  EARLY_RATIO_STRONG: 3,   // strong tier -- exclusive tier measured 96.2% live / 87.0% pooled.
 });
 
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
 
 export function newSession() {
   return {
-    openHist: [], priceHist: [], firstMs: null,
+    openHist: [], priceHist: [], firstMs: null, firstRem: null,
     slopeMean: null, slopeVar: null,   // EWMA moments of the 5s flow slope
     pMean: null, pVar: null,           // EWMA moments of the 6s price move
     imbEwma: null,
@@ -198,7 +199,11 @@ export function earlyCallOf(s, inp) {
   } else {
     return null;   // nothing determinable yet -- keep evaluating on subsequent ticks
   }
-  s.earlyCall = { side, tier, ratio: Math.round(ratio * 100) / 100, rem: inp.remS };
+  // late: the session's first accepted tick already sat at/after the mark, i.e. the
+  // dashboard connected mid-bar -- this call had no full pre-mark history, a condition
+  // the measured tier percentages don't cover (they're all full-bar replays).
+  const late = s.firstRem != null && s.firstRem <= CFG.EARLY_MARK_REM;
+  s.earlyCall = { side, tier, ratio: Math.round(ratio * 100) / 100, rem: inp.remS, late };
   return s.earlyCall;
 }
 
@@ -233,7 +238,7 @@ function prune(hist, now, keepMs) {
 export function tick(s, inp) {
   const { now, sinceOpen, price } = inp;
   if (sinceOpen == null || price == null) return null;   // connect gate
-  if (s.firstMs == null) s.firstMs = now;
+  if (s.firstMs == null) { s.firstMs = now; s.firstRem = inp.remS ?? null; }
   s.openHist.push({ t: now, v: sinceOpen });
   s.priceHist.push({ t: now, v: price });
   prune(s.openHist, now, KEEP_MS);
