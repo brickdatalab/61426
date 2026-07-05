@@ -88,3 +88,45 @@ Signal card UI (v5.3+): run counter `×N ticks`, conviction charge bar to 31 tic
 2. Collect clean v5.4 bars (focused tab / solo) → grade live vs the gate prediction → user decides trust.
 3. At ~100 bars: rerun the LHF pipeline; retest the near-miss rescue stacks, the lp-corroborator problem, and the tick-vs-time hardening (queue in memory: `v54-state-and-retest-queue`). Dedupe pre-2026-07-03 logs that crossed rollovers before grading.
 4. The FINDINGS §10 re-measurement list (alerts by |cushion|, p_flip calibration, late-bar tag gating).
+
+---
+
+# HANDOFF ADDENDUM — 2026-07-05 (read this after the sections above; nothing above is removed, some of it is superseded by what's here)
+
+## Where we are RIGHT NOW (top priority context)
+
+- **The user runs v5.3 live.** v5.4 exists, is gate-validated, but is NOT yet trusted for live use.
+- **The next engine version is v6, and its tuning targets are already documented**: `ENGINE_PROBLEMS.md` (repo root) ends with "THE THREE MAJOR ENGINE PROBLEMS — v6 TUNING TARGETS": full dossiers with per-instance evidence tables for `thin-aligned-vs-flow` (21 instances/13 bars/1,047 wrong ticks), `inverted-whale-corroborator` (9/7/415), `late-deadzone-release` (7/7/645 silent ticks). Every row regenerated from the deterministic extractor and re-verified against a fresh run before commit. **v6 work is discussion-first per standing rule — the dossiers are documentation, no fixes were designed.**
+- **42 full bar autopsies live in `AUTOPSY/`** (one .md per slug, standard format). All 168 `_v53` session logs are staged locally at `AUTOPSY/logs/` (gitignored).
+
+## What was built since the last summary section
+
+1. **140:140 mirror comparison** (2026-07-04): all v5.3 logs replayed through the real v5.4 engine → `_v54m.json` mirrors on the VM `mirrors/`; generator `v5.4/analysis/mirror-v54.mjs`. Pooled result on 111 settled bars: v5.4 +1,026 correct / −77 wrong / −1,016 missed / 0 bars hurt / GATE PASS — strongest v5.4 evidence yet, still counterfactual. The 5 real `_v54.json` test logs were DELETED at user's order (clean comparison).
+2. **Settle ground truth re-verified**: all 140 mirror-set logs checked against Polymarket Gamma resolutions — 140/140 match (lifetime 192/192). Gamma requires a browser User-Agent header (bare urllib gets Cloudflare 403).
+3. **Behavior-correlation program** (results in `ENGINE_PROBLEMS.md`): hard direction flips (52 v5.3 / 50 v5.4; switched-to direction 56%/60%; final-60s flips 30%/40% — worse than nothing); first signal vs settle 66% both versions (identical first calls on all 120 shared bars — the 41 misses are the SAME bars, BAFO can't act that early); second signal 77%/78%; HIGH CONVICTION first-flash 2×2 (78–80% both cards; flash fires in 75% of bars; accuracy lives at cushion ≥2× floor: 94–98%; **v5.4's 1× magnitude gate is set too low — 1×→2× is a documented display-layer candidate**).
+4. **The `autopsy` pipeline** — the tooling that produced the 42 case files:
+   - Skill: `~/.claude/skills/autopsy/` — `scripts/autopsy_data.py` (deterministic fact extractor: episodes, entry attribution, failure flags, truth-tellers, v5.4 mirror diff; finds logs in `AUTOPSY/logs/` else fetches from VM), `references/patterns.md` (failure-pattern encyclopedia + interpretation rules), `assets/template.md` (report skeleton), SKILL.md (hard rules: every number from the script, one output file, no engine changes, errors stop).
+   - Subagent: `.claude/agents/autopsy.md` (Sonnet model, tools locked to Skill/Bash/Read/Write) — registers after a session restart; until then dispatch general-purpose+sonnet with the same brief. Proven pattern: ~40 parallel agents completed the sweep; transient API rate-limit errors just need relaunching (agents that died wrote nothing — check `AUTOPSY/*.md` existence to find casualties).
+5. **Dashboard fixes earlier (2026-07-03, `dd83717`)** still stand: single tick loop (1.00/s measured), chart-swap fixed (empty `setData([])` breaks LWC 4.2.3 pane rendering — whitespace point instead), 900ms Polymarket fetch cap, pinned pressure bar, imb tile row removed.
+
+## What's working / what's not (updated)
+
+**Working:** the measurement pipeline end-to-end (extractor → autopsy agents → verified dossiers); mirrors + gate comparator; settle verification (192/192 lifetime); dashboards post-fix; VM healthy (~15% CPU after killing the unrelated dboard-listener on 2026-07-02 — stopped AND disabled).
+
+**Not working / open, in priority order:**
+1. **The three v6 engine problems** (see ENGINE_PROBLEMS.md dossiers) — the whole point of the current program.
+2. **Conviction gate too low** (1× → 2× candidate, display-layer, measured on 140 bars).
+3. **v5.4 trust** — still no clean live-fire evidence; the paused BigQuery collector solves this as a byproduct.
+4. **BigQuery collector paused at ONE user-run IAM command** — full resume state in `rawddataset.md`. Tables exist (`strange-mason-474823-e0:raw_d`), collector deployed to VM `/home/vincent/collector/` (never started).
+5. Unclassified wrong episodes (converged-then-reversed; split-flow d3m-vs-since_open disagreements — engine has no tie-break) — documented per-bar in AUTOPSY/, not yet measured as classes.
+
+## Standing rules (unchanged, absolute)
+
+Version isolation (new work = new version dir; v6 will be a fork, never edits to v5.x). Signal-logic changes discussion-first, shipped only through the dominance-gate pattern. Never trust static per-tick predictions — dynamic replay only. Mirrors (`_v53m`/`_v54m`) are never live sessions. Dedupe pre-2026-07-03 rollover-crossing logs before per-tick grading. The dead historical `v4/` is never referenced as a target ("v3/v4" in user speech = v5.3/v5.4).
+
+## Next steps in order
+
+1. v6 design discussion off the three dossiers (user drives; measure candidate rules with the LHF pipeline pattern — ledger → dynamic replay → dominance filter + LOBO — before any fork).
+2. Conviction-gate 1×→2× decision (display-layer).
+3. Resume the collector when the user runs the IAM grant (`rawddataset.md` has the exact command).
+4. Keep collecting `_v53` logs; restage `AUTOPSY/logs/` when doing new autopsies (scp from VM).
