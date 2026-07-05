@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { newSession, tick } from '../src/signals.mjs';
+import * as v54engine from '../../v5.4/src/signals.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const LOGS = [
@@ -11,16 +12,16 @@ const LOGS = [
   'btc-updown-5m-1782960000_v5_log.json',
 ];
 
-function replay(file) {
+function replay(file, engine = { newSession, tick }) {
   const d = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
   const settle = d.rows.find(r => r.settled);
   const rows = d.rows.filter(r => !r.settled);
-  const s = newSession();
+  const s = engine.newSession();
   const out = [];
   let t = 1700000000000;
   for (const r of rows) {
     t += 1000;
-    const res = tick(s, {
+    const res = engine.tick(s, {
       now: t,
       sinceOpen: r.cvd_since_open,
       price: r.cushion != null ? settle.open + r.cushion : null,
@@ -84,4 +85,31 @@ test('replay btc-updown-5m-1782970800 (flip bar): alert fires AND matches settle
   // and it must lead the settle, not fire in the last few seconds (position proxy for lead time)
   const idx = out.findIndex(r => r.flip.alert);
   assert.ok(idx < out.length - 30, `alert fired too late: idx ${idx}/${out.length}`);
+});
+
+// ---- v6: lean stream stays byte-identical to v5.4; early channel always calls ----
+const ALL_FIXTURES = readdirSync(join(here, 'fixtures')).filter(f => f.endsWith('.json'));
+
+test('v6 vs v5.4: decision.sig sequences are identical across every fixture (lean stream untouched)', () => {
+  for (const file of ALL_FIXTURES) {
+    const { out: outV54 } = replay(file, v54engine);
+    const { out: outV6 } = replay(file, { newSession, tick });
+    assert.equal(outV6.length, outV54.length, `${file}: tick count mismatch`);
+    const sigsV54 = outV54.map(r => r.decision.sig);
+    const sigsV6 = outV6.map(r => r.decision.sig);
+    assert.deepEqual(sigsV6, sigsV54, `${file}: decision.sig sequence diverged from v5.4`);
+  }
+});
+
+test('v6 early channel: always-call — every fixture with a tick at rem<=EARLY_MARK_REM ends with a non-null early call', () => {
+  for (const file of ALL_FIXTURES) {
+    const { out } = replay(file, { newSession, tick });
+    // `out` doesn't carry remS directly, so check the mark against the raw rows
+    const d = JSON.parse(readFileSync(join(here, 'fixtures', file), 'utf8'));
+    const rows = d.rows.filter(r => !r.settled);
+    const anyPostMark = rows.some(r => r.rem != null && r.rem <= 210);
+    if (!anyPostMark) continue;   // fixture never reaches the mark — nothing to assert
+    const lastEarly = out[out.length - 1]?.early;
+    assert.ok(lastEarly, `${file}: expected a latched early call by end of bar, got ${JSON.stringify(lastEarly)}`);
+  }
 });

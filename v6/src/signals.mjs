@@ -37,6 +37,10 @@ Object.assign(CFG, {
   ABSORB_BOOST: 0.5,     // extra opposing weight when absorption + opposing flow
   W_FLOW: 1.2,           // logit-space weight of the opposing score
   ALERT_P: 0.6, ALERT_CLEAR: 0.5, ALERT_TICKS: 10,
+  // v6 early-call channel: one tiered, latched directional call per bar.
+  EARLY_MARK_REM: 210,     // early-call mark: 90s into a 5m bar; dashboard overrides to barS-90. Basis: 145-bar study 2026-07-05
+  EARLY_RATIO: 2,          // qualified tier: cushion >= 2x vol floor at the mark -- 36/39 = 92.3% on v5.4 stream
+  EARLY_RATIO_STRONG: 3,   // strong tier -- 25/26 = 96.2%
 });
 
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
@@ -49,6 +53,7 @@ export function newSession() {
     imbEwma: null,
     sig: 'MIXED', pendingSig: null, pendingCount: 0, counterHold: 0,
     alertCount: 0, alert: null,
+    earlyCall: null,
   };
 }
 
@@ -171,6 +176,32 @@ export function volFromHist(priceHist) {
   return Math.sqrt(v) * Math.sqrt(60) || 30;
 }
 
+// v6 early-call channel: one tiered, latched directional call per bar, evaluated
+// from CFG.EARLY_MARK_REM onward. Always-call mandate -- every bar gets a direction
+// as early as determinable. Must run AFTER decideDebounced has updated s.sig.
+export function earlyCallOf(s, inp) {
+  if (s.earlyCall) return s.earlyCall;                          // immutable latch
+  if (inp.remS == null || inp.remS > CFG.EARLY_MARK_REM) return null;   // before the mark
+  const vol = Math.max(inp.vol1m ?? volFromHist(s.priceHist), 1);
+  const floor = Math.max(10, 0.5 * vol);
+  const cushSign = inp.cushion == null ? 0 : Math.sign(inp.cushion);
+  const ratio = inp.cushion == null ? 0 : Math.abs(inp.cushion) / floor;
+  let side, tier;
+  if (s.sig !== 'MIXED' && cushSign !== 0 && ((s.sig === 'UP') === (cushSign > 0)) && ratio >= CFG.EARLY_RATIO) {
+    side = s.sig; tier = ratio >= CFG.EARLY_RATIO_STRONG ? 'strong' : 'qualified';
+  } else if (s.sig !== 'MIXED') {
+    side = s.sig; tier = 'lean';
+  } else if (cushSign !== 0) {
+    side = cushSign > 0 ? 'UP' : 'DOWN'; tier = 'lean';
+  } else if (s.imbEwma != null && s.imbEwma !== 0) {
+    side = s.imbEwma > 0 ? 'UP' : 'DOWN'; tier = 'lean';
+  } else {
+    return null;   // nothing determinable yet -- keep evaluating on subsequent ticks
+  }
+  s.earlyCall = { side, tier, ratio: Math.round(ratio * 100) / 100, rem: inp.remS };
+  return s.earlyCall;
+}
+
 export function flipRisk(s, inp, flow) {
   const { cushion, remS, vol1m, largePrints, efficiency, perpSpotDiv } = inp;
   if (cushion == null || remS == null) return { p: null, side: null, alert: s.alert ?? null };
@@ -218,6 +249,7 @@ export function tick(s, inp) {
     cush_d10: deltaAt(s.priceHist, now, 10_000),
     momentum,
     decision: decideDebounced(s, inp, momentum, flow),
+    early: earlyCallOf(s, inp),
     flip: flipRisk(s, inp, flow),
   };
 }

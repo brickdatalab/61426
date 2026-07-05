@@ -1,6 +1,6 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { newSession, tick, valAt, deltaAt, decideDebounced, flipRisk, volFromHist, phi } from '../src/signals.mjs';
+import { newSession, tick, valAt, deltaAt, decideDebounced, flipRisk, volFromHist, phi, earlyCallOf } from '../src/signals.mjs';
 
 const T0 = 1700000000000;
 // feed a session one sample per second from arrays of sinceOpen/price values
@@ -275,4 +275,99 @@ test('v5.4 BAFO guard: without a flow argument the rule is inert (back-compat)',
   const s = newSession();
   let r; for (let i = 0; i < 20; i++) r = decideDebounced(s, bafoInp(), { dir: 'FLAT' });
   assert.equal(r.sig, 'MIXED');
+});
+
+// ---- v6: tiered always-call early channel (mark 210s, 2x/3x floor tiers) ----
+describe('v6 early call', () => {
+  test('pre-mark: remS 250 -> early stays null', () => {
+    const s = newSession();
+    s.sig = 'UP';
+    const early = earlyCallOf(s, { remS: 250, cushion: 60, vol1m: 40 });
+    assert.equal(early, null);
+  });
+
+  test('at the mark, aligned sig + ratio 3 (cushion 60, floor 20) -> strong tier', () => {
+    const s = newSession();
+    s.sig = 'UP';
+    const early = earlyCallOf(s, { remS: 210, cushion: 60, vol1m: 40 });
+    assert.deepEqual(early, { side: 'UP', tier: 'strong', ratio: 3, rem: 210 });
+  });
+
+  test('ratio exactly 2.0 -> qualified tier (boundary: >=)', () => {
+    const s = newSession();
+    s.sig = 'UP';
+    const early = earlyCallOf(s, { remS: 200, cushion: 40, vol1m: 40 });
+    assert.equal(early.tier, 'qualified');
+    assert.equal(early.ratio, 2);
+    assert.equal(early.side, 'UP');
+  });
+
+  test('aligned sig but ratio 1.5 -> lean tier, side follows the engine sig', () => {
+    const s = newSession();
+    s.sig = 'UP';
+    const early = earlyCallOf(s, { remS: 200, cushion: 30, vol1m: 40 });
+    assert.equal(early.tier, 'lean');
+    assert.equal(early.side, 'UP');
+  });
+
+  test('counter-cushion sig (sig DOWN, fat +cushion): call follows the engine, not the cushion, in lean tier', () => {
+    const s = newSession();
+    s.sig = 'DOWN';
+    const early = earlyCallOf(s, { remS: 200, cushion: 60, vol1m: 40 });
+    assert.equal(early.tier, 'lean');
+    assert.equal(early.side, 'DOWN');
+  });
+
+  test('sig MIXED falls back to cushion sign (lean)', () => {
+    const s = newSession();
+    s.sig = 'MIXED';
+    const early = earlyCallOf(s, { remS: 200, cushion: -15, vol1m: 40 });
+    assert.equal(early.tier, 'lean');
+    assert.equal(early.side, 'DOWN');
+  });
+
+  test('sig MIXED, cushion 0, falls back to imbEwma sign (lean)', () => {
+    const s = newSession();
+    s.sig = 'MIXED';
+    s.imbEwma = 0.1;
+    const early = earlyCallOf(s, { remS: 200, cushion: 0, vol1m: 40 });
+    assert.equal(early.tier, 'lean');
+    assert.equal(early.side, 'UP');
+  });
+
+  test('nothing determinable at the mark -> null; latches on the first determinable tick after', () => {
+    const s = newSession();
+    s.sig = 'MIXED';
+    let early = earlyCallOf(s, { remS: 210, cushion: null, vol1m: 40 });
+    assert.equal(early, null);
+    early = earlyCallOf(s, { remS: 195, cushion: -20, vol1m: 40 });
+    assert.equal(early.tier, 'lean');
+    assert.equal(early.side, 'DOWN');
+    assert.equal(early.rem, 195);
+  });
+
+  test('latch is immutable: only one call per session, unaffected by later opposite conditions', () => {
+    const s = newSession();
+    s.sig = 'UP';
+    const first = earlyCallOf(s, { remS: 200, cushion: 60, vol1m: 40 });
+    for (let i = 0; i < 5; i++) {
+      s.sig = 'DOWN';
+      const later = earlyCallOf(s, { remS: 200 - i, cushion: -60, vol1m: 40 });
+      assert.deepEqual(later, first);
+    }
+  });
+
+  test('tick(): early call surfaces through tick() and the result schema stays additive', () => {
+    const s = newSession();
+    let r;
+    // drive the book hard UP long enough to cross ENTER + DWELL before the mark
+    for (let i = 0; i < 15; i++) {
+      r = tick(s, { now: T0 + i * 1000, sinceOpen: i * 1000, price: 60000, bimb: 0.5, pimb: 0.5, remS: 250 });
+    }
+    assert.equal(r.early, null);   // still pre-mark
+    r = tick(s, { now: T0 + 15000, sinceOpen: 15000, price: 60000, bimb: 0.5, pimb: 0.5, cushion: 45, vol1m: 20, remS: 205 });
+    assert.ok(r.flow && r.momentum && r.decision && r.flip, 'additive schema: existing keys must still be present');
+    assert.ok(r.early);
+    assert.equal(r.early.side, 'UP');
+  });
 });
