@@ -10,22 +10,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **A new version must never affect a previous working version.** `v1/`, `v2/`, `v3/` are frozen lineage and are never edited by v4/v5 work. New work = new files. v4 is dead (removed from tree, git history only) — do not resurrect it.
 
-## Version ladder (as of 2026-07-02)
+## Version ladder (as of 2026-07-05)
 
-`v5.4/` is the **current tuned version**; each vX.Y is a full fork of its predecessor (dashboard + `src/signals.mjs` + tests + `ourWebSocket/` copy) and predecessors are frozen:
-- **v5.4** — current. v5.3 + the BAFO rule (book-against flow override; gate-validated on 52 Polymarket-verified bars: +482 correct/−9 wrong/0 bars hurt) + conviction-lock magnitude gate. Logs `<slug>_v54.json`.
+`v6/` is the **current version**; each vX.Y is a full fork of its predecessor (dashboard + `src/signals.mjs` + tests + `ourWebSocket/` copy) and predecessors are frozen:
+- **v6** — current. v5.4 lean stream byte-identical (replay gate: correct 34793→34793, 0 bars hurt, GATE PASS over the pooled 145 live + 135 BQ = 280-bar evidence base; candidates P2/P3 measured and rejected — dominance gate FAIL) + the tiered always-call EARLY CALL channel: one latched call per bar at the first tick with `rem<=210` (90s into a 5m bar). Tiers: strong (cushion-side ratio ≥3x vol floor) 96.2% live (n=26) / 75.0% BQ-OOS (n=20); qualified (2x≤ratio<3x) 84.6% live (n=13) / 76.5% BQ-OOS (n=17); lean (always-call fallback) 60.3% pooled (123/204). Coverage 280/280 (100%). Full record: `v6/analysis/2026-07-05-v6-basis.md`. Logs `<slug>_v6.json`.
+- **v5.4** — frozen predecessor to v6. v5.3 + the BAFO rule (book-against flow override; gate-validated on 52 Polymarket-verified bars: +482 correct/−9 wrong/0 bars hurt) + conviction-lock magnitude gate. Logs `<slug>_v54.json`.
 - **v5.3** — first tuned engine (aligned entry 0.14, counter-cushion confirmation, hold-release 15). Frozen. Logs `_v53`.
 - **v5.1 / v5.2** — untuned baseline engine (v5.2 = v5.1 + hardening). Frozen. Logs `_v51`/`_v52`.
-- Session logs live on the VM at `/home/vincent/projects/61426/v5/logs/`; `mirrors/` there holds `_v53m` **counterfactual replays** (never treat as live sessions). Analysis reports: `v5.1/FINDINGS.md` (running findings home), `v5.1/analysis/`, `v5.4/analysis/2026-07-02-lhf-52bars.md` (latest, incl. rejected candidates + near-misses to retest at ~100 bars).
-- **Signal-logic changes are discussion-first**: analyze logs, present measured findings, get explicit approval, then ship as a NEW version fork with the dominance-gate pattern (`v5.4/analysis/replay-compare.mjs`).
+- Session logs live on the VM at `/home/vincent/projects/61426/v5/logs/`; `mirrors/` there holds `_v53m` **counterfactual replays** (never treat as live sessions). BQ-derived bars live in `v6/analysis/bqbars/` (`_bq.json`, reconstructions from the `bin` dataset on VM `pm` — never live sessions; same provenance rule as mirrors). Analysis reports: `v5.1/FINDINGS.md` (running findings home), `v5.1/analysis/`, `v5.4/analysis/2026-07-02-lhf-52bars.md`, `v6/analysis/2026-07-05-v6-basis.md` (latest, incl. rejected candidates + v6.1 retest queue).
+- **Signal-logic changes are discussion-first**: analyze logs, present measured findings, get explicit approval, then ship as a NEW version fork with the dominance-gate pattern (`v6/analysis/replay-compare.mjs`).
 
 ## Commands
 
 There is no build step, package.json, or linter. Dashboards are single-file HTML (no framework); signal logic is a pure ES module; the VM service is Python.
 
-- **Run current dashboard:** `python3 -m http.server 5173` from the repo root, then open `http://localhost:5173/v5.4/updown-liquidity-overlap.html` (v5 lives at `/v5/...`, etc.). HTTP is required (ES-module import — `file://` won't work). One dashboard per port.
-- **Run tests (current version):** `node --test v5.4/test/signals.test.mjs v5.4/test/replay.test.mjs` (node:test, no deps). Pass file paths — the directory form fails.
-- **Acceptance gate:** `node v5.4/analysis/replay-compare.mjs <dir-of-session-logs>` (replays new engine vs predecessor over all logs; binary GATE PASS/FAIL).
+- **Run current dashboard:** `python3 -m http.server 5173` from the repo root, then open `http://localhost:5173/v6/updown-liquidity-overlap.html` (v5 lives at `/v5/...`, etc.). HTTP is required (ES-module import — `file://` won't work). One dashboard per port.
+- **Run tests (current version):** `node --test v6/test/signals.test.mjs v6/test/replay.test.mjs` (node:test, no deps). Pass file paths — the directory form fails.
+- **Acceptance gate:** `node v6/analysis/replay-compare.mjs <live-logs-dir> [bq-bars-dir]` (replays new engine vs predecessor over live logs plus an optional BQ-bars dir; binary GATE PASS/FAIL).
 - **VM service tests:** `cd <version>/ourWebSocket && python3 -m unittest test_compute test_server -v`.
 
 ## Architecture

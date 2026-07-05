@@ -4,6 +4,60 @@ BTC/ETH **Polymarket up/down** live dashboards + the signal logic behind them.
 This file is the current-state brief for anyone (human or agent) picking up the project,
 especially for **V5** work.
 
+## Current state 2026-07-05 — v6
+
+**v6 shipped.** Fork of v5.4. Lean stream (`decideDebounced`/`momentumOf`/`flipRisk`) is
+**byte-identical** to v5.4 — replay gate over the pooled 145 live + 135 BQ = 280-bar evidence
+base: correct 34793→34793 (100.0%), 0 bars hurt, GATE PASS. New: an **early-call channel**
+(`earlyCallOf`) — one immutable, always-call directional call latched per bar at the first
+tick with `rem<=210` (90s into a 5m bar). Tier ladder: **strong** (`sig` on cushion side,
+`|cushion|>=3x` vol floor), **qualified** (`2x<=ratio<3x`), **lean** (fallback — `sig` even
+off-cushion, else cushion sign, else smoothed order-book imbalance sign). Coverage **280/280
+(100%)** on the evidence base — no no-call bars. Logs `<slug>_v6.json`. Full record:
+`v6/analysis/2026-07-05-v6-basis.md`.
+
+**Tier table** (from the basis doc's `early-call-verify.mjs` run, 280 bars):
+
+| Set | strong (n, acc) | qualified (n, acc) | lean (n, acc) |
+|---|---|---|---|
+| LIVE (145) | 26, 96.2% | 13, 84.6% | 106, 63.2% |
+| BQ (135) | 20, 75.0% | 17, 76.5% | 98, 57.1% |
+| POOLED (280) | 46, 87.0% | 30, 80.0% | 204, 60.3% (123/204) |
+
+**Honest caveat (OOS degradation, not resolved):** strong/qualified score noticeably lower on
+BQ (75.0%/76.5%) than LIVE (96.2%/84.6%). Candidate explanations, flagged not smoothed over:
+(a) the BQ capture window sits in a measurably heavier regime — spot turnover ~$5.4K/s vs perp
+~$194K/s, with a liquidation-cascade stretch (2026-07-05 ~11:09–11:12 UTC) driving
+`perp_spot_div` to ~$107M vs ~$4.65M on the one comparable live sample; (b) the BQ window is
+one contiguous ~11.3h stretch, not a diverse sample of sessions; (c) `bin.book_imb_1s`
+replicates `feeds.py DepthFeed._imbalance` verbatim but runs as an independent service
+instance on the same VM — formula-identical, process-parity unverified (open question).
+
+**Data layer:** `bin` dataset on VM `pm`, 3 BigQuery tables at 1s cadence — `trades_1s`
+(spot+perp), `book_imb_1s`, `poly_5m_1s`. Exporter `v6/analysis/bq-export-bars.mjs`: klines
+settle fidelity 135/135 bars matched a kline + 135/135 settle directions matched (100%),
+median `|our_open − kline_open|` = $0.00 (p75 $0.01, max $18.18). Observed pull: 135 bars over
+an ~11.3h (40,549s) window → **~284/day** at the observed 135/137 attempted-slot success rate
+(**~288/day** theoretical-max-adjusted). *(An earlier "~264/day" figure could not be traced to
+any committed artifact per the basis doc's own self-review — the ~284–288/day figures above are
+the traceable ones.)* Evidence base now **145 live + 135 BQ = 280 bars**.
+
+**P2/P3 (ENGINE_PROBLEMS 2 & 3) measured, NOT shipped** — both gate FAIL:
+- Candidate B (`P2_NO_WHALE`, drop whale-print corroboration): pooled correct-tick retention
+  98.42% < 99% required; 27 bars lose >10% of their correct ticks (6 wiped to zero). NO-SHIP.
+- Candidate C (`P3_FAT_HOLD`, keep a fat cushion-aligned `sig` alive instead of decaying to
+  MIXED): coverage gain is real (fat-cushion subset non-MIXED coverage 58.0%→80.9%), but
+  exactly 1 per-bar-hurt violation (BQ `1783241700`, 3→0 correct ticks) against the
+  zero-tolerance gate, plus pooled wrong ticks increase (14254→15658). NO-SHIP — but **the
+  strongest v6.1 revisit candidate** once the one hurt bar is examined at BQ scale.
+- B+C combined: still 23 bars lose >10% of correct ticks. NO-SHIP.
+
+**v6.1 roadmap:** earlier-mark sweep — test `EARLY_MARK_REM` at `rem` 240/225 (60s/75s into
+the bar) instead of the current 210 (90s), once ~1–2k BQ bars accumulate (currently 135).
+`FINDINGS-first-fire.md` already shows 60s measurably worse (85.3% vs 92.1% at ≥2x) on the
+smaller 145-bar set — needs re-test at pooled scale before any change. Same dominance-gate
+pattern (`v6/analysis/replay-compare.mjs`).
+
 ## Versions (single-file HTML dashboards, no build; each in its own subdir)
 - **v1** `v1/updown-playground.html` — cushion dashboard. Untouched lineage.
 - **v2** `v2/updown-playground-CVDprob.html` — CVD→P(up). Untouched lineage.
