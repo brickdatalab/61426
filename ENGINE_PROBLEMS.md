@@ -48,7 +48,25 @@ Where the flash is actually money (first-flash slices):
 
 PROBLEM: v5.4's magnitude gate is set too low. It requires cushion ≥1× the vol floor, but the 1–2× tier it admits is only 65% accurate — barely better than the ungated junk (63%) it was built to remove. Nearly all real conviction lives at ≥2× the floor (94–98%). Candidate fix (display-layer only): raise the gate from 1× to 2× — the card would flash in roughly a third of bars instead of three-quarters, at ~19-out-of-20 accuracy.
 
+> **STATUS 2026-07-05:** resolved by absorption into v6 — the ≥2×/≥3× discriminator became the EARLY CALL qualified/strong tiers, displayed with measured (not projected) accuracy: pooled 80%/87%, live 84.6%/96.2%, BQ-OOS 76.5%/75.0%. The legacy HIGH CONVICTION card itself was left at v5.4 behavior (unchanged by v6).
+
 Robustness: dedupe sensitivity pass (1 row/sec, corrects pre-2026-07-03 duplicated-row inflation) moves headlines ±1 point (79%/81%) — no conclusion changes. Note: the folklore "96%" was per-tick accuracy of the locked STATE (run ≥31 aligned), not the first-flash moment — different metric, both now measured.
+
+---
+
+# RESOLUTION STATUS — 2026-07-05, post-v6 ship (annotations only; the dossiers below are preserved verbatim)
+
+**v6 shipped** (branch v5.1, commits ddc37aa..72c6efb, final review READY TO MERGE — full record `v6/analysis/2026-07-05-v6-basis.md`). What happened to each problem in this file:
+
+| Problem | Candidate fix measured | Gate verdict | Status |
+|---|---|---|---|
+| P1 `thin-aligned-vs-flow` | aligned-entry discount gated by cushion ratio {1×,1.5×,2×} × cvd_d3m veto {off,sign,sign+$50k} — 9-point grid | **REJECTED, FAIL 9/9** (retention 93.7–97.6%, 15–33 bars hurt, LOBO 0/145; first-fire acc only 63.2→64.3%) | Open at the lean-stream level; **addressed at the actionable layer** by v6's EARLY CALL tiers (calls qualified by cushion ratio ≥2×/≥3×) |
+| P2 `inverted-whale-corroborator` | candidate B: momentum-only corroborator + no whale reset of hold-release | **REJECTED** (pooled retention 98.42% < 99%; 27 bars hurt, 6 zeroed; LOBO 0/280) | Open — blunt removal still kills late-flip catching, same shape as the 52-bar audit's finding |
+| P3 `late-deadzone-release` | candidate C: dead-zone release consults cushion (hold when ≥2× correct-side; late MIXED→cushion-side take at rem≤120) | **REJECTED — closest near-miss** (1 hurt bar `1783241700` 3→0 + pooled wrong 14,254→15,658, against coverage gain 58.0%→80.9%) | Open — **first revisit candidate at BQ scale** (~1–2k bars), possibly under a relaxed per-bar tolerance discussion |
+| Conviction gate 1×→2× (display-layer, top of file) | superseded rather than applied to the old card | n/a | **Absorbed into v6's EARLY CALL tier design**: the ≥2×/≥3× discriminator became the qualified/strong tiers, shown with measured accuracy (pooled 80%/87%; live 84.6%/96.2%; BQ-OOS 76.5%/75.0%). The legacy HIGH CONVICTION card itself is unchanged (v5.4 behavior) |
+| First-signal weakness (66%, top of file) | measured: the ~14s first fire is a 63% information floor — no entry-threshold change extracts more | n/a | **Answered by v6's EARLY CALL**: one latched, tiered call per bar from the 90s mark, every bar covered (280/280), accuracy printed per tier |
+
+B+C combined also failed (23 bars hurt). All three candidates' full gate tables: `v6/analysis/2026-07-05-v6-basis.md` §3. Caveat that travels with every number above: the BQ out-of-sample day degraded the tiers (strong 96.2%→75.0%) — treat pooled numbers as the honest ones until more BQ days accumulate.
 
 ---
 
@@ -58,6 +76,8 @@ Robustness: dedupe sensitivity pass (1 row/sec, corrects pre-2026-07-03 duplicat
 Scope note, stated plainly: these dossiers cover only the CLASSIFIED wrong episodes. The remaining wrong episodes are unclassified — chiefly the converged-then-reversed shape (every input agreed at entry and the market genuinely turned afterward) and the split-flow shape (cvd_d3m and cvd_since_open opposed each other at entry; the engine has no tie-break) — and are recorded in the individual autopsies, not here. The flags mark wrong episodes only; correct episodes matching the same entry geometry exist and are not counted in these tables, so no table below is a hit-rate. Class hit-rates come from the separate replay measurements cited in each dossier.
 
 ## PROBLEM 1 — `thin-aligned-vs-flow` (21 wrong-entry instances, 13 bars)
+
+> **STATUS 2026-07-05:** lean-stream fix REJECTED (dominance gate FAIL 9/9 across the ratio×veto grid — the same thin-cushion entry geometry admits more correct ticks than wrong over the full bar). Mitigated at the actionable layer: v6's EARLY CALL only grants a qualified/strong tier when the cushion is ≥2×/≥3× the vol floor. Dossier below unchanged.
 
 **Mechanism (engine behavior as measured, not speculation):** the v5.3/v5.4 aligned-entry rule lowers the book-EWMA entry threshold from 0.20 to 0.14 whenever the candidate direction matches the cushion's SIGN. The rule checks sign only. It never checks cushion MAGNITUDE against the vol floor (max($10, 0.5 × vol_1m)) and it never checks flow direction — `cvd_d3m` has no veto over an aligned entry. Result: a cushion of $0.71 receives the same entry discount as a cushion of $60, and the entry fires even when three minutes of net flow are running hundreds of thousands of dollars the opposite way. Every instance below is a WRONG directional episode that entered aligned on a sub-floor cushion (ratio < 1×; a row displaying 1.00× is rounded up from just under 1) while `cvd_d3m` at entry ran opposite the call.
 
@@ -91,6 +111,8 @@ Scope note, stated plainly: these dossiers cover only the CLASSIFIED wrong episo
 
 ## PROBLEM 2 — `inverted-whale-corroborator` (9 wrong-entry instances, 7 bars)
 
+> **STATUS 2026-07-05:** candidate B (momentum-only corroborator; whale prints no longer reset hold-release) measured over 280 bars and REJECTED — retention 98.42% (<99%), 27 bars hurt, 6 zeroed, LOBO 0/280. Confirms the 52-bar audit: the inversion is real but blunt removal erases correct ticks on late-flip bars. Still open; needs a discriminating rule, retest at BQ scale.
+
 **Mechanism:** rule 2 (counter-cushion confirmation) blocks entries that fire AGAINST the price lead unless a corroborator agrees — momentum or `large_prints`. Momentum is FLAT on ~95% of ticks, so in practice the whale-print door is the corroborator. Measured in the 52-bar audit: whale-'confirmed' counter-cushion fires run **9–14% accurate** — the signal is inverted for this use. Worse, the same signal IMMUNIZES the wrong fire it admitted: rule 3 (hold-release) kills uncorroborated counter-holds after 15 ticks, but its counter resets on every tick that `large_prints` keeps 'backing' the held side — so a persistent whale print both opens the door and holds it open. Every instance below is a WRONG counter-cushion entry admitted by whale prints against an opposing cushion at ≥1× the vol floor (the flag deliberately marks only the fat-opposing-cushion subset — the worst of the class, where the price lead being fought was real).
 
 **Aggregates (this set):** 9 instances across 7 bars · **415 wrong signal ticks** · opposing-cushion ratio being fought: min 1.44× / median 2.68× / max 5.14× the floor · escalation specimen: `1783034100` fired wrong THREE times at 2.05×, 4.30×, 5.14× — leaning harder into the wrong call exactly as the true signal grew more reliable. Prior live specimen outside this set: the 2026-07-02 tab-throttled bar.
@@ -110,6 +132,8 @@ Scope note, stated plainly: these dossiers cover only the CLASSIFIED wrong episo
 **Distinct source logs (7):** `btc-updown-5m-1782986400_v53.json`, `btc-updown-5m-1782997800_v53.json`, `btc-updown-5m-1782999000_v53.json`, `btc-updown-5m-1783005000_v53.json`, `btc-updown-5m-1783014900_v53.json`, `btc-updown-5m-1783017900_v53.json`, `btc-updown-5m-1783034100_v53.json`
 
 ## PROBLEM 3 — `late-deadzone-release` (7 instances, 7 bars)
+
+> **STATUS 2026-07-05:** candidate C (release consults cushion: hold at ≥2× correct-side, late MIXED→cushion-side at rem≤120) measured and REJECTED — 1 hurt bar (`1783241700`, 3→0) + pooled wrong ticks 14,254→15,658, despite the largest coverage gain of any candidate (58.0%→80.9%). **Closest near-miss; first revisit candidate at ~1–2k BQ bars.** Dossier below unchanged.
 
 **Mechanism:** when the smoothed book pressure decays inside the dead zone (|imbEwma| < EXIT = 0.08), the tag releases to MIXED — unconditionally. The release logic never consults the cushion. So when the order book goes quiet late in a bar (which it routinely does), the engine drops a correct directional call and sits silent while a fat, correct-side price lead sits on the board — ignoring the single most reliable late-bar input ever measured on this project (final-60s cushion sign alone ≈96%; fat-cushion states 94–98%). Each instance below is a bar whose FINAL episode was ≥15 consecutive MIXED ticks with a correct-side cushion ≥2× the vol floor: pure missed fires at the moment of highest certainty.
 

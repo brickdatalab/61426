@@ -130,3 +130,44 @@ Version isolation (new work = new version dir; v6 will be a fork, never edits to
 2. Conviction-gate 1×→2× decision (display-layer).
 3. Resume the collector when the user runs the IAM grant (`rawddataset.md` has the exact command).
 4. Keep collecting `_v53` logs; restage `AUTOPSY/logs/` when doing new autopsies (scp from VM).
+
+---
+
+# HANDOFF ADDENDUM — 2026-07-05 (v6 SHIPPED) — appended verbatim per user instruction
+
+v6 is built, verified, and the final whole-branch review verdict is READY TO MERGE. 11 commits on branch v5.1 (ddc37aa..72c6efb), every v5.x file untouched — swap the URL and nothing else changes: http://localhost:5173/v6/updown-liquidity-overlap.html.
+
+About your server log: it's healthy. The 404s are all favicon.ico / apple-touch-icon.png — files browsers request automatically that no version of this dashboard has ever had; same noise appears on your v5.3/v5.4 loads going back days. Your log also shows v6 loading clean at 14:28:38 (HTML 200 + signals.mjs 200) — that was my boot check, which ran through your already-running server: V6 tag renders, engine module loads, zero JS errors.
+
+What v6 is
+
+- Lean stream: byte-identical to v5.4, proven — the gate replayed both engines over all 280 bars: 34,793→34,793 correct ticks, 0 bars hurt, GATE PASS. Problems 2 and 3 from ENGINE_PROBLEMS were prototyped and measured first: both failed the dominance gate (B: 98.42% retention, 27 hurt bars; C: 1 hurt bar + wrong ticks up; B+C: 23 hurt) so neither shipped — same fate as P1. C is the documented first revisit candidate at BQ scale.
+- The EARLY CALL channel — one latched call per bar at the first tick past the 90-second mark, every bar gets a call (280/280 coverage, your mandate), tiered by what the data earned:
+
+┌────────────────────┬───────────────┬────────────────────────┬───────────────────────────────┐
+│        Tier        │  live (145)   │ BQ out-of-sample (135) │ pooled — what the badge shows │
+├────────────────────┼───────────────┼────────────────────────┼───────────────────────────────┤
+│ strong (≥3× floor) │ 96.2% (n=26)  │ 75.0% (n=20)           │ 87%                           │
+├────────────────────┼───────────────┼────────────────────────┼───────────────────────────────┤
+│ qualified (2–3×)   │ 84.6% (n=13)  │ 76.5% (n=17)           │ 80%                           │
+├────────────────────┼───────────────┼────────────────────────┼───────────────────────────────┤
+│ lean (fallback)    │ 62.0% (n=100) │ 57.1% (n=98)           │ 60%                           │
+└────────────────────┴───────────────┴────────────────────────┴───────────────────────────────┘
+
+- Data pipeline: bq-export-bars.mjs turns your bin tables into replayable bars (135 exported, settle verified 135/135 against klines, median open delta $0.00). The evidence base now grows ~284/day without a browser tab.
+
+What you need to hear straight
+
+The out-of-sample day degraded the tiers — strong fell from 96% to 75% on the BQ bars. Candidate explanations are documented (single heavy-perp-regime day, book-imbalance process-parity open question), but until more BQ days accumulate, treat 87% pooled as the honest strong-tier number, not 96%. The final review caught the badge showing the inflated 92/96% figures and it was fixed before ship — badge, basis doc, and root docs now agree to the decimal. Mid-bar connects (which can't have full pre-mark history) are tagged late and show no percentage rather than borrowing one; 6 such bars were split out of the evidence itself.
+
+The review process also caught and fixed: a silent data-corruption bug in the exporter (null − barOpen cushion), a fail-open acceptance gate, and two doc mischaracterizations. Full record: v6/analysis/2026-07-05-v6-basis.md.
+
+Next: let the bin tables run. At ~1–2k bars (a few days), the v6.1 earlier-mark sweep (60s/75s marks, dwell-qualified variant) runs through the same gate — that's the path to earlier calls that the current 145+135 bars can't statistically support. Branch is not merged to main, same as your v5.x precedent — your call when.
+
+✻ Crunched for 1h 56m 0s
+
+❯ I want you to tell me now when I turn on V6 and I'm watching it and I see a fire, will the new features be accounted for in its firing? Yes or no? I want you to tell me also too, will these new features that are in the big four table that we're pulling be tracked and locked? Just respond back yes or no for that too. So I expect a yes or no for the first one and a yes or no for the second one.
+
+Q1 — Yes. When you turn on v6 and see the EARLY CALL fire, that fire is the new machinery: it only latches from the 90-second mark, it's qualified by cushion-side + vol-floor ratio (the ≥3×/≥2× tiers), it carries its measured accuracy on the badge, and if you connected mid-bar it says "late — unmeasured" instead of borrowing a number. One precision so the yes is honest: the plain UP/DOWN/MIXED signal tag is deliberately unchanged v5.4 behavior — the new fire is the EARLY CALL badge.
+
+Q2 — Yes. The three BigQuery tables keep recording 24/7 regardless of whether any dashboard is open (they're systemd services on the VM, append-only, hourly-partitioned), and every v6 fire is locked: the call latches once per bar in the engine (immutable for the rest of the bar), and it's written into the session log rows (early_call / early_tier) that POST back to the VM — so every fire is permanently graded against how the bar actually settled. One precision here too: the live engine doesn't read BigQuery in real time — the tables are the permanent record and tuning fuel, while live firing runs off the ourWebSocket feed as always.
