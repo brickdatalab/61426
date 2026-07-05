@@ -16,13 +16,15 @@ off-cushion, else cushion sign, else smoothed order-book imbalance sign). Covera
 (100%)** on the evidence base — no no-call bars. Logs `<slug>_v6.json`. Full record:
 `v6/analysis/2026-07-05-v6-basis.md`.
 
-**Tier table** (from the basis doc's `early-call-verify.mjs` run, 280 bars):
+**Tier table** (from the basis doc's `early-call-verify.mjs` run, 280 bars; tier rows count
+only `late:false` calls — calls latched `late:true` because the session joined mid-bar are
+tagged and reported separately in the `late` row, nothing silently dropped):
 
-| Set | strong (n, acc) | qualified (n, acc) | lean (n, acc) |
-|---|---|---|---|
-| LIVE (145) | 26, 96.2% | 13, 84.6% | 106, 63.2% |
-| BQ (135) | 20, 75.0% | 17, 76.5% | 98, 57.1% |
-| POOLED (280) | 46, 87.0% | 30, 80.0% | 204, 60.3% (123/204) |
+| Set | strong (n, acc) | qualified (n, acc) | lean (n, acc) | late (n, acc) |
+|---|---|---|---|---|
+| LIVE (145) | 26, 96.2% | 13, 84.6% | 100, 62.0% | 6, 83.3% |
+| BQ (135) | 20, 75.0% | 17, 76.5% | 98, 57.1% | 0, — |
+| POOLED (280) | 46, 87.0% | 30, 80.0% | 198, 59.6% (118/198) | 6, 83.3% |
 
 **Honest caveat (OOS degradation, not resolved):** strong/qualified score noticeably lower on
 BQ (75.0%/76.5%) than LIVE (96.2%/84.6%). Candidate explanations, flagged not smoothed over:
