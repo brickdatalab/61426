@@ -79,6 +79,7 @@
     .metric.conv-flash{animation:none;background:rgba(199,185,74,.35)}
   }
   .pos{color:var(--up)}.neg{color:var(--down)}
+  .earlybadge{margin-top:6px;font-size:12px;font-weight:700;letter-spacing:.3px}
   table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
   th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:10px;position:sticky;top:0;background:var(--bg)}
@@ -149,6 +150,7 @@
       <div class="sigcol">
         <div class="sigtag WAIT" id="sigtag">—</div>
         <div class="siginfo" id="siginfo">press Connect…</div>
+        <div class="earlybadge" id="earlyBadge" style="display:none"></div>
       </div>
       <div class="presswrap">
         <div class="pressbar">
@@ -216,14 +218,16 @@
 <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script type="module">
   // Pure signal logic (testable, see v5.1/test/signals.test.mjs) -> exposed to the page.
-  import { newSession, tick as sigTick } from './src/signals.mjs';
-  window.V5 = { newSession, sigTick };
+  import { newSession, tick as sigTick, CFG } from './src/signals.mjs';
+  window.V5 = { newSession, sigTick, CFG };
 </script>
 <script>
 const $=s=>document.querySelector(s);
 const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
 const BIN_BAND=0.0012;   // ±0.12% of price shown
 const POLY_BAND=0.06;    // ±6 cents of prob shown
+// measured 2026-07-05 (145-bar study); lean tier filled by v6/analysis/early-call-verify.mjs — Task 6 updates it
+const EARLY_TIER_ACC = { strong:'96%', qualified:'92%', lean:'—' };
 let parsed=null,poll=null,st=null,runsLeft=0;
 
 function parseSlug(slug){
@@ -428,6 +432,20 @@ async function tickBody(){
     `${edge != null ? ' (edge ' + (edge >= 0 ? '+' : '') + Math.round(edge * 100) + '%)' : ''}` +
     `${flip && flip.alert ? ' <b class="neg">' + flip.alert + '</b>' : ''}<br>${Math.round(rem)}s left`;
 
+  // EARLY CALL badge: null until latched; once latched it stays for the rest of the bar (engine latches).
+  const eb = $('#earlyBadge');
+  if (sg && sg.early) {
+    const arrow = sg.early.side === 'UP' ? '▲' : '▼';
+    const tierTxt = sg.early.tier === 'strong' ? `≥3× floor (${EARLY_TIER_ACC.strong})`
+                  : sg.early.tier === 'qualified' ? `≥2× floor (${EARLY_TIER_ACC.qualified})`
+                  : `lean (${EARLY_TIER_ACC.lean}%)`;
+    eb.textContent = `EARLY CALL ${arrow} ${sg.early.side} · ${tierTxt}`;
+    eb.className = 'earlybadge ' + (sg.early.side === 'UP' ? 'pos' : 'neg');
+    eb.style.display = 'block';
+  } else {
+    eb.style.display = 'none';
+  }
+
   // subtle sub-header: price + prob
   $('#mBar').innerHTML = `BTC <b>${bmid ? bmid.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</b> · Poly <b>${pmid ? pmid.toFixed(2) : '—'}</b>`;
   // remaining top-right
@@ -514,6 +532,8 @@ async function tickBody(){
     p_flip: flip && flip.p != null ? +flip.p.toFixed(3) : null,
     flip_alert: flip ? flip.alert : null,
     signal: sig,
+    early_call: sg && sg.early ? sg.early.side : null,
+    early_tier: sg && sg.early ? sg.early.tier : null,
   };
   st.log.push(row); saveLog();
   if(st.log.length%5===0)renderThreads();   // keep sidebar fresh (active thread, new threads)
@@ -692,7 +712,8 @@ async function postLogToVM(){
 
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
-  $('#led').innerHTML='';$('#settled').style.display='none';
+  V5.CFG.EARLY_MARK_REM = parsed.barSec - 90;   // 90s-before-close mark on any bar length (5m->210, 15m->810)
+  $('#led').innerHTML='';$('#settled').style.display='none';$('#earlyBadge').style.display='none';
   st={running:true,_settled:false,_inTick:false,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,lastOwsMsg:Date.now(),
       swapImbBin:[],swapImbPoly:[],swapCvd5:[],swapCvd60:[],swapCush:[],imbMode:'imb',
       owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,owsVol1m:null,ows:null,_owrt:null,
