@@ -26,9 +26,9 @@ function checkAuth(secret, authHeader) {
 function buildRoutes(orchestrator) {
   return [
     ['POST', /^\/runs$/, async (_m, body) => {
-      const { version, slug, continuous } = body || {};
+      const { version, slug, continuous, ab } = body || {};
       if (!version || !slug) return { status: 400, json: { error: 'version and slug are required' } };
-      const runId = await orchestrator.start({ version, slug, continuous: continuous ?? 0 });
+      const runId = await orchestrator.start({ version, slug, continuous: continuous ?? 0, ab: !!ab });
       return { status: 200, json: { runId } };
     }],
     ['DELETE', /^\/runs\/([^/]+)$/, async (m) => {

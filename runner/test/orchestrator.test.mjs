@@ -94,3 +94,34 @@ test('logs() groups log files by version suffix', async () => {
   const read = orch.readLog(`${SLUG}_v6`);
   assert.equal(read.slug, `${SLUG}_v6`);
 });
+
+test('ab flag: start routes to ab dir + persists ab in manifest; default false', async () => {
+  const stateDir = mkTmp();
+  const logDir = mkTmp();
+  const abLogDir = mkTmp();
+  const orch = createOrchestrator({ stateDir, logDir, abLogDir, makeFeeds: fakeMakeFeeds(), setTimer: () => {} });
+  const rid1 = await orch.start({ version: 'v6', slug: SLUG, continuous: 0, ab: true });
+  const rid2 = await orch.start({ version: 'v6', slug: 'btc-updown-5m-1783349100', continuous: 0 });
+  assert.equal(orch._sessions.get(rid1).ab, true);
+  assert.equal(orch._sessions.get(rid2).ab, false);
+  const m = JSON.parse(fs.readFileSync(path.join(stateDir, 'sessions.json'), 'utf8'));
+  const abBySlug = Object.fromEntries(m.active.map((e) => [e.slug, e.ab]));
+  assert.equal(abBySlug[SLUG], true);
+  assert.equal(abBySlug['btc-updown-5m-1783349100'], false);
+});
+
+test('resumeAll preserves ab routing (and defaults false for old manifests without ab)', async () => {
+  const stateDir = mkTmp();
+  const logDir = mkTmp();
+  const abLogDir = mkTmp();
+  writeAtomic(path.join(stateDir, 'sessions.json'), JSON.stringify({
+    active: [
+      { runId: 'rab', version: 'v6', slug: SLUG, continuous: 0, ab: true },
+      { runId: 'rold', version: 'v6', slug: 'btc-updown-5m-1783349100', continuous: 0 },
+    ],
+  }));
+  const orch = createOrchestrator({ stateDir, logDir, abLogDir, makeFeeds: fakeMakeFeeds(), setTimer: () => {} });
+  assert.equal(await orch.resumeAll(), 2);
+  assert.equal(orch._sessions.get('rab').ab, true);
+  assert.equal(orch._sessions.get('rold').ab, false); // back-compat: missing ab -> false
+});

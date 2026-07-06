@@ -23,7 +23,8 @@ export async function makeProdFeeds(version, slug) {
 }
 
 export function createOrchestrator({
-  stateDir, logDir, makeFeeds = makeProdFeeds, now = Date.now, setTimer = setTimeout,
+  stateDir, logDir, abLogDir = process.env.RUNNER_AB_LOG_DIR || path.join(stateDir, 'ab-logs'),
+  makeFeeds = makeProdFeeds, now = Date.now, setTimer = setTimeout,
 }) {
   const sessions = new Map(); // runId -> Session
 
@@ -33,17 +34,19 @@ export function createOrchestrator({
 
   function persistManifest() {
     const active = [...sessions.values()].map((s) => ({
-      runId: s.runId, version: s.version, slug: s.slug, continuous: s.continuousRemaining,
+      runId: s.runId, version: s.version, slug: s.slug, continuous: s.continuousRemaining, ab: !!s.ab,
     }));
     writeAtomic(manifestFile(), JSON.stringify({ active }));
   }
 
-  async function start({ version, slug, continuous = 0 }) {
+  async function start({ version, slug, continuous = 0, ab = false }) {
     const runId = crypto.randomUUID();
     const feeds = await makeFeeds(version, slug);
     const session = new Session({
-      runId, version, slug, continuousRemaining: continuous, stateDir, logDir, feeds, now, setTimer,
+      runId, version, slug, continuousRemaining: continuous,
+      stateDir, logDir: ab ? abLogDir : logDir, feeds, now, setTimer,
     });
+    session.ab = ab; // routing marker; persisted so resume keeps the ab dir
     await session.start();
     sessions.set(runId, session);
     persistManifest();
@@ -100,10 +103,13 @@ export function createOrchestrator({
     const active = manifest && Array.isArray(manifest.active) ? manifest.active : [];
     for (const entry of active) {
       const feeds = await makeFeeds(entry.version, entry.slug);
+      const ab = entry.ab ?? false;
       const session = new Session({
         runId: entry.runId, version: entry.version, slug: entry.slug,
-        continuousRemaining: entry.continuous ?? 0, stateDir, logDir, feeds, now, setTimer,
+        continuousRemaining: entry.continuous ?? 0,
+        stateDir, logDir: ab ? abLogDir : logDir, feeds, now, setTimer,
       });
+      session.ab = ab;
       await session.start();
       sessions.set(entry.runId, session);
     }

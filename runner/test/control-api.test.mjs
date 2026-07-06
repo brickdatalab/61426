@@ -109,3 +109,17 @@ test('a longer-than-secret auth token does not throw and is rejected', async () 
   const r = await app.inject('GET', '/runs', { auth: 'a-much-longer-provided-token' });
   assert.equal(r.status, 401);
 });
+
+test('POST /runs passes the ab flag through to orchestrator.start (default false)', async () => {
+  let captured = null;
+  const orch = {
+    async start(args) { captured = args; return 'r1'; },
+    stop() { return true; }, list() { return []; }, rows() { return []; },
+    logs() { return []; }, readLog() { return null; },
+  };
+  const app = createApp({ secret: 'S', orchestrator: orch });
+  await app.inject('POST', '/runs', { auth: 'S', body: { version: 'v6', slug: 'x', ab: true } });
+  assert.equal(captured.ab, true);
+  await app.inject('POST', '/runs', { auth: 'S', body: { version: 'v6', slug: 'x' } });
+  assert.equal(captured.ab, false);
+});
