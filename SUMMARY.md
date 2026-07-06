@@ -2,6 +2,15 @@
 
 **Purpose:** complete handoff so a compacted/future session knows exactly where we left off. Read this + `CLAUDE.md` + `CONTEXT.md` first. When the user says "v1/v2/v3/v4" in conversation they usually mean **v5.1/v5.2/v5.3/v5.4** (the historical `v4/` multi-venue experiment is dead — never resurrect, never name anything v4).
 
+## Autopsy log auto-sync LIVE (2026-07-06)
+
+`AUTOPSY/logs/` is now git-tracked and **auto-populated**: a cron reconciler on VM `pm`
+(`tools/autopsy-sync/`, `*/5` under `flock`, deploy-key clone at `/home/vincent/autopsy-sync/repo`)
+reads the live log dir read-only, waits 5 min after each bar closes, verifies/corrects the
+`settled` field against Polymarket Gamma, and commits+pushes the log to `main`. Read-only on
+the receivers (`ourwebsocket`/`v5logd` untouched); idempotent; self-healing. **Your local
+`main` drifts behind — `git pull --rebase` to stay current.** Full detail: `tools/autopsy-sync/README.md`.
+
 ## WHERE WE ARE RIGHT NOW (2026-07-04)
 
 - **Dashboard fixes SHIPPED to v5.3 + v5.4** (2026-07-03, commit `dd83717`, both live-verified in browser):

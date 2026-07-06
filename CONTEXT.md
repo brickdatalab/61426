@@ -4,6 +4,20 @@ BTC/ETH **Polymarket up/down** live dashboards + the signal logic behind them.
 This file is the current-state brief for anyone (human or agent) picking up the project,
 especially for **V5** work.
 
+## Autopsy log auto-sync (2026-07-06)
+
+Completed session logs (any version) are now auto-committed to `AUTOPSY/logs/` on `main`.
+A standalone reconciler on VM `pm` (`tools/autopsy-sync/autopsy_sync.py`, cron `*/5` under
+`flock`, clone at `/home/vincent/autopsy-sync/repo` via a repo deploy key) reads the live
+log dir **read-only** (never touches `ourwebsocket`/`v5logd`), and for each bar closed
+≥5 min: verifies the settle against Polymarket Gamma, rewrites `settled` in place if it
+disagrees (Polymarket is ground truth), then commits+pushes the log. Idempotent (already-
+synced bars skip without a network call). See `tools/autopsy-sync/README.md`. **Consequence:**
+the VM pushes log commits to `main`, so your local `main` drifts behind — `git pull --rebase`
+to catch up (log commits are new files, never conflict with code). Disable by commenting the
+crontab line on the VM. Note: settle-vs-Binance-spot divergences are **not** only on flat bars
+(e.g. `1783348800` moved +$9.97 on spot but Polymarket resolved DOWN).
+
 ## Current state 2026-07-05 — v6
 
 **v6 shipped.** Fork of v5.4. Lean stream (`decideDebounced`/`momentumOf`/`flipRisk`) is
