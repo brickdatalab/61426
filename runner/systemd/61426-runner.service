@@ -1,0 +1,25 @@
+[Unit]
+Description=61426 version runner — headless engine (control-API on 127.0.0.1 only)
+# Bar boundaries depend on a correct, network-synced clock.
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vincent
+WorkingDirectory=/home/vincent/61426-runner/repo/runner
+EnvironmentFile=/home/vincent/61426-runner/env
+ExecStart=/usr/bin/node /home/vincent/61426-runner/repo/runner/server.mjs
+Restart=on-failure
+RestartSec=3
+
+# Isolation: cap resource use so the runner cannot starve ourwebsocket/bin collectors,
+# but give its 1s tick loop scheduling priority within that cap (the box is burstily loaded).
+Nice=-5
+CPUWeight=300
+CPUQuota=50%
+MemoryMax=512M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

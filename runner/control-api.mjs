@@ -103,9 +103,10 @@ export function createApp({ secret, orchestrator }) {
   }
 
   let _server = null;
-  function listen(port, cb) {
+  function listen(port, host, cb) {
+    if (typeof host === 'function') { cb = host; host = undefined; } // back-compat: listen(port, cb)
     _server = server();
-    return _server.listen(port, cb);
+    return _server.listen(port, host, cb); // host='127.0.0.1' binds localhost only (never 0.0.0.0)
   }
   function close(cb) {
     if (_server) _server.close(cb);
