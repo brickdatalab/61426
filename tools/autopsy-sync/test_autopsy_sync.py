@@ -43,3 +43,15 @@ def test_decide():
     assert a.decide("UP", {"resolved": False, "direction": None}) == ("wait", None)
     assert a.decide("UP", {"resolved": True, "direction": None}) == ("ambiguous", None)
     assert a.decide(None, {"resolved": True, "direction": "UP"}) == ("nosettle", None)
+
+
+def test_same_data_is_formatting_agnostic(tmp_path):
+    doc = {"slug": "x", "rows": [{"t": "1", "settled": "UP", "open": 1, "close": 2}]}
+    p = tmp_path / "f.json"
+    p.write_text(a.json.dumps(doc, indent=2))          # different indentation/formatting
+    assert a._same_data(p, doc) is True                 # equal data -> True
+    p.write_text(a.json.dumps(doc, separators=(",", ":")))  # minified -> still equal data
+    assert a._same_data(p, doc) is True
+    other = {"slug": "x", "rows": [{"t": "1", "settled": "DOWN", "open": 1, "close": 2}]}
+    assert a._same_data(p, other) is False              # different settle -> False
+    assert a._same_data(tmp_path / "missing.json", doc) is False  # missing file -> False

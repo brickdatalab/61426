@@ -102,6 +102,15 @@ def load_log(path):
         return json.load(f)
 
 
+def _same_data(path, doc):
+    """True iff the file at path parses to JSON equal to doc (formatting-agnostic)."""
+    try:
+        with open(path) as f:
+            return json.load(f) == doc
+    except Exception:
+        return False
+
+
 def write_settle(doc, new_settle):
     for r in doc.get("rows", []):
         if "settled" in r:
@@ -134,6 +143,12 @@ def process(log_dir, repo, dry_run):
         ls = settle_from_log(doc)
         if ls is None:
             continue  # not settled yet
+        dest = dest_dir / fname
+        # Cheap idempotency FIRST (no network): if the repo already holds this
+        # bar with identical data, it was verified on a prior cycle -> skip.
+        if dest.exists() and _same_data(dest, doc):
+            continue
+        # New or differing -> consult Polymarket to verify/correct.
         try:
             gamma = resolution_from_gamma(fetch_gamma(slug))
         except Exception as e:
@@ -149,19 +164,18 @@ def process(log_dir, repo, dry_run):
             continue
         if action == "correct":
             log(f"CORRECT {slug}: log={ls} -> polymarket={new}")
+            write_settle(doc, new)
             if not dry_run:
-                write_settle(doc, new)
-                with open(src, "w") as f:
+                with open(src, "w") as f:  # fix the VM source in place too
                     json.dump(doc, f, indent=2, ensure_ascii=False)
-        # sync into repo (only if new or changed)
-        dest = dest_dir / fname
-        desired = json.dumps(doc, indent=2, ensure_ascii=False)
-        if dest.exists() and dest.read_text() == desired:
-            continue  # already synced, unchanged -> idempotent no-op
+        # After a possible correction, the repo may already match (e.g. it was
+        # pre-corrected) -> nothing to sync.
+        if dest.exists() and _same_data(dest, doc):
+            continue
         log(f"SYNC {fname} ({action})")
+        staged.append(fname)
         if not dry_run:
-            dest.write_text(desired)
-            staged.append(fname)
+            dest.write_text(json.dumps(doc, indent=2, ensure_ascii=False))
     return staged
 
 
