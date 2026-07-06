@@ -32,6 +32,7 @@ async function main() {
     console.error('[runner] NTP not synchronized — refusing to start (bar boundaries need a correct clock)');
     process.exit(1);
   }
+  console.error('[runner] NTP gate passed (clock synchronized) — resuming sessions');
   const orchestrator = createOrchestrator({ stateDir: cfg.stateDir, logDir: cfg.logDir });
   const resumedCount = await orchestrator.resumeAll(); // returns the number of sessions resumed
   console.error(`[runner] resumed ${resumedCount} session(s); OWS_BASE=${process.env.OWS_BASE || '(default)'}`);
