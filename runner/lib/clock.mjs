@@ -49,7 +49,14 @@ export class Scheduler {
 
   _fire() {
     if (!this._active) return;
-    const sec = Math.floor(this._now() / 1000);
+    let sec = Math.floor(this._now() / 1000);
+    // The wall clock can step BACKWARD while NTP disciplines it (notably in the
+    // minutes after a reboot, when timesyncd corrects a clock that drifted during
+    // long uptime). Never emit a duplicate or backward second — that would
+    // double-feed the engine (dup now_ms). Clamp forward by one. Genuine FORWARD
+    // jumps (real downtime, e.g. a reboot gap) pass through unchanged so they are
+    // still detected and marked.
+    if (sec <= this._lastSec) sec = this._lastSec + 1;
     const gapSec = gapSeconds(this._lastSec, sec);
     this._lastSec = sec;
     if (this._cb) this._cb({ sec, gapSec });

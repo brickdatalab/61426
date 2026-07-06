@@ -83,3 +83,23 @@ test('Scheduler: a jump from sec=100 to sec=130 emits exactly one cb with gapSec
   assert.equal(seen.length, 1);
   assert.deepEqual(seen[0], { sec: 130, gapSec: 30 });
 });
+
+test('NTP backward slew: emits strictly-increasing seconds (no dup/backward), real forward gap still marked', () => {
+  // Simulates the post-reboot window: wall clock steps BACKWARD as NTP disciplines it,
+  // then a genuine forward jump (downtime). now() returns the scripted value at index i.
+  const seq = [1000000, 1001000, 1000400, 1001300, 1130000];
+  let i = 0;
+  const now = () => seq[i];
+  const fired = [];
+  let timerFn = null;
+  const s = new Scheduler({ now, setTimer: (fn) => { timerFn = fn; return 1; }, clearTimer() {} });
+  s.onSecond((x) => fired.push(x));
+  s.start();                 // lastSec = 1000
+  i = 1; timerFn();          // wall sec 1001 -> 1001, gap 1
+  i = 2; timerFn();          // wall sec 1000 (stepped back) -> clamp 1002, gap 1
+  i = 3; timerFn();          // wall sec 1001 (still behind) -> clamp 1003, gap 1
+  i = 4; timerFn();          // wall sec 1130 (real forward jump) -> 1130, gap 127
+  assert.deepEqual(fired.map((f) => f.sec), [1001, 1002, 1003, 1130]); // strictly increasing, no dup
+  assert.equal(fired.filter((f) => f.gapSec <= 0).length, 0);          // never zero/negative (no dup ticks)
+  assert.equal(fired[3].gapSec, 127);                                   // genuine gap preserved for marking
+});
