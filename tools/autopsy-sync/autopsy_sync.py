@@ -126,7 +126,7 @@ def log(msg):
     print(f"[{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}] {msg}", flush=True)
 
 
-def process(log_dir, repo, dry_run):
+def process(log_dir, repo, dry_run, min_rows=50):
     now = int(time.time())
     dest_dir = pathlib.Path(repo) / "AUTOPSY" / "logs"
     staged = []
@@ -139,6 +139,10 @@ def process(log_dir, repo, dry_run):
             doc = load_log(src)
         except Exception as e:
             log(f"SKIP {fname}: unreadable ({e})")
+            continue
+        body = sum(1 for r in doc.get("rows", []) if "settled" not in r)
+        if body < min_rows:
+            log(f"SKIP {fname}: incomplete ({body} rows < {min_rows})")
             continue
         ls = settle_from_log(doc)
         if ls is None:
@@ -207,10 +211,11 @@ def main():
     ap.add_argument("--log-dir", required=True)
     ap.add_argument("--repo", required=True)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--min-rows", type=int, default=50)
     args = ap.parse_args()
     if not args.dry_run:
         git(args.repo, "pull", "--rebase", "origin", "main", check=False)
-    staged = process(args.log_dir, args.repo, args.dry_run)
+    staged = process(args.log_dir, args.repo, args.dry_run, args.min_rows)
     commit_push(args.repo, staged, args.dry_run)
 
 

@@ -55,3 +55,31 @@ def test_same_data_is_formatting_agnostic(tmp_path):
     other = {"slug": "x", "rows": [{"t": "1", "settled": "DOWN", "open": 1, "close": 2}]}
     assert a._same_data(p, other) is False              # different settle -> False
     assert a._same_data(tmp_path / "missing.json", doc) is False  # missing file -> False
+
+
+def _write_log(log_dir, slug, body_rows, settle="UP"):
+    rows = [{"t": str(i), "signal": "UP"} for i in range(body_rows)]
+    rows.append({"t": "z", "settled": settle, "open": 1, "close": 2})
+    (log_dir / f"{slug}_v6.json").write_text(a.json.dumps({"slug": f"{slug}_v6", "rows": rows}))
+
+
+def test_process_skips_incomplete_below_min_rows(tmp_path, monkeypatch):
+    log_dir = tmp_path / "logs"; log_dir.mkdir()
+    repo = tmp_path / "repo"; (repo / "AUTOPSY" / "logs").mkdir(parents=True)
+    slug = "btc-updown-5m-1783348800"  # well in the past -> is_due True
+    _write_log(log_dir, slug, body_rows=5)  # incomplete
+    # gamma must never be consulted for a skipped log
+    monkeypatch.setattr(a, "fetch_gamma", lambda s: (_ for _ in ()).throw(AssertionError("gamma should not be called")))
+    staged = a.process(str(log_dir), str(repo), dry_run=True, min_rows=50)
+    assert staged == []
+
+
+def test_process_syncs_complete_at_or_above_min_rows(tmp_path, monkeypatch):
+    log_dir = tmp_path / "logs"; log_dir.mkdir()
+    repo = tmp_path / "repo"; (repo / "AUTOPSY" / "logs").mkdir(parents=True)
+    slug = "btc-updown-5m-1783348800"
+    _write_log(log_dir, slug, body_rows=60, settle="UP")  # complete
+    monkeypatch.setattr(a, "fetch_gamma", lambda s: [{"markets": [{"closed": True, "outcomes": '["Up","Down"]', "outcomePrices": '["1","0"]'}]}])
+    monkeypatch.setattr(a.time, "sleep", lambda s: None)
+    staged = a.process(str(log_dir), str(repo), dry_run=True, min_rows=50)
+    assert f"{slug}_v6.json" in staged
