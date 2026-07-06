@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePoll } from '@/lib/usePoll';
 
 type LogEntry = {
@@ -34,9 +35,9 @@ export default function LogSidebar() {
           <div className="muted">{v}</div>
           {(byVersion.get(v) || []).map((l, i) => (
             <div key={`${l.slug}-${i}`} className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-              <span title={l.slug} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
+              <Link href={`/log/${encodeURIComponent(l.slug)}`} title={l.slug} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
                 {l.slug}
-              </span>
+              </Link>
               <span className={l.settled ? 'good' : 'muted'}>
                 {l.settled ? 'settled' : 'live'} n={l.n ?? '—'}
               </span>

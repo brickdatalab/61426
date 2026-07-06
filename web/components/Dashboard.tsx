@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 import { usePoll } from '@/lib/usePoll';
-import RunControls from './RunControls';
-import RunView from './RunView';
 import LogSidebar from './LogSidebar';
 
 export type Run = {
@@ -15,23 +14,48 @@ export type Run = {
   lastTick?: number | null;
 };
 
+const VERSIONS = ['v1', 'v2', 'v3', 'v5', 'v5.1', 'v5.2', 'v5.3', 'v5.4', 'v6'];
+const INTERVALS = ['5m', '15m', '1h'];
+
+function intervalSec(iv: string): number {
+  const m = iv.match(/^(\d+)([mh])$/);
+  if (!m) return 300;
+  return Number(m[1]) * (m[2] === 'h' ? 3600 : 60);
+}
+
 export default function Dashboard() {
   const { data, error } = usePoll<Run[]>('/api/vm/runs');
   const runs = Array.isArray(data) ? data : [];
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
-  // Keep a valid selection: default to the first run, clear if it vanished.
-  useEffect(() => {
-    if (selectedRunId && !runs.some((r) => r.runId === selectedRunId)) {
-      setSelectedRunId(runs[0]?.runId ?? null);
-    } else if (!selectedRunId && runs.length) {
-      setSelectedRunId(runs[0].runId);
+  const [version, setVersion] = useState('v6');
+  const [asset, setAsset] = useState('BTC');
+  const [interval, setInterval] = useState('5m');
+  const [continuous, setContinuous] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  async function start() {
+    setBusy(true);
+    setFormError('');
+    try {
+      const secs = intervalSec(interval);
+      const barEpoch = Math.floor(Date.now() / (secs * 1000)) * secs;
+      const slug = `${asset.toLowerCase()}-updown-${interval}-${barEpoch}`;
+      const res = await fetch('/api/vm/runs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ version, slug, continuous, ab: false }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      setFormError(String((e as Error)?.message || e));
+    } finally {
+      setBusy(false);
     }
-  }, [runs, selectedRunId]);
+  }
 
   async function stop(runId: string) {
     await fetch(`/api/vm/runs/${runId}`, { method: 'DELETE' });
-    if (selectedRunId === runId) setSelectedRunId(null);
   }
 
   return (
@@ -43,7 +67,41 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <RunControls runs={runs} selectedRunId={selectedRunId} onStarted={setSelectedRunId} onStop={stop} />
+      <div className="panel row">
+        <select value={version} onChange={(e) => setVersion(e.target.value)}>
+          {VERSIONS.map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </select>
+        <select value={asset} onChange={(e) => setAsset(e.target.value)}>
+          <option value="BTC">BTC</option>
+          <option value="ETH">ETH</option>
+        </select>
+        <select value={interval} onChange={(e) => setInterval(e.target.value)}>
+          {INTERVALS.map((iv) => (
+            <option key={iv} value={iv}>
+              {iv}
+            </option>
+          ))}
+        </select>
+        <label className="row" style={{ gap: 4 }}>
+          continuous
+          <input
+            type="number"
+            value={continuous}
+            min={1}
+            max={50}
+            onChange={(e) => setContinuous(Math.max(1, Number(e.target.value) || 1))}
+            style={{ width: 64 }}
+          />
+        </label>
+        <button onClick={start} disabled={busy}>
+          {busy ? '…' : 'Start run'}
+        </button>
+        {formError && <span className="bad">{formError}</span>}
+      </div>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 420px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -53,24 +111,18 @@ export default function Dashboard() {
             {!runs.length && <div className="muted">no active runs</div>}
             {runs.map((r) => (
               <div key={r.runId} className="row" style={{ justifyContent: 'space-between' }}>
-                <label className="row" style={{ gap: 6 }}>
-                  <input
-                    type="radio"
-                    name="run"
-                    checked={selectedRunId === r.runId}
-                    onChange={() => setSelectedRunId(r.runId)}
-                  />
-                  <span>
-                    {r.version} {r.slug}
+                <Link href={`/run/${r.runId}`}>
+                  {r.version} <span className="mono">{r.slug}</span>
+                </Link>
+                <span className="row" style={{ gap: 10 }}>
+                  <span className="muted">
+                    rem={r.rem ?? '—'} cont={r.continuousRemaining ?? '—'}
                   </span>
-                </label>
-                <span className="muted">
-                  rem={r.rem ?? '—'} cont={r.continuousRemaining ?? '—'}
+                  <button onClick={() => stop(r.runId)}>Stop</button>
                 </span>
               </div>
             ))}
           </div>
-          {selectedRunId && <RunView runId={selectedRunId} />}
         </div>
         <LogSidebar />
       </div>
