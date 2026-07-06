@@ -10,11 +10,14 @@ export function gapSeconds(prevSec, nowSec) {
 }
 
 export class Scheduler {
-  constructor({ now = Date.now, setTimer = setTimeout } = {}) {
+  constructor({ now = Date.now, setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
     this._now = now;
     this._setTimer = setTimer;
+    this._clearTimer = clearTimer;
     this._cb = null;
     this._lastSec = null;
+    this._active = false;
+    this._timer = null;
   }
 
   onSecond(cb) {
@@ -22,18 +25,30 @@ export class Scheduler {
   }
 
   start() {
+    this._active = true;
     this._lastSec = Math.floor(this._now() / 1000);
     this._arm();
   }
 
+  // Cancel the pending tick and refuse to arm further ones. Idempotent.
+  stop() {
+    this._active = false;
+    if (this._timer != null) {
+      this._clearTimer(this._timer);
+      this._timer = null;
+    }
+  }
+
   _arm() {
+    if (!this._active) return;
     const nowMs = this._now();
     const nextBoundaryMs = (Math.floor(nowMs / 1000) + 1) * 1000;
     const delay = nextBoundaryMs - nowMs;
-    this._setTimer(() => this._fire(), delay);
+    this._timer = this._setTimer(() => this._fire(), delay);
   }
 
   _fire() {
+    if (!this._active) return;
     const sec = Math.floor(this._now() / 1000);
     const gapSec = gapSeconds(this._lastSec, sec);
     this._lastSec = sec;

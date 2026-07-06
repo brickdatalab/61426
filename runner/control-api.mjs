@@ -71,8 +71,14 @@ export function createApp({ secret, orchestrator }) {
   // Test seam: no sockets, no serialization round-trip beyond JSON body/response.
   async function inject(method, path, { auth, body } = {}) {
     const authHeader = auth != null ? `Bearer ${auth}` : undefined;
-    const result = await handle(method, path, authHeader, body);
-    return { status: result.status, json: result.json };
+    try {
+      const result = await handle(method, path, authHeader, body);
+      return { status: result.status, json: result.json };
+    } catch (err) {
+      // Match the server() path: a throwing orchestrator method is a clean 500,
+      // not an unhandled rejection.
+      return { status: 500, json: { error: String((err && err.message) || err) } };
+    }
   }
 
   function server() {

@@ -102,6 +102,7 @@ export class Session {
     runId, version, slug, continuousRemaining = 0, stateDir,
     feeds, overrideEngineChange = false, logDir, baseMs = BASE_MS,
     loadEngineImpl = defaultLoadEngine, now = Date.now, setTimer = setTimeout,
+    clearTimer = clearTimeout,
   }) {
     this.runId = runId;
     this.version = version;
@@ -115,6 +116,7 @@ export class Session {
     this._loadEngine = loadEngineImpl;
     this._now = now;
     this._setTimer = setTimer;
+    this._clearTimer = clearTimer;
 
     this.mod = null;
     this.gitHash = null;
@@ -218,7 +220,7 @@ export class Session {
     await this._init();
     this.feeds.ows?.start?.();
     this.feeds.poly?.start?.();
-    this._scheduler = new Scheduler({ now: this._now, setTimer: this._setTimer });
+    this._scheduler = new Scheduler({ now: this._now, setTimer: this._setTimer, clearTimer: this._clearTimer });
     this._scheduler.onSecond(({ sec, gapSec }) => this._onSecond(sec, gapSec));
     this._scheduler.start();
   }
@@ -240,6 +242,7 @@ export class Session {
   }
 
   stop() {
+    this._scheduler?.stop?.();
     this._scheduler = null;
     this.feeds.ows?.stop?.();
     this.feeds.poly?.stop?.();

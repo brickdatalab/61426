@@ -39,6 +39,31 @@ test('Scheduler: normal 1s ticks emit gapSec=1 via injected time seam', () => {
   assert.deepEqual(seen, [{ sec: 101, gapSec: 1 }, { sec: 102, gapSec: 1 }]);
 });
 
+test('Scheduler: after stop(), the pending timer is cleared and no further cb fires', () => {
+  let nowMs = 100000; // sec=100
+  const timers = [];
+  const cleared = [];
+  const fakeSetTimer = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  const fakeClearTimer = (h) => { cleared.push(h); };
+  const fakeNow = () => nowMs;
+
+  const sched = new Scheduler({ now: fakeNow, setTimer: fakeSetTimer, clearTimer: fakeClearTimer });
+  const seen = [];
+  sched.onSecond((info) => seen.push(info));
+  sched.start();
+
+  const armed = timers[timers.length - 1];
+  sched.stop();
+  assert.deepEqual(cleared, [timers.length], 'the pending timer handle was cleared');
+
+  // Even if the already-scheduled callback still fires, it must be a no-op and
+  // must NOT re-arm.
+  nowMs = 101000;
+  armed.fn();
+  assert.equal(seen.length, 0, 'no callback after stop');
+  assert.equal(timers.length, 1, 'no further timer armed after stop');
+});
+
 test('Scheduler: a jump from sec=100 to sec=130 emits exactly one cb with gapSec=30', () => {
   let nowMs = 100000; // sec=100
   const timers = [];

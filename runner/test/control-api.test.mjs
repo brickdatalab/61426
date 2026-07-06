@@ -87,6 +87,17 @@ test('GET /logs and GET /logs/:slug', async () => {
   assert.equal(missing.status, 404);
 });
 
+test('a throwing orchestrator method surfaces as a clean 500 (inject matches prod)', async () => {
+  const throwingOrch = {
+    ...fakeOrch(),
+    list() { throw new Error('boom'); },
+  };
+  const app = createApp({ secret: 'S', orchestrator: throwingOrch });
+  const r = await app.inject('GET', '/runs', { auth: 'S' });
+  assert.equal(r.status, 500);
+  assert.equal(r.json.error, 'boom');
+});
+
 test('a wrong-length secret does not throw and is rejected', async () => {
   const app = createApp({ secret: 'a-much-longer-secret-value', orchestrator: fakeOrch() });
   const r = await app.inject('GET', '/runs', { auth: 'short' });

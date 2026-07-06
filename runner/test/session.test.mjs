@@ -114,6 +114,85 @@ test('a live gap marks exactly one row and fabricates none', async () => {
   assert.equal(gapRows[0].gap, true);
 });
 
+// 4b. After .stop() the scheduler is cancelled: a stale already-armed timer
+//     callback fires NO further tick — no new state write, no settle log.
+test('after Session.stop() no further ticks write state or settle logs', async () => {
+  const dir = mkTmp();
+  const logDir = mkTmp();
+  const baseSec = 1783348800; // bar end = baseSec+300, so remS stays > 0
+  const slug = `btc-updown-5m-${baseSec}`;
+
+  const timers = [];
+  const cleared = [];
+  let nowMs = (baseSec + 10) * 1000;
+  const setTimer = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+  const clearTimer = (h) => cleared.push(h);
+  const now = () => nowMs;
+
+  const s = new Session({
+    runId: 'stop1', version: 'v6', slug, stateDir: dir, logDir,
+    feeds: makeFakeFeeds(), now, setTimer, clearTimer,
+  });
+  await s.start();
+
+  // Fire the first armed tick -> one row.
+  nowMs = (baseSec + 11) * 1000;
+  timers[timers.length - 1].fn();
+  assert.equal(s._rows.length, 1);
+  const armedAfterTick = timers[timers.length - 1]; // re-armed by _fire
+
+  s.stop();
+  assert.ok(cleared.length >= 1, 'stop() cleared the pending timer');
+
+  // Fire the stale callback that was already armed before stop — must be a no-op.
+  nowMs = (baseSec + 12) * 1000;
+  armedAfterTick.fn();
+  assert.equal(s._rows.length, 1, 'no further state rows after stop');
+
+  // No settle log was written (bar never reached rem<=0).
+  assert.ok(!fs.existsSync(path.join(logDir, `${slug}_v6.json`)), 'no settle log after stop');
+});
+
+// 4c. Settle close uses the RAW last tape price, not barOpen + 2dp-rounded cushion.
+//     Fixture: price=100.004 -> cushion rounds to 0.00 (old close=open=100 => DOWN),
+//     but the raw price 100.004 > open => UP. Close must equal the raw price.
+test('settle close uses the raw last price (near-flat bar does not flip on rounding)', async () => {
+  const dir = mkTmp();
+  const logDir = mkTmp();
+  const slug = 'btc-updown-5m-1783348800';
+  const s = new Session({ runId: 'sc1', version: 'v6', slug, stateDir: dir, logDir, feeds: makeFakeFeeds() });
+  await s._init();
+  s._barOpen = 100;
+
+  const tape = { price: 100.004, bar_open: 100, cvd_candle_usd: 0, binance_imb: 0 };
+  s._tickWith((1783348800 + 120) * 1000, tape, { pimb: null, poly_mid: null }, 120, {});
+  // The public row's cushion rounds to 0.00 — the old formula would settle DOWN.
+  assert.equal(s._rows[s._rows.length - 1].cushion, 0);
+
+  s._settleAndAdvance((1783348800 + 300) * 1000);
+  const doc = JSON.parse(fs.readFileSync(path.join(logDir, `${slug}_v6.json`), 'utf8'));
+  const settle = doc.rows.find((r) => r.settled);
+  assert.equal(settle.close, 100.004, 'close is the raw last price, full precision');
+  assert.equal(settle.settled, 'UP', 'raw price 100.004 > open 100 => UP (no rounding flip)');
+});
+
+// 4d. Fallback: when NO tape price was ever seen this bar, close falls back to
+//     barOpen + the last row's cushion.
+test('settle close falls back to barOpen + cushion when no price was seen', async () => {
+  const dir = mkTmp();
+  const logDir = mkTmp();
+  const slug = 'btc-updown-5m-1783348800';
+  const s = new Session({ runId: 'sc2', version: 'v6', slug, stateDir: dir, logDir, feeds: makeFakeFeeds() });
+  s._barOpen = 100;
+  s._lastPrice = null; // no price ever seen
+  s._rows.push({ t: '00:00:01', rem: 5, cushion: 0.5, now_ms: 1, tape_age_ms: null, book_age_ms: null });
+
+  s._settleAndAdvance((1783348800 + 300) * 1000);
+  const doc = JSON.parse(fs.readFileSync(path.join(logDir, `${slug}_v6.json`), 'utf8'));
+  const settle = doc.rows.find((r) => r.settled);
+  assert.equal(settle.close, 100.5, 'close = barOpen + last cushion when no raw price seen');
+});
+
 // 5. now_ms / staleness live in state only, never in the public log.
 test('state rows carry now_ms/tape_age_ms; the written log rows do not', async () => {
   const bar = loadCapturedBar('v6');
