@@ -123,6 +123,7 @@ export class Session {
     this._barOpen = null;
     this._barEnd = null;
     this._lastNowMs = null;
+    this._lastPrice = null;
     this._replaying = false;
     this._resumeLastSec = null; // gap baseline after resume (last persisted tick sec)
     this._scheduler = null;
@@ -178,6 +179,7 @@ export class Session {
   // THE single tick path (live + replay + tests).
   _tickWith(nowMs, tape, book, remS, { tapeAgeMs = null, bookAgeMs = null, gap = false } = {}) {
     const inp = buildInp({ now: nowMs, tape, book, barOpen: this._barOpen, remS });
+    if (inp.price != null) this._lastPrice = inp.price;
     const out = this.mod.tick(this.engineSession, inp);
     if (this._replaying) return null; // reconstruction only advances engine state
     const stateRow = {
@@ -247,7 +249,13 @@ export class Session {
   _settleAndAdvance(nowMs) {
     const open = this._barOpen;
     const last = this._rows[this._rows.length - 1];
-    const close = (open != null && last && last.cushion != null) ? open + last.cushion : open;
+    // Settle close: use the RAW last tape price (full precision), not
+    // barOpen + the 2dp-rounded cushion — that rounding can flip UP/DOWN on
+    // near-flat bars. Fall back to the cushion reconstruction only if no
+    // price was ever seen this bar.
+    const close = this._lastPrice != null
+      ? this._lastPrice
+      : (open != null && last && last.cushion != null) ? open + last.cushion : open;
     const settleRow = {
       t: new Date(nowMs).toISOString().slice(11, 19),
       settled: close > open ? 'UP' : 'DOWN', open, close,
@@ -262,6 +270,7 @@ export class Session {
       this._rows = [];
       this._barOpen = null;
       this._lastNowMs = null;
+      this._lastPrice = null;
       this.continuousRemaining -= 1;
       this.feeds.poly?.setSlug?.(this.slug); // prod: repoint the book feed
       this._persist();

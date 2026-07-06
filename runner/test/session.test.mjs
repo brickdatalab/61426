@@ -24,6 +24,13 @@ test('resume-by-replay matches the uninterrupted reference per row', async () =>
   const dir = mkTmp();
   const mid = Math.floor(bar.rows.length / 2);
 
+  // Keep this test load-bearing if fixtures change: the mid-bar kill must land
+  // strictly after the first early-call latch row, or resuming before any
+  // latch happened would trivially "match" without exercising the latch state.
+  const firstLatchIdx = ref.findIndex((r) => r.early_call != null);
+  assert.ok(firstLatchIdx >= 0, 'fixture must contain an early-call latch');
+  assert.ok(mid > firstLatchIdx, 'mid-kill index must be after the first early-call latch');
+
   const s1 = new Session({
     runId: 't1', version: 'v6', slug: bar.slug, continuousRemaining: 0,
     stateDir: dir, feeds: makeFakeFeeds(bar),
