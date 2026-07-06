@@ -22,7 +22,9 @@ export class OwsFeed {
   }
 
   _defaultWs() {
-    const url = `ws://34.89.159.108/ws/v5/tape?symbol=${this.symbol}&bar=${this.interval}`;
+    // Base is env-configurable: on the VM set OWS_BASE=ws://127.0.0.1 (avoid hairpin via the public IP).
+    const base = process.env.OWS_BASE || 'ws://34.89.159.108';
+    const url = `${base}/ws/v5/tape?symbol=${this.symbol}&bar=${this.interval}`;
     return new WebSocket(url);
   }
 
