@@ -35,7 +35,7 @@ export default function LogSidebar() {
           <div className="muted">{v}</div>
           {(byVersion.get(v) || []).map((l, i) => (
             <div key={`${l.slug}-${i}`} className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-              <Link href={`/log/${encodeURIComponent(l.slug)}`} title={l.slug} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
+              <Link href={`/log/${encodeURIComponent(`${l.slug}_${l.version}`)}`} title={l.slug} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>
                 {l.slug}
               </Link>
               <span className={l.settled ? 'good' : 'muted'}>
