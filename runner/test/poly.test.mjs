@@ -18,7 +18,8 @@ test('backoff grows then caps at 30s', () => {
 test('token resolve parses clobTokenIds JSON string via Gamma', async () => {
   const fetchImpl = async (url) => {
     assert.ok(url.startsWith('https://gamma-api.polymarket.com/events?slug=btc-updown-5m-1'));
-    return { ok: true, json: async () => ({ markets: [{ clobTokenIds: '["TOK1","TOK2"]' }] }) };
+    // real Gamma /events?slug= returns an ARRAY of events
+    return { ok: true, json: async () => ([{ markets: [{ clobTokenIds: '["TOK1","TOK2"]' }] }]) };
   };
   const timers = [];
   const f = new PolyFeed('btc-updown-5m-1', { fetchImpl, setTimer: (fn, ms) => timers.push({ fn, ms }) });
@@ -34,7 +35,7 @@ test('poll computes pimb/poly_mid from the book and sets ageMs', async () => {
     asks: [{ price: '0.54', size: '100' }, { price: '0.70', size: '100' }],
   };
   const fetchImpl = async (url) => {
-    if (url.includes('gamma-api')) return { ok: true, json: async () => ({ markets: [{ clobTokenIds: ['TOK1'] }] }) };
+    if (url.includes('gamma-api')) return { ok: true, json: async () => ([{ markets: [{ clobTokenIds: ['TOK1'] }] }]) };
     assert.ok(url === 'https://clob.polymarket.com/book?token_id=TOK1');
     return { ok: true, json: async () => book };
   };
@@ -51,7 +52,7 @@ test('poll computes pimb/poly_mid from the book and sets ageMs', async () => {
 
 test('429/error never throws; latest stays stale; backoff advances', async () => {
   const fetchImpl = async (url) => {
-    if (url.includes('gamma-api')) return { ok: true, json: async () => ({ markets: [{ clobTokenIds: ['TOK1'] }] }) };
+    if (url.includes('gamma-api')) return { ok: true, json: async () => ([{ markets: [{ clobTokenIds: ['TOK1'] }] }]) };
     return { ok: false, status: 429, json: async () => ({}) };
   };
   const timers = [];

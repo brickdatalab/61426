@@ -84,7 +84,8 @@ export class PolyFeed {
       const r = await this._fetch(`${GAMMA_BASE}${this.slug}`, { headers: { 'User-Agent': BROWSER_UA } });
       if (!r.ok) throw new Error(String(r.status));
       const j = await r.json();
-      let ids = j?.markets?.[0]?.clobTokenIds;
+      const e = Array.isArray(j) ? j[0] : j; // Gamma /events?slug= returns an array (mirrors dashboard's Array.isArray(ev)?ev[0]:ev)
+      let ids = e?.markets?.[0]?.clobTokenIds;
       if (typeof ids === 'string') ids = JSON.parse(ids);
       const token = ids?.[0];
       if (!token) throw new Error('no token');
