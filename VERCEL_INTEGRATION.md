@@ -7,8 +7,15 @@
 - ✅ VM ground truth: NTP synced (UTC), 4 cores / 31Gi, critical services identified (`ourwebsocket`, `bin-{book,poly,trades}-1s`, `payload-v6`, `tape-playground` enabled-on-boot; autopsy-sync is a `*/5` cron; `v5logd` running but NOT enabled-on-boot — flag before reboot).
 - ✅ Cloned runner to `/home/vincent/61426-runner/repo` via the `autopsy_deploy` key; `npm ci`; 40/40 on node 20.
 - ✅ Live feeds validated; PolyFeed array-unwrap bug fixed and re-validated live.
-- ⏳ **Blocked on TLS** (domain / Cloudflare) before the exposed control-API, the reboot test, and Vercel.
-- ⛔ Not yet: `runner/server.mjs` entrypoint, systemd units (with `After=network-online.target time-sync.target`), the live single-bar run, kill-9 resume, real reboot, live A/B, the Vercel app.
+- ✅ Deployed under **systemd** (`61426-runner.service`, enabled, 127.0.0.1-only, `Nice=-5`/`CPUWeight=300` within `CPUQuota=50%`/`MemoryMax=512M`); env+secret generated on-VM (`openssl rand`), OWS on localhost; read-only deploy key.
+- ✅ **Acceptance (a):** exact 1s cadence — **0 jitter over 134 ticks**, 0 stale inputs; settle → scratch-log write (298 rows) → continuous advance across 3 bars; settle `close` uses raw price.
+- ✅ **kill-9 resume:** clean — single 6s gap, 0 dups, early-call latch reconstructed. (Caught + fixed a misleading `resumed 0` log.)
+- ✅ **Reboot (b):** resumes into the same bar, one bounded+marked 123s downtime gap, correct single `DOWN` settle, **NTP gate fired before resume**. Surfaced a real bug — post-reboot NTP clock-slew caused dup/skip ticks for ~2 min — **fixed** (scheduler clamps to strictly-increasing seconds; unit-verified by an NTP-backward-slew test). A confirmatory second reboot would prove no-dups end-to-end.
+- ✅ **(d) Idempotency:** each bar's settle log written exactly once across kill-9 + reboot (`_writeLogIdempotent`, unit-tested).
+- ✅ **Directive 2:** golden API fixtures + env-gated live contract test (3/3 live) — fixture-drift bug class retired.
+- ✅ Caught + fixed live: PolyFeed Gamma-array-unwrap bug (feeds were 0% exercised by the 40 unit tests).
+- ⏳ **Remaining:** live A/B (c) — needs your browser open on the same market for ≥2 bars — then the Vercel app (`web/`, B1–B4). TLS is deferred to the Vercel hookup (Tailscale Funnel / DuckDNS+Caddy / pinned self-signed — free, no domain purchase).
+- Test suite: **51 (48 pass + 3 live-contract skipped by default)**. Runner on `main` @ current HEAD.
 
 This document is the full record of what was asked, why, the plan, what got built, what's left, and the decisions you (the user) still own.
 
