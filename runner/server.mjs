@@ -33,8 +33,8 @@ async function main() {
     process.exit(1);
   }
   const orchestrator = createOrchestrator({ stateDir: cfg.stateDir, logDir: cfg.logDir });
-  const resumed = await orchestrator.resumeAll();
-  console.error(`[runner] resumed ${Array.isArray(resumed) ? resumed.length : 0} session(s); OWS_BASE=${process.env.OWS_BASE || '(default)'}`);
+  const resumedCount = await orchestrator.resumeAll(); // returns the number of sessions resumed
+  console.error(`[runner] resumed ${resumedCount} session(s); OWS_BASE=${process.env.OWS_BASE || '(default)'}`);
   const app = createApp({ secret: cfg.secret, orchestrator });
   app.listen(cfg.port, cfg.host, () => console.error(`[runner] control-API on ${cfg.host}:${cfg.port}`));
 
