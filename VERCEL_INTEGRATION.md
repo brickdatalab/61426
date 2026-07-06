@@ -1,6 +1,14 @@
 # Vercel Integration — persistent, browser-independent version running
 
-**Status as of 2026-07-06:** VM runner (the engine half) is **code-complete and fully reviewed** — 40 tests green, 9 commits local on `main` (not yet pushed). The Vercel app and the VM deploy are the remaining work. Details below.
+**Status as of 2026-07-06:** VM runner **code-complete, reviewed, pushed to `main`, and cloned onto the VM** at `/home/vincent/61426-runner/repo`. **40 tests pass on the VM's node 20** (built on node 25 — cross-version parity confirmed). **Live first-light on the VM validated both feeds** against the real market — and caught + fixed a real bug: `PolyFeed` wasn't unwrapping the array Gamma returns, so `pimb`/`poly_mid` were null (fix `ff7f870`; the 40 unit tests missed it because the fixture didn't match the real API shape). ourWebSocket feed, Polymarket feed, and the `buildInp` mapping all now produce correct live values. **Remaining before acceptance: TLS in front of the control-API (needs a domain — see §8), then the full live single-bar run, kill-9 resume, reboot, and A/B.** The Vercel app is built last.
+
+### Deployment progress log
+- ✅ Additive-only confirmed; runner + docs pushed to `main`; skill symlinks gitignored.
+- ✅ VM ground truth: NTP synced (UTC), 4 cores / 31Gi, critical services identified (`ourwebsocket`, `bin-{book,poly,trades}-1s`, `payload-v6`, `tape-playground` enabled-on-boot; autopsy-sync is a `*/5` cron; `v5logd` running but NOT enabled-on-boot — flag before reboot).
+- ✅ Cloned runner to `/home/vincent/61426-runner/repo` via the `autopsy_deploy` key; `npm ci`; 40/40 on node 20.
+- ✅ Live feeds validated; PolyFeed array-unwrap bug fixed and re-validated live.
+- ⏳ **Blocked on TLS** (domain / Cloudflare) before the exposed control-API, the reboot test, and Vercel.
+- ⛔ Not yet: `runner/server.mjs` entrypoint, systemd units (with `After=network-online.target time-sync.target`), the live single-bar run, kill-9 resume, real reboot, live A/B, the Vercel app.
 
 This document is the full record of what was asked, why, the plan, what got built, what's left, and the decisions you (the user) still own.
 
@@ -127,14 +135,18 @@ Full 4-chart dashboard viewer, multi-tab / parallel runs, sidebar grouping, fini
 
 ---
 
-## 8. Decisions you still own
+## 8. Decisions — RESOLVED (per the 2026-07-06 deploy directives)
 
-1. **TLS for the control-API (blocks A7 deploy).** Pick one:
-   - **Caddy + Let's Encrypt on a subdomain** — needs a subdomain/DNS pointed at `34.89.159.108`.
-   - **Cloudflare Tunnel** — no domain-on-VM needed; good if you already use Cloudflare.
-2. **Resume-test method on the production VM.** A full OS reboot briefly drops `ourwebsocket` + the `bin-1s` collectors + `autopsy-sync` (all auto-restart). The safe alternative proves the *same* resume-by-replay path by restarting just the runner unit — zero disruption. Choose "runner-restart only" (safe) or "also do a full reboot."
-3. **Order of remaining work:** build the Vercel app (B1–B4) next, or deploy the VM runner (A7) first — either order works; B1–B4's *real* end-to-end test needs the VM URL from A7.
-4. **When to push.** The 9 commits are **local on `main`, not pushed** (you wanted the repo import-ready first). When you say go, I'll push — note `origin/main` also receives the VM's autopsy-log auto-commits, so I'll `git pull --rebase` first.
+1. **Sequencing:** deploy the VM runner and pass acceptance (a)–(d) FIRST; build the Vercel app (`web/`) only after. Use `curl` against the control-API as the stand-in viewer for Phase 1.
+2. **TLS:** Cloudflare Tunnel (as a systemd unit, `Restart=always`), unless a domain with DNS control already exists → then Caddy + Let's Encrypt. Control-API is never exposed without TLS. **Open input needed: the domain situation — see below.**
+3. **Reboot test:** do both — `kill -9` for fast resume iteration, plus one genuine `sudo reboot` mid-bar for acceptance (b).
+4. **Acceptance (b) amended:** a real live reboot has no uninterrupted reference stream, so it verifies only *gap bounded + marked + no dupes + successful resume*; signal-parity-after-resume is proven by the deterministic kill/resume test (confirmed to replay a **real** `_v6.json` log).
+5. **Systemd ordering:** runner unit declares `After=network-online.target time-sync.target`, `Wants=network-online.target`; verify `timedatectl` synced before the orchestrator resumes on boot.
+6. **Secrets:** generate `VM_CONTROL_SECRET`/`SESSION_SECRET` on the VM at deploy (`openssl rand -hex 32`); rotate `APP_PASSWORD` before the Vercel app goes live. Nothing written to repo/docs.
+7. **Dead-man switch (recommended):** healthchecks.io ping per successful tick batch so a stalled runner emails; else the minimal viewer must show last-row age prominently.
+8. **Push:** done — all commits are on `origin/main`.
+
+**The one thing I need from you to proceed:** your **domain situation** for TLS (a stable hostname is required for the Vercel→VM link and to survive reboots). See the question below.
 
 ---
 
