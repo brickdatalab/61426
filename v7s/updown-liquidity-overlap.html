@@ -719,6 +719,27 @@ async function postLogToVM(){
   }catch(e){ /* VM/firewall unreachable — localStorage still holds the log */ }
 }
 
+// ---- background-proof ticker ----
+// Chrome clamps MAIN-THREAD setInterval to ~1 tick/min after ~5 min unfocused/occluded
+// (the 2026-07-02 A/B failure: 2.24s/tick). Timers inside a dedicated Worker are NOT
+// throttled, and message delivery to the main thread is not throttled either — so the
+// worker just posts every 1s and tick() runs on message. Screensaver / minimized /
+// covered windows no longer stall the engine. (System SLEEP still stops everything —
+// run `caffeinate -dis` for long sessions.) Falls back to setInterval if Workers fail.
+let ticker=null,lastTickMs=0;
+function startTicker(){
+  stopTicker();
+  try{
+    ticker=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(1),1000)'],{type:'text/javascript'})));
+    ticker.onmessage=()=>{
+      const now=Date.now();
+      if(lastTickMs&&now-lastTickMs>2500){ st&&st.log&&console.warn(`tick gap ${now-lastTickMs}ms (rows self-heal via wall-clock rem; per-tick constants stretched during the gap)`); }
+      lastTickMs=now; tick();
+    };
+  }catch(e){ ticker=null; poll=setInterval(tick,1000); }
+}
+function stopTicker(){ if(ticker){try{ticker.terminate();}catch(e){} ticker=null;} if(poll){clearInterval(poll);poll=null;} lastTickMs=0; }
+
 async function start(){
   parsed=parseSlug($('#slug').value);if(!parsed)return;
   V5.CFG.EARLY_MIN_REM = parsed.barSec - 45;    // fire window opens 45s in
@@ -741,10 +762,10 @@ async function start(){
   jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
     const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
   }).catch(()=>$('#dPoly').className='dot bad');
-  if(poll){clearInterval(poll);poll=null;}   // never stack tick loops (continuous-runs rollover leak)
-  tick();poll=setInterval(tick,1000);animate();
+  stopTicker();   // never stack tick loops (continuous-runs rollover leak)
+  tick();startTicker();animate();
 }
-function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(owsWatchdog){clearInterval(owsWatchdog);owsWatchdog=null;}if(poll){clearInterval(poll);poll=null;}
+function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(owsWatchdog){clearInterval(owsWatchdog);owsWatchdog=null;}stopTicker();
   $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
   $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
 
