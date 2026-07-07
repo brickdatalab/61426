@@ -29,5 +29,6 @@ export function buildInp({ now, tape, book, barOpen, remS }){
     cushion: (price!=null && open!=null) ? price-open : null,
     remS,
     vol1m: tape?.vol_1m_usd ?? null,
+    polyMid: book?.poly_mid ?? null,   // v7s/v7c early channel input; v6 and earlier ignore it
   };
 }
