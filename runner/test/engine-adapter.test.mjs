@@ -19,6 +19,7 @@ test('buildInp maps tape+book to the exact inp keys the engine consumes', () => 
   assert.equal(inp.cushion, 50);      // price - barOpen
   assert.equal(inp.remS, 210);
   assert.equal(inp.vol1m, 20);
+  assert.equal(inp.polyMid, 0.55);
   assert.equal(inp.now, 1700000000000);
 });
 
