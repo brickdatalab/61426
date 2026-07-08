@@ -164,10 +164,17 @@ def process_bar(ticks, slug, src, settle, bar_epoch, K_values,
 
             price_side = get_price_side(trigger_tick, ep['dir'], src)
 
-            p30_idx = ep['trigger_idx'] + 30
-            p60_idx = ep['trigger_idx'] + 60
-            price_side_p30 = get_price_side(ticks[p30_idx], ep['dir'], src) if p30_idx < n else None
-            price_side_p60 = get_price_side(ticks[p60_idx], ep['dir'], src) if p60_idx < n else None
+            # time-based (not index-based) forward prices: first tick at or past
+            # trigger_rem-30/-60 — robust to occasional missing seconds
+            def price_at_rem(target_rem):
+                if target_rem < 0:
+                    return None
+                for j in range(ep['trigger_idx'] + 1, n):
+                    if ticks[j]['rem'] is not None and ticks[j]['rem'] <= target_rem:
+                        return get_price_side(ticks[j], ep['dir'], src)
+                return None
+            price_side_p30 = price_at_rem(trigger_rem - 30)
+            price_side_p60 = price_at_rem(trigger_rem - 60)
 
             won = (ep['dir'] == settle)
 

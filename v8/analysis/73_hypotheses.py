@@ -38,8 +38,8 @@ def h3(e):
 
 def h4(e):
     f = e.get('feat')
-    if f is None: return None
-    return 'A' if sign(f.get('px_vs_vwap')) == dir_sign(e) else 'B'
+    if f is None or f.get('px_vs_vwap') is None: return None
+    return 'A' if sign(f['px_vs_vwap']) == dir_sign(e) else 'B'
 
 def h5(e):
     f = e.get('feat')
@@ -49,13 +49,13 @@ def h5(e):
 
 def h6(e):
     f = e.get('feat')
-    if f is None: return None
-    return 'A' if sign(f.get('agg_ratio_60')) == dir_sign(e) and (f.get('agg_persist_60') or 0) >= 0.5 else 'B'
+    if f is None or f.get('agg_ratio_60') is None: return None
+    return 'A' if sign(f['agg_ratio_60']) == dir_sign(e) and (f.get('agg_persist_60') or 0) >= 0.5 else 'B'
 
 def h7(e):
     f = e.get('feat')
-    if f is None or f.get('basis_valid') != 1: return None
-    return 'A' if sign(f.get('basis_vel_10')) == dir_sign(e) else 'B'
+    if f is None or f.get('basis_valid') != 1 or f.get('basis_vel_10') is None: return None
+    return 'A' if sign(f['basis_vel_10']) == dir_sign(e) else 'B'
 
 def h8(e):
     f = e.get('feat')
@@ -153,8 +153,8 @@ def main():
     held_days = set(bq_days[2:])
 
     splits = {
-        'TRAIN': [e for e in eps if e.get('src') == 'bq' and e['day'] in train_days],
-        'HELDOUT': [e for e in eps if e.get('src') == 'bq' and e['day'] in held_days],
+        'TRAIN': [e for e in eps if e.get('src') == 'bq' and e.get('day') in train_days],
+        'HELDOUT': [e for e in eps if e.get('src') == 'bq' and e.get('day') in held_days],
         'LIVE': [e for e in eps if e.get('src') == 'live'],
     }
     print(f"K={args.K} | TRAIN days {sorted(train_days)} n={len(splits['TRAIN'])} | HELDOUT days {sorted(held_days)} n={len(splits['HELDOUT'])} | LIVE n={len(splits['LIVE'])}\n")
