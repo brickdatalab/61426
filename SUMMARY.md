@@ -2,6 +2,30 @@
 
 **Purpose:** complete handoff so a compacted/future session knows exactly where we left off. Read this + `CLAUDE.md` + `CONTEXT.md` first. When the user says "v1/v2/v3/v4" in conversation they usually mean **v5.1/v5.2/v5.3/v5.4** (the historical `v4/` multi-venue experiment is dead — never resurrect, never name anything v4).
 
+## 2026-07-08 — v8 ship (newest state)
+
+**v8 is live**: per-tick stream replaced with the calibrated cushion-lead rule
+(`sign(cushion)` at `|cushion| ≥ max($10, 0.5·vol_1m)`, else MIXED), v7s early-call channel
+inherited byte-identical (0 latch mismatches / 1,008 bars). Walk-forward research (823 24/7
+bars, 40 microstructure features incl. taker split/whale split/basis/book pulls/VWAP) proved
+price location is the whole per-tick signal. Gate 5/5: acc 82.5% vs v6 73.1%, missed
+fire-worthy 0.00% vs 20.9%, LOBO all days. Logs `_v8.json`. Run `/v8/updown-liquidity-overlap.html`.
+Records: `v8/analysis/2026-07-08-frontier.md`, `v8/README.md`.
+
+## 2026-07-07 — v7 ship (body below is v5/v6-era)
+
+The **v7 generation shipped**: `v7s/` (standard, band [0.82,0.93], **live** — the user's
+current dashboard, logs `_v7s.json`) and `v7c/` (conviction, [0.90,0.96], **parked for
+UMA/automation plans — do not touch**). Selective EARLY CALL: one immutable latch per BTC 5m
+bar at 45–90s in, abstains otherwise; lean stream byte-identical to v6 (tie-gate 0/74,305
+ticks). Pooled 990-bar record: v7s **85.8% @ 23.4% cov, fire 68s**; v7c **91.5% @ 7.2%**.
+Load-bearing finding: the in-sample 95.6% collapsed to 81.7% on the 709-bar 24/7 BQ base —
+**Polymarket is calibrated at 45–90s, edge from public data ≈ 0; judge candidates on 24/7 BQ
+data only.** The v7s dashboard tick loop now runs in a Web Worker (background-tab-proof; pair
+long runs with `caffeinate -dis`). Queued: v8 research (order-book dynamics, cross-market
+lead-lag) + v7c/UMA groundwork. Full record: `v7/analysis/2026-07-07-v7-basis.md`,
+`v7/README.md`; the v6 basis remains `v6/analysis/2026-07-05-v6-basis.md`.
+
 ## Autopsy log auto-sync LIVE (2026-07-06)
 
 `AUTOPSY/logs/` is now git-tracked and **auto-populated**: a cron reconciler on VM `pm`

@@ -18,7 +18,62 @@ to catch up (log commits are new files, never conflict with code). Disable by co
 crontab line on the VM. Note: settle-vs-Binance-spot divergences are **not** only on flat bars
 (e.g. `1783348800` moved +$9.97 on spot but Polymarket resolved DOWN).
 
-## Current state 2026-07-05 — v6
+## Current state 2026-07-08 — v8 (per-tick stream replaced; v7s early call inherited)
+
+**v8 shipped.** The per-tick UP/DOWN/MIXED stream is now `decideV8`: **call the cushion side
+when `|cushion| ≥ max($10, 0.5·vol_1m)`, else MIXED** — the walk-forward frontier winner from
+the v8 research program (823 24/7 bars / 48,557 ticks / 40 features: taker split, side-split
+whale flow, perp-spot basis, book bid/ask pulls, poly dynamics, VWAP, trajectory transforms —
+**all measured ≈no lift beyond price location**; permutation importance `cush_norm` 0.380 vs
+0.022 next; hysteresis variants worse OOS). The v7s early-call channel is inherited
+byte-identical (gate: 0 latch mismatches on 1,008 bars). Gate 5/5 (1,008 pooled bars):
+acc 82.5% vs v6 73.1%, wrong 12.6% vs 16.0%, **missed fire-worthy 0.00% vs 20.9%**, LOBO all
+days. The 30 measured "MIXED-while-evidence-screams" pain bars are all called correctly; two
+are permanent fixtures in `v8/test/`. No VM change (rule uses tape fields already present).
+Logs `<slug>_v8.json`. Records: `v8/analysis/2026-07-08-frontier.md`, `v8/README.md`.
+New do-not-re-litigate: per-tick microstructure (aggression split, whale split, basis, book
+pulls, poly dynamics, VWAP) adds no directional accuracy beyond cushion at 1s–60s windows.
+
+## Previous state 2026-07-07 — v7 generation (v7s frozen, v7c parked)
+
+**v7s + v7c shipped** (PR #1 `f2079f3`, then PR #2 `0ba38e7`). Both are full sibling forks of
+v6; lean stream **byte-identical** to v6 (tie-gate: 0 differing ticks in 74,305 over 253 bars,
+PASS). The change: v6's always-call EARLY CALL is replaced with a **selective** one — one
+immutable latch per BTC 5m bar in the **45–90s window**, requiring `poly_mid` in-band +
+cushion-agree + dwell 3, **abstaining otherwise** (hard deadline 90s: measured edge decays
+45–90s +10.5pp → 90–120s +2.3pp → 120–180s +0.9pp). New engine input `inp.polyMid`, plumbed
+additively through `runner/engine-adapter.mjs` and the dashboards (v6 and earlier ignore it).
+
+| engine | band | pooled 990-bar (281 live + 709 BQ 24/7) | status |
+|---|---|---|---|
+| **v7s** standard | [0.82, 0.93] | **85.8% @ 23.4% cov, median fire 68s** (BQ-24/7 alone 81.7%; ex-cascade-day 89.5%) | **live** — `/v7s/updown-liquidity-overlap.html`, logs `_v7s.json` |
+| **v7c** conviction | [0.90, 0.96] | **91.5% @ 7.2% cov, fire 72s** (BQ-24/7 90.4%; ex-cascade 94.0%) | **PARKED** for UMA/automation plans — do not deploy, wire, or modify |
+
+**The load-bearing v7 finding (add to the do-not-re-litigate list below):** the in-sample
+result (95.6% / +10.5pp edge on live-session logs) **collapsed out-of-sample** to 81.7% /
+−2.8pp on 709 continuous 24/7 BQ bars. Diagnosed causes: bar-selection luck (live sessions ran
+in cleaner stretches); misses are invisible at fire time (hits/misses statistically identical
+on every available feature — no veto exists in these inputs); and **Polymarket is calibrated
+at 45–90s — trading edge from public tape/poly features ≈ 0**. Plus ~8% of bars are near-flat
+oracle coin-flips, capping any predictor ~96%. Consequences: judge every candidate on the 24/7
+BQ distribution, never on live-session samples; any v8 edge claim must beat the calibrated
+market on that distribution. Full record: `v7/analysis/2026-07-07-v7-basis.md` + `v7/README.md`;
+evidence base `v7/analysis/bq_eval.jsonl` (709 bars, 59.2h, Jul 5–7).
+
+**Dashboard (PR #2):** the v7s 1s tick loop runs in a **dedicated Web Worker** — Chrome
+throttles main-thread timers (~1 tick/min after ~5 min backgrounded; this corrupted the old
+v5.4 A/B) but not worker timers, so minimized/occluded tabs keep ticking at 1/s (gap >2.5s
+logs a console warning; falls back to `setInterval` if Worker creation fails). System sleep is
+separate: long continuous runs need **`caffeinate -dis`** on the Mac. Local serving: any port
+works (`:5173` convention; a standing worker-managed server on `:7724` is also in use).
+
+**Queued next (v8 research):** (1) order-book *dynamics* from `bin.book_imb_1s`/`trades_1s`
+(the hunt for edge beyond `poly_mid`), (2) cross-market lead-lag (perp→spot, ETH→BTC),
+(3) v7c + UMA automation requirements. Open infra: the VM runner (`61426-runner`/`61426-tls`)
+is deployed but disabled, `stunnel4` (dead SSH experiment) still holds VM :443 which the
+runner's TLS front needs, and Binance perp 429 pressure persists on the shared VM IP.
+
+## Previous state 2026-07-05 — v6 (frozen predecessor)
 
 **v6 shipped.** Fork of v5.4. Lean stream (`decideDebounced`/`momentumOf`/`flipRisk`) is
 **byte-identical** to v5.4 — replay gate over the pooled 145 live + 135 BQ = 280-bar evidence
@@ -141,6 +196,14 @@ GCP tag `http-server` added to the VM (`default-allow-http` rule, permanent). **
 - **CORS:** open (`Access-Control-Allow-Origin: *` on `/log`).
 
 ### What the validation already proved (do NOT re-litigate, but don't over-trust either)
+From the v7 program (2026-07-07, 709-bar 24/7 BQ evidence base — see the v7 section above):
+- **Polymarket is calibrated at 45–90s** — its price ≈ its accuracy in every bucket; trading
+  edge from public tape/poly features ≈ 0 there. `poly_mid` is the dominant early predictor;
+  AND-ing in flow/book/whale signals slightly hurts.
+- **Live-session samples are selection-flattered** (95.6% in-sample → 81.7% 24/7 OOS). Judge
+  every candidate on the 24/7 BQ distribution.
+- **~8% of bars are near-flat oracle coin-flips** — no predictor clears ~96% overall.
+
 Backtested across 18 captured bars (`testdata/v3-logs/`):
 - **CVD-30s alone is a WEAK predictor** of 5m flips. Per-tick slope and simple CVD/price
   divergence did **not** generalize (the divergence that looked perfect on the flip bar was

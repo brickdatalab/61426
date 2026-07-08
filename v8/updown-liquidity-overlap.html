@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Up/Down — Liquidity Overlap [V8]</title>
+<style>
+  :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;--cvd:#9b8cff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  header{padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:15px;margin:0;font-weight:600}
+  .vtag{font-size:10px;background:var(--bin);color:#04122e;padding:2px 6px;border-radius:5px;margin-left:6px;font-weight:700;vertical-align:middle}
+  #mBar{color:var(--dim);font-size:12px;font-family:ui-monospace,monospace}
+  #mBar b{color:var(--txt)}
+  .live{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  .rem{font-family:ui-monospace,monospace;color:var(--txt);background:var(--panel2);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+  .pulse{width:9px;height:9px;border-radius:50%;background:#444}
+  .pulse.on{background:var(--up);animation:pp 1s infinite}
+  @keyframes pp{0%{box-shadow:0 0 0 0 rgba(46,194,126,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,126,0)}100%{box-shadow:0 0 0 0 rgba(46,194,126,0)}}
+  .wrap{display:grid;grid-template-columns:290px 1fr;min-height:calc(100vh - 50px)}
+  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+  .preview{padding:16px;overflow:auto}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 6px}
+  input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 10px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px}
+  input[type=text]:focus{outline:none;border-color:var(--bin)}
+  .group{margin-bottom:16px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px}
+  .presets button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12px}
+  .presets button:hover{border-color:var(--bin)}
+  .btnrow{display:flex;gap:8px}
+  .startbtn{flex:1;padding:11px;border-radius:8px;font-weight:600;font-size:14px;border:none;cursor:pointer;background:var(--bin);color:#04122e}
+  .startbtn.stop{background:var(--down);color:#2a0307}
+  .logbtn{padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:13px}
+  .status{margin-top:14px}
+  .feed{font-size:12px;color:var(--dim);margin-bottom:5px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#444;margin-right:7px}
+  .dot.ok{background:var(--up)}.dot.bad{background:var(--down)}.dot.wait{background:var(--flat)}
+  .sep{height:1px;background:var(--line);margin:16px 0}
+  .threads{font-size:11px;color:var(--dim)}
+  .threads .thhead{text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+  .threads .thempty{color:var(--dim);opacity:.6;font-style:italic}
+  /* signal = flowing pressure bar */
+  .signal{display:flex;align-items:center;gap:18px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
+  .sigcol{flex:0 0 430px;max-width:430px;min-width:0}   /* fixed column: text changes can never move the pressure bar */
+  .sigtag{font-size:26px;font-weight:800;letter-spacing:1px;line-height:1.1}
+  .sigtag.UP{color:var(--up)}.sigtag.DOWN{color:var(--down)}.sigtag.MIXED{color:var(--flat)}.sigtag.WAIT{color:var(--dim)}
+  .siginfo{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.5;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .siginfo b{color:var(--txt)}
+  .presswrap{flex:1;min-width:240px}
+  .pressbar{position:relative;height:42px;border-radius:10px;background:linear-gradient(90deg,rgba(255,93,108,.22),rgba(255,93,108,.03) 45%,rgba(46,194,126,.03) 55%,rgba(46,194,126,.22));border:1px solid var(--line);overflow:hidden}
+  .pressmid{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--txt);opacity:.45}
+  .pressfill{position:absolute;top:6px;bottom:6px;left:50%;width:0;border-radius:4px;transition:width .9s cubic-bezier(.22,.61,.36,1),left .9s cubic-bezier(.22,.61,.36,1),background .3s}
+  .pressneedle{position:absolute;top:-3px;bottom:-3px;left:50%;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .9s cubic-bezier(.22,.61,.36,1)}
+  .presslbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
+  .panels{display:grid;grid-template-columns:2fr 3fr;grid-template-rows:auto auto;gap:14px;margin-bottom:14px}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .card h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  .legend{display:flex;gap:12px;font-size:10px;color:var(--dim);margin-top:6px;font-family:ui-monospace,monospace}
+  .legend span b{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
+  #cvdChart,#cvdDeltaChart,#flowChart,#imbChart{width:100%}
+  #cvdChart a,#cvdDeltaChart a,#flowChart a,#imbChart a{display:none !important}
+  .tip{position:absolute;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:11px ui-monospace,monospace;color:var(--txt);pointer-events:none;display:none;z-index:5;white-space:nowrap}
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
+  .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+  .metric .k{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
+  .metric .v{font-size:16px;font-weight:600;margin-top:3px;font-family:ui-monospace,monospace}
+  .metric .kd{font-size:10px;color:var(--dim);margin-top:2px;font-family:ui-monospace,monospace}
+  .metric .convtrack{height:3px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden;display:none}
+  .metric .convtrack .fill{height:100%;width:0%;border-radius:2px;transition:width .4s ease, background .4s ease}
+  .metric.conv-up{border-color:var(--up)}
+  .metric.conv-down{border-color:var(--down)}
+  .metric.conv-flash{animation:convflash 1.2s step-end infinite}
+  @keyframes convflash{0%,49%{background:rgba(199,185,74,.55)}50%,100%{background:var(--panel)}}
+  .metric .kd.convlbl{color:var(--txt);letter-spacing:.4px}
+  @media (prefers-reduced-motion: reduce){
+    .metric .convtrack .fill{transition:none}
+    .metric.conv-flash{animation:none;background:rgba(199,185,74,.35)}
+  }
+  .pos{color:var(--up)}.neg{color:var(--down)}
+  .earlybadge{margin-top:6px;font-size:12px;font-weight:700;letter-spacing:.3px}
+  table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
+  th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:10px;position:sticky;top:0;background:var(--bg)}
+  th:first-child,td:first-child{text-align:left}
+  td.UP{color:var(--up)}td.DOWN{color:var(--down)}td.MIXED{color:var(--flat)}
+  .settled{padding:13px 16px;border-radius:10px;margin-bottom:12px;font-weight:600;display:none}
+  .settled.UP{background:rgba(46,194,126,.12);border:1px solid var(--up);color:var(--up)}
+  .settled.DOWN{background:rgba(255,93,108,.12);border:1px solid var(--down);color:var(--down)}
+  .promptbox{border-top:1px solid var(--line);background:var(--panel);padding:12px 18px}
+  .promptbox .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .promptbox h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+  #prompt{width:100%;min-height:50px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-family:ui-monospace,monospace;font-size:12px;resize:vertical}
+  .copy{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12px}
+  /* session-history threads */
+  .threads .thitem{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 9px;border-radius:6px;cursor:pointer;font-size:11px;margin-bottom:5px;font-family:ui-monospace,monospace}
+  .threads .thitem:hover{border-color:var(--bin)}
+  .threads .thitem.cur{border-color:var(--bin);background:rgba(91,157,255,.12)}
+  /* thread progression modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+  .modalcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(680px,92vw)}
+  .modalhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-family:ui-monospace,monospace;font-size:13px;color:var(--txt)}
+  .thclose{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer}
+  .thstats{margin-top:10px;font-size:12px;color:var(--dim);font-family:ui-monospace,monospace}
+  .thresult{font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px}
+  .thresult.UP{color:var(--up);background:rgba(46,194,126,.15)}
+  .thresult.DOWN{color:var(--down);background:rgba(255,93,108,.15)}
+  #thCanvas{width:100%;height:160px;display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Up / Down <span class="vtag">V8</span></h1>
+  <span id="mBar">BTC — · Poly —</span>
+  <div class="live"><span id="pulse" class="pulse"></span><span id="rate">idle</span><span class="rem" id="mRem">--:--</span></div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <div class="group"><label>Market slug</label>
+      <input id="slug" type="text" value="btc-updown-15m-1781669700" spellcheck="false"></div>
+    <div class="group"><label>Presets — current live bar</label>
+      <div class="presets" id="presets">
+        <button data-a="btc" data-i="5m">BTC 5m</button>
+        <button data-a="btc" data-i="15m">BTC 15m</button>
+        <button data-a="eth" data-i="5m">ETH 5m</button>
+        <button data-a="eth" data-i="15m">ETH 15m</button>
+       </div></div>
+    <div class="group" style="display:flex;align-items:center;gap:8px"><label style="margin:0">Continuous runs</label>
+      <input id="continuous" type="number" value="1" min="1" max="50" style="width:50px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px"></div>
+    <div class="btnrow">
+      <button id="start" class="startbtn">▶ Connect &amp; stream</button>
+      <button id="dl" class="logbtn">⬇ Log</button>
+    </div>
+    <div class="status"><label>Feeds · WS live</label>
+      <div class="feed"><span id="dBin" class="dot"></span>Binance perp (WebSocket)</div>
+      <div class="feed"><span id="dPoly" class="dot"></span>Polymarket book</div></div>
+    <div class="sep"></div>
+    <div class="threads" id="threads">
+      <div class="thhead">Session history</div>
+      <div class="thempty">No past sessions yet</div>
+    </div>
+  </div>
+
+  <div class="preview">
+    <div class="settled" id="settled"></div>
+
+    <div class="signal">
+      <div class="sigcol">
+        <div class="sigtag WAIT" id="sigtag">—</div>
+        <div class="siginfo" id="siginfo">press Connect…</div>
+        <div class="earlybadge" id="earlyBadge" style="display:none"></div>
+      </div>
+      <div class="presswrap">
+        <div class="pressbar">
+          <div class="pressmid"></div>
+          <div class="pressfill" id="pressFill"></div>
+          <div class="pressneedle" id="pressNeedle" style="left:50%"></div>
+        </div>
+        <div class="presslbl"><span>← DOWN pressure</span><span>net flow + book conviction</span><span>UP pressure →</span></div>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="card">
+        <h3>CVD 1m — net flow</h3>
+        <div id="cvdChart" style="width:100%;height:250px"></div>
+      </div>
+      <div class="card">
+        <h3>CVD 10s — delta flow</h3>
+        <div id="cvdDeltaChart" style="width:100%;height:250px"></div>
+      </div>
+      <div class="card">
+        <h3>Bar flow — CVD since open</h3>
+        <div id="flowChart" style="width:100%;height:250px"></div>
+      </div>
+      <div class="card">
+        <select id="imbSelect" style="background:transparent;border:1px solid var(--line);color:var(--dim);padding:3px 24px 3px 8px;border-radius:5px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 10 10%22><path d=%22M2 3.5L5 6.5L8 3.5%22 stroke=%22%238a93a3%22 stroke-width=%221.2%22 fill=%22none%22/></svg>');background-repeat:no-repeat;background-position:right 6px center">
+          <option value="imb">Binance imb vs Poly imb</option>
+          <option value="cvd5">CVD 5s delta</option>
+          <option value="cvd60">CVD 60s delta</option>
+          <option value="cush">Cushion</option>
+        </select>
+        <div id="imbChart" style="width:100%;height:250px"></div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div><div class="kd" id="mCushD">Δ10s —</div></div>
+      <div class="metric"><div class="k">CVD since open</div><div class="v" id="mCvdOpen">—</div></div>
+      <div class="metric"><div class="k">CVD Δ5s</div><div class="v" id="mCvd5">—</div></div>
+      <div class="metric"><div class="k">CVD Δ10s</div><div class="v" id="mCvd10">—</div></div>
+      <div class="metric"><div class="k">CVD Δ60s</div><div class="v" id="mCvd60">—</div></div>
+      <div class="metric" id="mSigCard"><div class="k">Signal</div><div class="v" id="mSig">—</div><div class="convtrack" id="mSigTrack"><div class="fill" id="mSigFill"></div></div><div class="kd" id="mSigRun">×—</div></div>
+    </div>
+
+    <table>
+      <thead><tr><th>Time</th><th>rem</th><th>BTC imb</th><th>Poly imb</th><th>comb</th><th>cushion</th><th>CVD30s</th><th>signal</th></tr></thead>
+      <tbody id="led"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="promptbox">
+  <div class="hd"><h3>Prompt — copy back into Claude</h3><button class="copy" id="copy">Copy</button></div>
+  <textarea id="prompt" readonly></textarea>
+</div>
+
+<div class="modal" id="threadModal">
+  <div class="modalcard">
+    <div class="modalhd"><span id="thTitle"></span><button id="thClose" class="thclose">✕</button></div>
+    <canvas id="thCanvas" width="640" height="160"></canvas>
+    <div id="thStats" class="thstats"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script type="module">
+  // Pure signal logic (testable, see v5.1/test/signals.test.mjs) -> exposed to the page.
+  import { newSession, tick as sigTick, CFG } from './src/signals.mjs';
+  window.V5 = { newSession, sigTick, CFG };
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const SYM={btc:'BTCUSDT',eth:'ETHUSDT',sol:'SOLUSDT',xrp:'XRPUSDT',doge:'DOGEUSDT'};
+const BIN_BAND=0.0012;   // ±0.12% of price shown
+const POLY_BAND=0.06;    // ±6 cents of prob shown
+// v7s 'standard' band [0.82,0.93]: measured 2026-07-07 on the 883-bar pooled 24/7 evidence base: 85.1% @ 22.9% coverage (89.5% excluding the 07-05 cascade day), median fire ~67s in.
+const EARLY_TIER_ACC = { standard: '85%' };
+const EARLY_TIER_TIP = 'v7s standard band [0.82,0.93], BTC 5m, fire window 45-90s, dwell 3, cushion-agree. Measured 2026-07-07 on 883 pooled 24/7 bars: 85.1% @ 22.9% cov (89.5% ex-cascade-day). The live-hours sample ran higher (95.6%) but is selection-flattered - trust the 24/7 number. Abstains when no setup exists.';
+let parsed=null,poll=null,st=null,runsLeft=0;
+
+function parseSlug(slug){
+  const m=slug.trim().toLowerCase().match(/^([a-z]+)-updown-(\d+)([mh])-(\d+)$/);
+  if(!m)return null;const[,asset,n,unit,ts]=m,num=+n,barSec=num*(unit==='h'?3600:60);
+  return{asset,symbol:SYM[asset]||asset.toUpperCase()+'USDT',interval:num+unit,barSec,ts:+ts,end:+ts+barSec,label:`${asset.toUpperCase()} ${num}${unit}`};
+}
+const fmtClock=s=>{s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');};
+const sgn=v=>v>=0?'+':'';
+const fmtUsd=v=>(v>=0?'+':'')+Math.round(v).toLocaleString();
+const fmtK=v=>{const a=Math.abs(v);return (v>=0?'+':'-')+(a>=1000000?(a/1000000).toFixed(2)+'M':a>=1000?(a/1000).toFixed(1)+'k':''+a);};
+async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
+async function jgetT(u,ms){const ac=new AbortController();const t=setTimeout(()=>ac.abort(),ms);
+  try{const r=await fetch(u,{signal:ac.signal});if(!r.ok)throw new Error(r.status);return await r.json();}finally{clearTimeout(t);}}
+
+// imbalance within band, returns {imb, mid, levels}
+function bookStats(bids,asks,mid,band,priceKey,sizeKey){
+  let bd=0,ad=0;const lv=[];
+  for(const b of bids){const p=+b[priceKey],s=+b[sizeKey]*p;if(Math.abs(p-mid)<=mid*band||Math.abs(p-mid)<=band){if(p<=mid){bd+=s;lv.push({p,s,side:-1});}}}
+  for(const a of asks){const p=+a[priceKey],s=+a[sizeKey]*p;if(Math.abs(p-mid)<=mid*band||Math.abs(p-mid)<=band){if(p>=mid){ad+=s;lv.push({p,s,side:1});}}}
+  const imb=(bd+ad)?(bd-ad)/(bd+ad):0;
+  return{imb,bd,ad,lv};
+}
+
+// ---- Binance via WebSocket: ONE persistent socket, no per-tick REST -> no rate-limit bans ----
+const BIN_WS='wss://fstream.binance.com/stream?streams=';
+function binStreams(){
+  const s=parsed.symbol.toLowerCase();
+  return `${s}@depth@100ms/${s}@trade`;
+}
+function newBook(){ return { bids:new Map(), asks:new Map(), lastU:0, ready:false, gap:false }; }
+function applyDiff(d){
+  const b=st.book; if(!b||!b.ready)return;
+  if(d.u<=b.lastU)return;
+  if(d.pu>b.lastU){ b.gap=true; return; }
+  for(const [p,q] of d.b){const P=+p,Q=+q; if(Q===0)b.bids.delete(P); else b.bids.set(P,Q);}
+  for(const [p,q] of d.a){const P=+p,Q=+q; if(Q===0)b.asks.delete(P); else b.asks.set(P,Q);}
+  b.lastU=d.u; st.bookLastAdv=Date.now();
+}
+async function syncBook(){
+  if(!st||!st.running)return;
+  st.book.ready=false; st.diffBuffer=[];
+  try{
+    const j=await jget(`https://fapi.binance.com/fapi/v1/depth?symbol=${parsed.symbol}&limit=1000`);
+    const b=st.book; b.bids.clear(); b.asks.clear();
+    for(const [p,q] of j.bids)if(+q>0)b.bids.set(+p,+q);
+    for(const [p,q] of j.asks)if(+q>0)b.asks.set(+p,+q);
+    b.lastU=j.lastUpdateId; b.ready=true;
+    for(const d of st.diffBuffer)applyDiff(d);
+    st.diffBuffer=[]; b.gap=false; st.bookLastAdv=Date.now();
+    if(!st.binReady){st.binReady=true;$('#dBin').className='dot ok';}
+  }catch(e){ setTimeout(()=>{if(st&&st.running)syncBook();},2000); }
+}
+function openWS(){
+  if(!st||!st.running)return;
+  closeWS();
+  let ws;
+  try{ ws=new WebSocket(BIN_WS+binStreams()); }
+  catch(e){ scheduleReconnect(); return; }
+  st.ws=ws;
+  ws.onopen=()=>{ st.wsRetry=0; syncBook(); };
+  ws.onmessage=(ev)=>{
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    const s=m.stream||'', d=m.data||{};
+    if(s.indexOf('@depth')>=0&&'u' in d&&d.b){
+      if(!st.book.ready)st.diffBuffer.push(d); else { applyDiff(d); if(st.book.gap){st.book.gap=false;syncBook();} }
+    }
+    else if(s.indexOf('@trade')>=0){
+      const px=+d.p, q=+d.q;
+      if(px>0 && q>0){                              // guard: drop malformed/zero prints
+        st.trades.push({T:+d.T,p:px,q:q,m:d.m}); st.wsLast=px; st.lastTradeTs=Date.now();
+      }
+    }
+  };
+  ws.onerror=()=>{ if(st)$('#dBin').className='dot bad'; };
+  ws.onclose=()=>{ if(!st)return; st.binReady=false; if(st.running){ $('#dBin').className='dot wait'; scheduleReconnect(); } };
+}
+function scheduleReconnect(){
+  if(!st||!st.running)return;
+  st.wsRetry=Math.min((st.wsRetry||0)+1,6);
+  const delay=Math.min(1000*Math.pow(2,st.wsRetry-1),8000);
+  clearTimeout(st._rt); st._rt=setTimeout(()=>{ if(st&&st.running)openWS(); },delay);
+}
+function closeWS(){ if(!st)return; if(st._rt){clearTimeout(st._rt);st._rt=null;} if(st.ws){ try{st.ws.onclose=null;st.ws.onerror=null;st.ws.close();}catch(e){} st.ws=null; } }
+// ---- ourWebSocket (VM) — reliable CVD source, no browser CORS/mute ----
+const OWS_URL='ws://34.89.159.108/ws/v5/tape';
+let owsRetry=0, owsWatchdog=null, owsReconnecting=false;
+function openOWS(){
+  if(!st||!st.running||!parsed)return;
+  closeOWS();
+  owsReconnecting=false;
+  let w;
+  try{ w=new WebSocket(`${OWS_URL}?symbol=${parsed.symbol}&bar=${parsed.interval}`); }
+  catch(e){ scheduleOWS(); return; }
+  st.ows=w;
+  w.onopen=()=>{ owsRetry=0; owsReconnecting=false; };
+  w.onmessage=(ev)=>{
+    st.lastOwsMsg=Date.now();                                // watchdog heartbeat
+    let m;try{m=JSON.parse(ev.data);}catch(e){return;}
+    if(m.tape){
+      st.owsCvd1m=m.tape.cvd_delta_1m;
+      st.owsCvd3m=m.tape.cvd_delta_3m;
+      st.owsSinceOpen=m.tape.cvd_candle_usd;
+      st.owsLargePrints=m.tape.large_print_net_3m_usd;
+      st.owsEfficiency=m.tape.efficiency_3m;
+      if(m.tape.price!=null) st.last=m.tape.price;
+      if(m.tape.bar_open!=null) st.open=m.tape.bar_open;
+      st.owsImb=m.tape.binance_imb;
+      st.owsVol1m=m.tape.vol_1m_usd ?? null;
+      $('#dBin').className='dot ok';
+    }
+    if(m.perp_spot_divergence) st.owsPerpSpotDiv=m.perp_spot_divergence.perp_cvd_minus_spot_cvd_5m_usd;
+  };
+  w.onerror=()=>{};
+  w.onclose=()=>{ if(st&&st.running){ st.ows=null; scheduleOWS(); } };
+}
+function scheduleOWS(){
+  if(!st||!st.running||owsReconnecting)return;
+  owsReconnecting=true;
+  clearTimeout(st._owrt); st._owrt=setTimeout(()=>{ owsReconnecting=false; if(st&&st.running)openOWS(); },500);
+}
+function closeOWS(){ if(!st)return; if(st._owrt){clearTimeout(st._owrt);st._owrt=null;} if(st.ows){ try{st.ows.onclose=null;st.ows.onerror=null;st.ows.close();}catch(e){} st.ows=null; } owsReconnecting=false; }
+function startOWSWatchdog(){
+  if(owsWatchdog)clearInterval(owsWatchdog);
+  owsWatchdog=setInterval(()=>{
+    if(!st||!st.running)return;
+    if(!st.lastOwsMsg||Date.now()-st.lastOwsMsg>5000){
+      if(!owsReconnecting){ closeOWS(); scheduleOWS(); }
+    }
+  },3000);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&st&&st.running){
+    if(!st.ows||st.ows.readyState!==1){ closeOWS(); scheduleOWS(); }
+  }
+});
+
+async function tick(){
+  if(!st||!st.running||st._inTick)return;   // async ticks must never overlap
+  st._inTick=true;
+  try{ await tickBody(); } finally { if(st)st._inTick=false; }
+}
+async function tickBody(){
+  if(!st||!st.running)return;
+  const now=Date.now()/1000, rem=parsed.end-now;
+  if(rem<=0){await settle();return;}
+  // Binance data comes entirely from the VM (ourWebSocket): price, bar_open, imbalance.
+  // No direct Binance connection — no CORS, no mute, no red dot, no per-tick REST spam.
+  const bimb=st.owsImb ?? null;
+  const bmid=st.last ?? null;
+  // CVD: from ourWebSocket (VM-computed spot CVD) — replaces the old browser-computed perp 30s + CORS-blocked REST watchdog
+  st.cvd = st.owsCvd1m ?? st.cvd ?? 0;   // chart display only; NOT a signal input
+  // Polymarket book
+  let book=null;
+  if(st.token){ try{ book=await jgetT('https://clob.polymarket.com/book?token_id='+st.token,900); $('#dPoly').className='dot ok'; }catch(e){ book=null; $('#dPoly').className='dot bad'; } }  // 900ms cap: a slow Polymarket can cost poly fields, never the tick cadence
+  let pStat=null,pmid=null;
+  if(book&&book.bids&&book.asks&&book.bids.length&&book.asks.length){
+    const bb=Math.max(...book.bids.map(b=>+b.price)), ba=Math.min(...book.asks.map(a=>+a.price));
+    pmid=(bb+ba)/2;
+    pStat=bookStats(book.bids.map(b=>[b.price,b.size]),book.asks.map(a=>[a.price,a.size]),pmid,POLY_BAND,0,1);
+  }
+
+  const pimb=pStat?pStat.imb:null;
+  const comb=(bimb!=null&&pimb!=null)?(bimb+pimb)/2:(bimb!=null?bimb:pimb);
+  const cush=(st.last!=null&&st.open!=null)?st.last-st.open:null;
+
+  // ---- v5.1 signal layer (pure, from ./src/signals.mjs) ----
+  const sg = st.signals ? V5.sigTick(st.signals, {
+    now: Date.now(),
+    sinceOpen: st.owsSinceOpen, price: st.last,
+    bimb, pimb,
+    largePrints: st.owsLargePrints, efficiency: st.owsEfficiency,
+    perpSpotDiv: st.owsPerpSpotDiv, cvd3m: st.owsCvd3m,
+    cushion: cush, remS: rem, vol1m: st.owsVol1m ?? null, polyMid: pmid,
+  }) : null;
+  const dr = sg ? sg.decision : { sig: 'MIXED', note: '' };
+  const sig = dr.sig;
+  const flip = sg ? sg.flip : null;
+  // flowing pressure scalar [-1..1]: book pressure + flip-risk contribution
+  let pressure = 0;
+  if (sg) {
+    const flipPush = flip && flip.p != null ? -flip.side * flip.p : 0;  // risk pushes AGAINST the current side
+    pressure = Math.max(-1, Math.min(1, (dr.imbEwma ?? comb ?? 0) * 0.7 + flipPush * 0.3));
+  }
+
+  // ---- render: pressure bar (needle eases, doesn't snap) ----
+  const npct = 50 + pressure * 48;
+  $('#pressNeedle').style.left = npct + '%';
+  const fill = $('#pressFill');
+  if (pressure >= 0) { fill.style.left = '50%'; fill.style.width = (pressure * 48) + '%'; fill.style.background = 'rgba(46,194,126,.45)'; }
+  else { fill.style.left = (50 + pressure * 48) + '%'; fill.style.width = (-pressure * 48) + '%'; fill.style.background = 'rgba(255,93,108,.45)'; }
+  const dispSig = sig;
+  st.sigRun = (dispSig === st.sigRunVal) ? (st.sigRun || 0) + 1 : 1;   // consecutive ticks at this value
+  st.sigRunVal = dispSig;
+  $('#sigtag').className = 'sigtag ' + dispSig;
+  $('#sigtag').textContent = dispSig === 'UP' ? 'UP' : dispSig === 'DOWN' ? 'DOWN' : 'MIXED';
+  const flowNote = dr.note ? ' · ' + dr.note : '';
+  const edge = (flip && flip.p != null && pmid != null && flip.side)
+    ? flip.p - (flip.side > 0 ? (1 - pmid) : pmid) : null;   // model P(flip) vs market-implied P(flip)
+  $('#siginfo').innerHTML = `Binance <b>${bimb == null ? '—' : bimb.toFixed(2)}</b> · Polymarket <b>${pimb == null ? '—' : pimb.toFixed(2)}</b> · mom z<b>${sg ? (sg.momentum.z >= 0 ? '+' : '') + sg.momentum.z.toFixed(1) : '—'}</b>${flowNote}` +
+    ` · flip <b>${flip && flip.p != null ? Math.round(flip.p * 100) + '%' : '—'}</b>` +
+    `${edge != null ? ' (edge ' + (edge >= 0 ? '+' : '') + Math.round(edge * 100) + '%)' : ''}` +
+    `${flip && flip.alert ? ' <b class="neg">' + flip.alert + '</b>' : ''}<br>${Math.round(rem)}s left`;
+
+  // EARLY CALL badge (v7s): selective channel — hidden until latched; after the hard
+  // deadline with no latch, shows an explicit NO CALL (abstained) state.
+  const eb = $('#earlyBadge');
+  if (sg && sg.early) {
+    const arrow = sg.early.side === 'UP' ? '▲' : '▼';
+    const tierTxt = sg.early.late ? `${sg.early.tier} (late connect — unmeasured)`
+                  : `${sg.early.tier} @${sg.early.price} (${EARLY_TIER_ACC[sg.early.tier] || '—'})`;
+    eb.textContent = `EARLY CALL ${arrow} ${sg.early.side} · ${tierTxt}`;
+    eb.title = EARLY_TIER_TIP;
+    eb.className = 'earlybadge ' + (sg.early.side === 'UP' ? 'pos' : 'neg');
+    eb.style.color = '';
+    eb.style.display = 'block';
+  } else if (sg && rem < V5.CFG.EARLY_HARD_REM) {
+    eb.textContent = 'NO CALL — abstained (no edge setup this bar)';
+    eb.title = EARLY_TIER_TIP;
+    eb.className = 'earlybadge';
+    eb.style.color = 'var(--dim)';
+    eb.style.display = 'block';
+  } else {
+    eb.style.display = 'none';
+  }
+
+  // subtle sub-header: price + prob
+  $('#mBar').innerHTML = `BTC <b>${bmid ? bmid.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</b> · Poly <b>${pmid ? pmid.toFixed(2) : '—'}</b>`;
+  // remaining top-right
+  $('#mRem').textContent = fmtClock(rem);
+
+  // scorecards
+  $('#mCush').textContent = cush == null ? '—' : sgn(cush) + cush.toFixed(1); $('#mCush').className = 'v ' + (cush > 0 ? 'pos' : cush < 0 ? 'neg' : '');
+  $('#mCushD').textContent = 'Δ10s ' + (sg && sg.cush_d10 != null ? sgn(sg.cush_d10) + sg.cush_d10.toFixed(1) : '—');
+  const setV = (id, v) => { const e = $('#' + id); e.textContent = v == null ? '—' : fmtK(v); e.className = 'v ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : ''); };
+  setV('mCvdOpen', st.owsSinceOpen);
+  setV('mCvd5', sg ? sg.flow.d5 : null);
+  setV('mCvd10', sg ? sg.flow.d10 : null);
+  setV('mCvd60', sg ? sg.flow.d60 : null);
+  $('#mSig').textContent = dispSig; $('#mSig').className = 'v ' + (dispSig === 'UP' ? 'pos' : dispSig === 'DOWN' ? 'neg' : '');
+  // conviction visualization: run persistence toward 31 ticks + price-side agreement
+  // (measured on the first 28 verified bars: >=31 & agreeing = 96%; against price = ~33%)
+  const CONV_TICKS = 31;
+  const convCard = $('#mSigCard'), convTrack = $('#mSigTrack'), convFill = $('#mSigFill'), runEl = $('#mSigRun');
+  const convDir = dispSig === 'UP' || dispSig === 'DOWN';
+  const convAgrees = convDir && cush != null && cush !== 0 && ((dispSig === 'UP') === (cush > 0));
+  const convFighting = convDir && cush != null && cush !== 0 && !convAgrees;
+  // v5.4: lock also requires a REAL price lead — thin-cushion locks measured 58% vs fat 91% on 52 bars
+  const convFat = cush != null && Math.abs(cush) >= Math.max(10, 0.5 * (st.owsVol1m ?? 20));
+  const convLocked = convAgrees && convFat && st.sigRun >= CONV_TICKS;
+  convCard.classList.toggle('conv-up', convLocked && dispSig === 'UP');
+  convCard.classList.toggle('conv-down', convLocked && dispSig === 'DOWN');
+  convCard.classList.toggle('conv-flash', convLocked);
+  convTrack.style.display = convDir ? 'block' : 'none';
+  if (convDir) {
+    convFill.style.width = Math.min(100, 100 * st.sigRun / CONV_TICKS) + '%';
+    convFill.style.background = convFighting ? 'var(--flat)' : (dispSig === 'UP' ? 'var(--up)' : 'var(--down)');
+  }
+  runEl.classList.toggle('convlbl', convLocked);
+  runEl.textContent = convLocked ? 'HIGH CONVICTION · ×' + st.sigRun
+                    : convFighting ? '×' + st.sigRun + ' · fighting price'
+                    : '×' + st.sigRun + ' ticks';
+  runEl.title = convLocked ? 'Run ≥31 ticks agreeing with a real price lead — ≈90% on 52 verified bars' : '';
+  $('#pulse').className = 'pulse on'; $('#rate').textContent = 'live · ' + st.log.length + ' ticks';
+
+  // histories for the two graphs
+  st.imbHist.push({ b: bimb, p: pimb, rem: Math.round(rem) }); if (st.imbHist.length > 180) st.imbHist.shift();
+  if (sg) {
+    st.cvdSeries.push({ t: Math.floor(Date.now()/1000), cvd: st.cvd, price: st.last, d5: sg.flow.d5, d10: sg.flow.d10, d60: sg.flow.d60, rate: sg.momentum.slope });
+    if (st.cvdSeries.length > 180) st.cvdSeries.shift();
+    const tSec=Math.floor(Date.now()/1000);
+    st.cvdEma = st.cvdEma==null ? st.cvd : 0.35*st.cvd + 0.65*st.cvdEma;   // light smoothing for clean line
+    updateChart('cvdChart', tSec, st.cvdEma);                                 // CVD 30s net flow
+    updateChart('cvdDeltaChart', tSec, sg ? sg.flow.d10 : null);               // CVD 10s delta
+    updateChart('flowChart', tSec, st.owsSinceOpen);                          // cumulative bar flow
+    updateChart('imbChart', tSec, st.imbMode==='imb'?[bimb,pimb]:st.imbMode==='cvd5'?(sg?sg.flow.d5:null):st.imbMode==='cvd60'?(sg?sg.flow.d60:null):(cush!=null?cush:null));
+    // push ALL swap histories (so a mid-market swap shows full bar data)
+    const sw={time:tSec};
+    const pushT=(a,p)=>{const L=a[a.length-1]; if(L&&L.time===p.time)a[a.length-1]=p; else a.push(p);};  // strictly-ascending times (setData requirement)
+    pushT(st.swapImbBin,{...sw,value:bimb}); pushT(st.swapImbPoly,{...sw,value:pimb});
+    pushT(st.swapCvd5,{...sw,value:sg?sg.flow.d5:null});
+    pushT(st.swapCvd60,{...sw,value:sg?sg.flow.d60:null});
+    pushT(st.swapCush,{...sw,value:cush});
+    const cap=300;
+    if(st.swapImbBin.length>cap)st.swapImbBin.shift();
+    if(st.swapImbPoly.length>cap)st.swapImbPoly.shift();
+    if(st.swapCvd5.length>cap)st.swapCvd5.shift();
+    if(st.swapCvd60.length>cap)st.swapCvd60.shift();
+    if(st.swapCush.length>cap)st.swapCush.shift();
+  }
+
+  const t = new Date().toISOString().substr(11, 8);
+  const row = {
+    t, rem: Math.max(0, Math.round(rem)),
+    btc_imb: bimb == null ? null : +bimb.toFixed(3), poly_imb: pimb == null ? null : +pimb.toFixed(3), comb: comb == null ? null : +comb.toFixed(3),
+    cushion: cush == null ? null : +cush.toFixed(2), cvd: Math.round(st.cvd),
+    cvd_since_open: st.owsSinceOpen == null ? null : Math.round(st.owsSinceOpen),
+    cvd_d5: sg && sg.flow.d5 != null ? Math.round(sg.flow.d5) : null,
+    cvd_d10: sg && sg.flow.d10 != null ? Math.round(sg.flow.d10) : null,
+    cvd_d60: sg && sg.flow.d60 != null ? Math.round(sg.flow.d60) : null,
+    cush_d10: sg && sg.cush_d10 != null ? +sg.cush_d10.toFixed(1) : null,
+    mom_z: sg ? +sg.momentum.z.toFixed(2) : null, mom_dir: sg ? sg.momentum.dir : null,
+    imb_ewma: sg && dr.imbEwma != null ? +dr.imbEwma.toFixed(3) : null,
+    large_prints: st.owsLargePrints == null ? null : Math.round(st.owsLargePrints),
+    efficiency: st.owsEfficiency == null ? null : +(+st.owsEfficiency).toFixed(3),
+    perp_spot_div: st.owsPerpSpotDiv == null ? null : Math.round(st.owsPerpSpotDiv),
+    cvd_d3m: st.owsCvd3m == null ? null : Math.round(st.owsCvd3m),
+    vol_1m: st.owsVol1m == null ? null : +(+st.owsVol1m).toFixed(2),
+    poly_mid: pmid == null ? null : +pmid.toFixed(3),
+    p_flip: flip && flip.p != null ? +flip.p.toFixed(3) : null,
+    flip_alert: flip ? flip.alert : null,
+    signal: sig,
+    early_call: sg && sg.early ? sg.early.side : null,
+    early_tier: sg && sg.early ? sg.early.tier : null,
+  };
+  st.log.push(row); saveLog();
+  if(st.log.length%5===0)renderThreads();   // keep sidebar fresh (active thread, new threads)
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${t}</td><td>${row.rem}</td><td>${bimb == null ? '·' : sgn(bimb) + bimb.toFixed(2)}</td>` +
+    `<td>${pimb == null ? '·' : sgn(pimb) + pimb.toFixed(2)}</td><td>${comb == null ? '·' : sgn(comb) + comb.toFixed(2)}</td>` +
+    `<td>${cush == null ? '·' : sgn(cush) + cush.toFixed(1)}</td><td>${fmtUsd(st.cvd)}</td><td class="${sig}">${sig}</td>`;
+  const led = $('#led'); led.insertBefore(tr, led.firstChild); while (led.children.length > 80) led.removeChild(led.lastChild);
+  updatePrompt(sig, bimb, pimb);
+}
+
+// ---- charts: Lightweight Charts — 4 panels, locked view, no scroll/zoom ----
+const charts={};   // id -> {chart, lines, rangeSet}
+function addLine(chart, opts){ return chart.addSeries ? chart.addSeries(LightweightCharts.LineSeries, opts) : chart.addLineSeries(opts); }
+function ensureChart(id, colors, pf){
+  if(charts[id]||!window.LightweightCharts)return;
+  const el=$('#'+id); if(!el)return;
+  const cs=Array.isArray(colors)?colors:[colors];
+  const chart=LightweightCharts.createChart(el, {
+    height:250, layout:{background:{color:'#14171d'}, textColor:'#8a93a3'},
+    grid:{vertLines:{color:'#1b1f27'}, horzLines:{color:'#1b1f27'}},
+    rightPriceScale:{visible:true, borderVisible:true, borderColor:'#262b35'},
+    timeScale:{timeVisible:true, secondsVisible:false, borderColor:'#262b35', lockVisibleTimeRangeOnResize:true},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    handleScroll:{mouseWheel:false,horzTouchDrag:false,vertTouchDrag:false,pressedMouseMove:false},  // NO user scroll, allow programmatic
+    handleScale:{mouseWheel:false,pinch:false,axisPressedMouseMove:false,axisDoubleClickReset:false},  // NO user zoom, but allow programmatic setVisibleRange
+  });
+  const lines=cs.map(c=>{const o={color:c,lineWidth:2};if(pf)o.priceFormat=pf;return addLine(chart,o);});
+  lines[0].createPriceLine({price:0, color:'#ffffff', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
+  charts[id]={chart, lines, rangeSet:false};
+}
+function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts}])); c.rangeSet=false; }  // seed whitespace at bar open only — setVisibleRange extends view to bar close
+function updateChart(id, tSec, val){
+  const c=charts[id]; if(!c)return;
+  const vals=Array.isArray(val)?val:[val];
+  vals.forEach((v,i)=>{ if(v!=null&&c.lines[i]){ try{ c.lines[i].update({time:tSec, value:v}); }catch(e){} } });   // a bad point must never kill the tick
+  try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}   // force full-bar view every tick
+}
+// imbChart-specific functions removed — the generic ensureChart/resetChart/updateChart above handles both panels.
+// ---- chart-swap: dropdown on imbChart to switch chart type mid-market with full history ----
+// chart-swap: the imbChart always has 2 lines; swap just reloads data into them
+const SWAP_MODES={
+  imb:  {colors:['#5b9dff','#e3c75a'], pf:null, dual:true},
+  cvd5: {colors:['#e3c75a'], pf:{type:'price',precision:0,minMove:1}, dual:false},
+  cvd60:{colors:['#e3c75a'], pf:{type:'price',precision:0,minMove:1}, dual:false},
+  cush: {colors:['#2ec27e'], pf:null, dual:false},
+};
+function swapImbChart(mode){
+  if(!parsed||!st)return;
+  const c=charts['imbChart']; if(!c)return;
+  st.imbMode=mode;
+  // swap data only — NO applyOptions, NO chart recreation = no flicker
+  const clean=a=>a.filter(p=>p.value!=null).filter((p,i,x)=>!i||p.time>x[i-1].time);  // null-free + strictly ascending or setData throws
+  try{
+    if(mode==='imb'){
+      c.lines[0].setData(clean(st.swapImbBin));
+      if(c.lines[1]) c.lines[1].setData(clean(st.swapImbPoly));
+    } else {
+      const hist = mode==='cvd5' ? st.swapCvd5 : mode==='cvd60' ? st.swapCvd60 : st.swapCush;
+      c.lines[0].setData(clean(hist));
+      if(c.lines[1]) c.lines[1].setData([{time:parsed.ts}]);   // hide second line: whitespace point — a truly EMPTY series breaks the pane's render loop (LWC 4.2.3 'Value is null' every frame = blank panel)
+    }
+  }catch(e){ console.warn('chart swap:', e.message); }
+  try{ c.chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end}); }catch(e){}
+}
+// hover on imbalance graph -> elapsed time into the bar
+function imbHover(ev){
+  const c=$('#imb'),tip=$('#imbTip'),rect=c.getBoundingClientRect(),W=c.width;
+  let mx=ev.clientX-rect.left; mx=Math.max(0,Math.min(W-1,mx));
+  const h=st?st.imbHist:[]; if(h.length<2){tip.style.display='none';return;}
+  const idx=Math.round(mx/W*(h.length-1)); const pt=h[idx]; if(!pt){tip.style.display='none';return;}
+  const elapsed=parsed.barSec-pt.rem;
+  const em=Math.floor(elapsed/60),es=Math.floor(elapsed%60);
+  tip.style.display='block';
+  tip.textContent=`${em}m ${es}s in · B ${pt.b==null?'—':pt.b.toFixed(2)} · P ${pt.p==null?'—':pt.p.toFixed(2)}`;
+  const cx=rect.left-c.parentElement.getBoundingClientRect().left+mx+12, cy=ev.clientY-c.parentElement.getBoundingClientRect().top-6;
+  tip.style.left=cx+'px'; tip.style.top=cy+'px';
+}
+function animate(){ /* Lightweight Charts self-render */ }
+
+async function settle(){
+  if(st&&st._settled)return; if(st)st._settled=true;   // concurrent in-flight ticks must settle once
+  stop(true);
+  let o=st.open,c=st.last;
+  try{const k=await jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`);
+    if(k&&k[0]){o=+k[0][1];c=+k[0][4];}}catch(e){ }
+  if(o==null||c==null)return;
+  const res=c>=o?'UP':'DOWN';const el=$('#settled');el.className='settled '+res;el.style.display='block';
+  el.textContent=`SETTLED ${res} — open ${o.toLocaleString()} → close ${c.toLocaleString()} (${sgn(c-o)+(c-o).toFixed(1)})`;
+  st.log.push({t:new Date().toISOString().substr(11,8),settled:res,open:o,close:c});saveLog();
+  renderThreads(); postLogToVM();   // thread marked settled + auto-save to VM
+  // Continuous runs: auto-advance to the next market slug
+  if(runsLeft>1){
+    runsLeft--;
+    const nextTs=parsed.ts+parsed.barSec;
+    const nextSlug=`${parsed.asset}-updown-${parsed.interval}-${nextTs}`;
+    $('#slug').value=nextSlug; updatePrompt();
+    setTimeout(()=>start(),2500);   // 2.5s pause to read the SETTLED banner, then auto-start next
+  }
+}
+
+const logKey=()=>'updownV8_log_'+($('#slug').value.trim());
+const MAX_SESSIONS=50;   // keep the 50 most-recent sessions in localStorage
+function pruneSessions(){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('updownV8_log_'))keys.push(k);}
+  if(keys.length<=MAX_SESSIONS)return;
+  const ts=k=>{const p=parseSlug(k.slice('updownV8_log_'.length));return p?p.ts:0;};
+  keys.sort((a,b)=>ts(b)-ts(a));                 // newest first
+  for(const k of keys.slice(MAX_SESSIONS)){try{localStorage.removeItem(k);}catch(e){}}
+}
+function saveLog(){try{localStorage.setItem(logKey(),JSON.stringify(st.log));pruneSessions();}catch(e){}}
+function downloadLog(){const data=st&&st.log.length?st.log:JSON.parse(localStorage.getItem(logKey())||'[]');
+  const blob=new Blob([JSON.stringify({slug:$('#slug').value.trim(),rows:data},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=$('#slug').value.trim()+'_v8_log.json';a.click();}
+function updatePrompt(sig,b,p){const pp=parsed,endUtc=new Date(pp.end*1000).toISOString().substr(11,5)+' UTC';
+  let t=`V5 flip watch on Polymarket \`${$('#slug').value.trim()}\` (${pp.label}, settles ${endUtc}) — CVD flow-momentum + book imbalance, flowing pressure. `;
+  if(sig)t+=`Now: ${sig} (Binance ${b==null?'—':b.toFixed(2)}, Polymarket ${p==null?'—':p.toFixed(2)}).`;$('#prompt').value=t;}
+
+// ---- session history (threads) + VM log endpoint ----
+function etLabel(slug){
+  const p=parseSlug(slug); if(!p)return slug;
+  const d=new Date(p.ts*1000);
+  const hhmm=d.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour12:false,hour:'2-digit',minute:'2-digit'});
+  return `${p.asset.toUpperCase()} · ${p.interval} · ${hhmm} ET`;
+}
+function loadThreads(){
+  const out=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i); if(!k||!k.startsWith('updownV8_log_'))continue;
+    const slug=k.slice('updownV8_log_'.length);
+    let rows=[]; try{rows=JSON.parse(localStorage.getItem(k)||'[]');}catch(e){}
+    const settled=rows.find(r=>r.settled); const p=parseSlug(slug);
+    out.push({slug,label:etLabel(slug),ts:p?p.ts:0,settled:settled?settled.settled:null,n:rows.length,rows});
+  }
+  out.sort((a,b)=>b.ts-a.ts); return out;
+}
+function renderThreads(){
+  const th=$('#threads'); if(!th)return; const list=loadThreads();
+  if(!list.length){th.innerHTML='<div class="thhead">Session history</div><div class="thempty">No past sessions yet</div>';return;}
+  th.innerHTML='<div class="thhead">Session history</div>'+list.map(t=>{
+    const cls=t.settled?(t.settled==='UP'?'ok':'bad'):'wait';
+    const cur=(st&&st.running&&$('#slug').value.trim()===t.slug)?' cur':'';
+    return `<button class="thitem${cur}" data-slug="${t.slug}"><span class="dot ${cls}"></span>${t.label}</button>`;
+  }).join('');
+}
+function openThread(slug){
+  const t=loadThreads().find(x=>x.slug===slug); if(!t)return;
+  const rows=(t.rows||[]).filter(r=>r.signal||r.cvd!=null||r.settled);
+  const rcls=t.settled?(t.settled==='UP'?'ok':'bad'):'wait';
+  $('#thTitle').innerHTML=`<span class="dot ${rcls}"></span>${t.label}`+(t.settled?` <span class="thresult ${t.settled}">${t.settled}</span>`:' <span style="color:var(--dim)">(no settle)</span>');
+  const c=$('#thCanvas'),x=c.getContext('2d'),W=c.width,H=c.height; x.clearRect(0,0,W,H);
+  const cush=rows.map(r=>r.cushion).filter(v=>v!=null);
+  let info='';
+  if(cush.length>1){
+    let mn=Math.min(...cush),mx=Math.max(...cush); if(mn===mx){mn-=1;mx+=1;}
+    const col=t.settled==='DOWN'?'rgba(255,93,108,.85)':t.settled==='UP'?'rgba(46,194,126,.85)':'#5b9dff';
+    x.strokeStyle=col;x.lineWidth=2;x.beginPath();
+    cush.forEach((v,i)=>{const px=i/(cush.length-1)*W,py=H-((v-mn)/(mx-mn))*(H-10)-5;i?x.lineTo(px,py):x.moveTo(px,py);});
+    x.stroke();
+    x.fillStyle='#8a93a3';x.font='10px ui-monospace';x.fillText('cushion (price − open)',6,12);
+    info=`open→close cushion: ${sgn(cush[0])}${cush[0].toFixed(1)} → ${sgn(cush[cush.length-1])}${cush[cush.length-1].toFixed(1)} · `;
+  } else { x.fillStyle='#8a93a3';x.font='11px ui-monospace';x.fillText('no cushion data',6,H/2); }
+  const cvds=rows.map(r=>r.cvd).filter(v=>v!=null);
+  const ups=rows.filter(r=>r.signal==='UP').length, downs=rows.filter(r=>r.signal==='DOWN').length;
+  $('#thStats').innerHTML=`${info}${rows.length} ticks · final CVD ${fmtUsd(cvds.length?cvds[cvds.length-1]:0)} · signals <b class="pos">${ups} UP</b> / <b class="neg">${downs} DOWN</b>`;
+  $('#threadModal').style.display='flex';
+}
+const V5_LOG_URL='http://34.89.159.108/log';
+async function postLogToVM(){
+  try{
+    await fetch(V5_LOG_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({slug:$('#slug').value.trim()+'_v8',rows:st.log})});
+  }catch(e){ /* VM/firewall unreachable — localStorage still holds the log */ }
+}
+
+// ---- background-proof ticker ----
+// Chrome clamps MAIN-THREAD setInterval to ~1 tick/min after ~5 min unfocused/occluded
+// (the 2026-07-02 A/B failure: 2.24s/tick). Timers inside a dedicated Worker are NOT
+// throttled, and message delivery to the main thread is not throttled either — so the
+// worker just posts every 1s and tick() runs on message. Screensaver / minimized /
+// covered windows no longer stall the engine. (System SLEEP still stops everything —
+// run `caffeinate -dis` for long sessions.) Falls back to setInterval if Workers fail.
+let ticker=null,lastTickMs=0;
+function startTicker(){
+  stopTicker();
+  try{
+    ticker=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(1),1000)'],{type:'text/javascript'})));
+    ticker.onmessage=()=>{
+      const now=Date.now();
+      if(lastTickMs&&now-lastTickMs>2500){ st&&st.log&&console.warn(`tick gap ${now-lastTickMs}ms (rows self-heal via wall-clock rem; per-tick constants stretched during the gap)`); }
+      lastTickMs=now; tick();
+    };
+  }catch(e){ ticker=null; poll=setInterval(tick,1000); }
+}
+function stopTicker(){ if(ticker){try{ticker.terminate();}catch(e){} ticker=null;} if(poll){clearInterval(poll);poll=null;} lastTickMs=0; }
+
+async function start(){
+  parsed=parseSlug($('#slug').value);if(!parsed)return;
+  V5.CFG.EARLY_MIN_REM = parsed.barSec - 45;    // fire window opens 45s in
+  V5.CFG.EARLY_HARD_REM = parsed.barSec - 90;   // hard abstain deadline 90s in (measured: later fires lose the edge)
+  $('#led').innerHTML='';$('#settled').style.display='none';$('#earlyBadge').style.display='none';
+  st={running:true,_settled:false,_inTick:false,last:null,open:null,cvd:0,cvdEma:null,token:null,imbHist:[],cvdSeries:[],log:[],raf:null,lastOwsMsg:Date.now(),
+      swapImbBin:[],swapImbPoly:[],swapCvd5:[],swapCvd60:[],swapCush:[],imbMode:'imb',
+      owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,owsVol1m:null,ows:null,_owrt:null,
+      book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
+      signals:V5.newSession()};
+  const PF={type:'price',precision:0,minMove:1}; ensureChart('cvdChart','#9b8cff',PF); ensureChart('cvdDeltaChart','#e3c75a',PF); ensureChart('flowChart','#2ec27e',PF);
+  st.imbMode=$('#imbSelect').value||'imb';
+  const ic=SWAP_MODES[st.imbMode]||SWAP_MODES.imb;
+  ensureChart('imbChart',['#5b9dff','#e3c75a']);   // always 2 lines — swap just reloads data
+  resetChart('cvdChart'); resetChart('cvdDeltaChart'); resetChart('flowChart'); resetChart('imbChart');
+  $('#start').textContent='■ Disconnect';$('#start').classList.add('stop');
+  $('#dBin').className='dot wait';$('#dPoly').className='dot wait';$('#siginfo').textContent='connecting…';
+  openWS(); openOWS(); startOWSWatchdog();   // Binance fstream (price+book) + ourWebSocket (CVD) + watchdog
+  jget(`https://api.binance.com/api/v3/klines?symbol=${parsed.symbol}&interval=${parsed.interval}&startTime=${parsed.ts*1000}&limit=1`).then(k=>{ if(k&&k[0])st.open=+k[0][1]; }).catch(()=>{});
+  jget('https://gamma-api.polymarket.com/events?slug='+encodeURIComponent($('#slug').value.trim())).then(ev=>{
+    const e=Array.isArray(ev)?ev[0]:ev;let tk=e.markets[0].clobTokenIds;if(typeof tk==='string')tk=JSON.parse(tk);st.token=tk[0];
+  }).catch(()=>$('#dPoly').className='dot bad');
+  stopTicker();   // never stack tick loops (continuous-runs rollover leak)
+  tick();startTicker();animate();
+}
+function stop(keep){if(st){st.running=false;if(st.raf)cancelAnimationFrame(st.raf);}closeWS();closeOWS();if(owsWatchdog){clearInterval(owsWatchdog);owsWatchdog=null;}stopTicker();
+  $('#start').textContent='▶ Connect & stream';$('#start').classList.remove('stop');
+  $('#pulse').className='pulse';if(!keep)$('#rate').textContent='idle';}
+
+$('#start').onclick=()=>{ if(st&&st.running){stop();} else {runsLeft=parseInt($('#continuous').value||'1'); start();} };
+$('#dl').onclick=downloadLog;
+$('#presets').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  const s=(+b.dataset.i.replace(/\D/g,''))*60,ts=Math.floor(Date.now()/1000/s)*s;
+  $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
+$('#copy').onclick=()=>{navigator.clipboard.writeText($('#prompt').value);const b=$('#copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);};
+$('#imbSelect').onchange=()=>{ if(st){ swapImbChart($('#imbSelect').value); } };
+parsed=parseSlug($('#slug').value);updatePrompt();
+$('#threads').addEventListener('click',e=>{const b=e.target.closest('.thitem');if(b)openThread(b.dataset.slug);});
+$('#thClose').onclick=()=>{ $('#threadModal').style.display='none'; };
+renderThreads();   // show any past sessions on load
+</script>
+</body>
+</html>
