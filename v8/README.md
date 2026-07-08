@@ -37,4 +37,56 @@ plug-and-play: same exports as v7s/v6; the runner loads it by version path uncha
 Honest limits (unchanged physics, see frontier report): the market is calibrated at
 45–90s — early unpriced certainty is not available from public data; ~8% of bars are
 near-flat oracle coin-flips. v8's win is *never missing the developing move and never
-echoing noise*, not beating the market's price.
+echoing noise*, not beating the market's price. Known designed failure mode: on genuine
+flip bars, pre-flip directional ticks are wrong until the flip happens (v8 reports where
+price leads *now* — it does not claim reversal prediction). First live read (2026-07-08,
+4 bars): 90.9% of directional ticks on the settle side; the one weak bar was exactly this
+flip class; early channel 2/2 fires correct + 2 correct abstentions.
+
+## Implementation notes (what changed in the signal logic, exactly)
+
+**Files:** `v8/src/signals.mjs` (engine), `v8/test/signals.test.mjs` (15 tests),
+`v8/test/fixtures/*.json` (2 real pain bars), `v8/updown-liquidity-overlap.html`
+(dashboard fork), `v8/analysis/replay-compare.mjs` (gate), `v8/analysis/` (the full
+research pipeline that produced the rule).
+
+**New CFG values (the only tuned numbers in v8, both measured not chosen):**
+- `V8_FLOOR_ABS: 10` — $ absolute floor. Same floor family the early-call and BAFO
+  channels already use (`max($10, 0.5·vol_1m)` is the project's standing vol floor).
+- `V8_FLOOR_VOLMULT: 0.5` — vol multiple. Together: `floor = max(10, 0.5 * vol_1m)`.
+  Basis: this exact static pair was the walk-forward winner; the swept alternatives
+  (enter 1.0/1.1/1.25 × exit 0.7/0.8/0.9 × dwell 1/2/3 hysteresis grid, `50_distill.py`)
+  all scored WORSE on held-out days. No other constant was added or altered.
+
+**New function `decideV8(s, inp)`** — the emitted per-tick stream:
+- Consumes only `inp.cushion` and `inp.vol1m` (falls back to `volFromHist(s.priceHist)`
+  when the tape's vol field is absent — same fallback `flipRisk` already used).
+- Returns `{ sig, floor, note }`; `note` is `'cushion-lead'` on directional calls.
+- Stateless by design (the static rule beat hysteresis OOS); the single state field
+  added to `newSession()` is `sig8`, used ONLY to carry the last tag through a
+  null-cushion tick — it never fabricates a call.
+
+**Changed `tick()` return contract (additive):** `decision` is now
+`{ sig, imbEwma, note, floor, legacySig }` where `sig` = decideV8's call and
+`legacySig` = the old v6/v7s lean tag. The legacy pipeline (`decideDebounced` +
+`momentumOf` + `flipRisk`, byte-identical to v6/v5.4) still executes every tick — it
+feeds the pressure bar (`imbEwma`), the flip readout, and the HIGH-CONVICTION card, and
+keeps engine state identical to predecessors. Displays reading `decision.sig` get v8;
+everything else is untouched plumbing.
+
+**Explicitly NOT changed:** `earlyCallOf` (byte-identical to v7s — gate-proven, 0 latch
+mismatches over 1,008 bars), all early-call CFG values, `decideDebounced` and every
+v5.3/v5.4 rule inside it (aligned-enter, counter-confirmation, hold-release, BAFO),
+`momentumOf`, `flipRisk`, `newSession` shape (one additive field), all exports (the
+engine stays drop-in for the dashboard and `runner/engine-adapter.mjs`). The dashboard
+fork changed only version identity (title/badge/log suffix `_v8`/localStorage keys) —
+the Web Worker ticker and all display mechanics are inherited from v7s.
+
+**Why the corroborators were removed from the emitted tag:** every candidate input
+(book EWMA, whale prints, flow deltas, momentum, poly, VWAP, basis, book pulls) was
+auditioned offline against the settle on 823 24/7 bars and added ≈ nothing beyond price
+location (`2026-07-08-frontier.md` §1). The old stream's corroboration logic is what
+produced the two documented failures — 20.9% missed fire-worthy ticks (MIXED while
+evidence screamed) and the ~60% book-echo first call. v8 removes the failure by removing
+the unearned inputs from the *emitted* call while keeping them visible elsewhere on the
+page (pressure bar, flip risk), where they carry display value without gating the tag.
