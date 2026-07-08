@@ -17,6 +17,7 @@ the VM pushes log commits to `main`, so your local `main` drifts behind — `git
 to catch up (log commits are new files, never conflict with code). Disable by commenting the
 crontab line on the VM. Note: settle-vs-Binance-spot divergences are **not** only on flat bars
 (e.g. `1783348800` moved +$9.97 on spot but Polymarket resolved DOWN).
+**Standing workflow (2026-07-08): after every pull, run `python3 tools/log-clean/clean-logs.py --pull --execute`** — hard-purges incomplete session logs (gap-runs, early-ends, >30-tick late starts; see `tools/log-clean/README.md`) from repo AND the VM source (else the cron resurrects them).
 
 ## Current state 2026-07-08 — v8 (per-tick stream replaced; v7s early call inherited)
 
