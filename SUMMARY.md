@@ -11,6 +11,7 @@ bars, 40 microstructure features incl. taker split/whale split/basis/book pulls/
 price location is the whole per-tick signal. Gate 5/5: acc 82.5% vs v6 73.1%, missed
 fire-worthy 0.00% vs 20.9%, LOBO all days. Logs `_v8.json`. Run `/v8/updown-liquidity-overlap.html`.
 Records: `v8/analysis/2026-07-08-frontier.md`, `v8/README.md`.
+**Also 2026-07-08 (data hygiene, engines untouched):** standing log cleaner shipped (`tools/log-clean/`) — pull → clean workflow hard-purges incomplete session logs from repo AND the VM source; first purge removed 64 (gap-runs/early-ends/>30-tick late starts); `AUTOPSY/logs/` now has a uniform completeness floor.
 
 ## 2026-07-07 — v7 ship (body below is v5/v6-era)
 
