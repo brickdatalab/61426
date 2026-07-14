@@ -21,6 +21,20 @@ node_modules/
 # Editor / OS cruft
 *.swp
 Thumbs.db
+
+# Local credentials and machine-specific environment
+.env
+.env.*
+!.env.example
+
+# Temporary handoff/build workspaces
+tmp/
+v8_corpus.staging.*/
+
+# Retired Vercel application artifacts
+web/
+.vercel/
+
 v5.2/secret.js
 v6/analysis/bqbars/
 

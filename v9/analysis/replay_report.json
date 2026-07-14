@@ -1,0 +1,4784 @@
+{
+  "report_version": "v9-replay-1",
+  "generated_at_utc": "2026-07-14T04:46:46Z",
+  "corpus": {
+    "sessions": 381,
+    "ticks": 111914,
+    "engine_eligible_ticks": 111516,
+    "verification_passed": true,
+    "verification_checks": 243
+  },
+  "v8_parity": {
+    "compared_ticks": 111516,
+    "mismatches": 0,
+    "passed": true
+  },
+  "strict_tally": {
+    "calls": 306,
+    "correct": 280,
+    "accuracy": 0.9150326797385621,
+    "abstained": 75
+  },
+  "settlement_nowcast": {
+    "checkpoints": {
+      "2": {
+        "eligible": 381,
+        "calls": 336,
+        "correct": 336,
+        "mixed": 45,
+        "coverage": 0.8818897637795275,
+        "accuracy": 1
+      },
+      "5": {
+        "eligible": 381,
+        "calls": 338,
+        "correct": 336,
+        "mixed": 43,
+        "coverage": 0.8871391076115486,
+        "accuracy": 0.9940828402366864
+      },
+      "10": {
+        "eligible": 381,
+        "calls": 337,
+        "correct": 330,
+        "mixed": 44,
+        "coverage": 0.884514435695538,
+        "accuracy": 0.9792284866468842
+      },
+      "20": {
+        "eligible": 381,
+        "calls": 338,
+        "correct": 324,
+        "mixed": 43,
+        "coverage": 0.8871391076115486,
+        "accuracy": 0.9585798816568047
+      },
+      "30": {
+        "eligible": 381,
+        "calls": 338,
+        "correct": 322,
+        "mixed": 43,
+        "coverage": 0.8871391076115486,
+        "accuracy": 0.9526627218934911
+      },
+      "60": {
+        "eligible": 381,
+        "calls": 325,
+        "correct": 306,
+        "mixed": 56,
+        "coverage": 0.8530183727034121,
+        "accuracy": 0.9415384615384615
+      },
+      "100": {
+        "eligible": 381,
+        "calls": 304,
+        "correct": 276,
+        "mixed": 77,
+        "coverage": 0.7979002624671916,
+        "accuracy": 0.9078947368421053
+      },
+      "105": {
+        "eligible": 381,
+        "calls": 309,
+        "correct": 277,
+        "mixed": 72,
+        "coverage": 0.8110236220472441,
+        "accuracy": 0.8964401294498382
+      },
+      "120": {
+        "eligible": 381,
+        "calls": 297,
+        "correct": 261,
+        "mixed": 84,
+        "coverage": 0.7795275590551181,
+        "accuracy": 0.8787878787878788
+      }
+    },
+    "change_events": 1779,
+    "markets_with_changes": 291,
+    "directional_reversals": 4,
+    "markets_with_directional_reversals": 3
+  },
+  "outcome_shadow": {
+    "early": {
+      "calls": 97,
+      "correct": 93,
+      "accuracy": 0.9587628865979382
+    },
+    "confirmed_discounted": {
+      "status": "UNAVAILABLE_MISSING_EXECUTABLE_TWO_SIDED_QUOTES",
+      "unavailable_sessions": 284,
+      "synthesized_down_quotes": 0
+    },
+    "combined_accuracy": null
+  },
+  "breakdowns": {
+    "by_utc_day": {
+      "2026-07-05": {
+        "2": {
+          "eligible": 9,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 4,
+          "coverage": 0.5555555555555556,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 9,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 4,
+          "coverage": 0.5555555555555556,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 9,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 4,
+          "coverage": 0.5555555555555556,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 5,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.8333333333333334
+        },
+        "30": {
+          "eligible": 9,
+          "calls": 5,
+          "correct": 4,
+          "mixed": 4,
+          "coverage": 0.5555555555555556,
+          "accuracy": 0.8
+        },
+        "60": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.6666666666666666
+        },
+        "100": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.6666666666666666
+        },
+        "105": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.6666666666666666
+        },
+        "120": {
+          "eligible": 9,
+          "calls": 5,
+          "correct": 4,
+          "mixed": 4,
+          "coverage": 0.5555555555555556,
+          "accuracy": 0.8
+        }
+      },
+      "2026-07-06": {
+        "2": {
+          "eligible": 36,
+          "calls": 32,
+          "correct": 32,
+          "mixed": 4,
+          "coverage": 0.8888888888888888,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 36,
+          "calls": 32,
+          "correct": 32,
+          "mixed": 4,
+          "coverage": 0.8888888888888888,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 36,
+          "calls": 31,
+          "correct": 31,
+          "mixed": 5,
+          "coverage": 0.8611111111111112,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 36,
+          "calls": 32,
+          "correct": 31,
+          "mixed": 4,
+          "coverage": 0.8888888888888888,
+          "accuracy": 0.96875
+        },
+        "30": {
+          "eligible": 36,
+          "calls": 33,
+          "correct": 31,
+          "mixed": 3,
+          "coverage": 0.9166666666666666,
+          "accuracy": 0.9393939393939394
+        },
+        "60": {
+          "eligible": 36,
+          "calls": 31,
+          "correct": 29,
+          "mixed": 5,
+          "coverage": 0.8611111111111112,
+          "accuracy": 0.9354838709677419
+        },
+        "100": {
+          "eligible": 36,
+          "calls": 28,
+          "correct": 24,
+          "mixed": 8,
+          "coverage": 0.7777777777777778,
+          "accuracy": 0.8571428571428571
+        },
+        "105": {
+          "eligible": 36,
+          "calls": 28,
+          "correct": 24,
+          "mixed": 8,
+          "coverage": 0.7777777777777778,
+          "accuracy": 0.8571428571428571
+        },
+        "120": {
+          "eligible": 36,
+          "calls": 25,
+          "correct": 21,
+          "mixed": 11,
+          "coverage": 0.6944444444444444,
+          "accuracy": 0.84
+        }
+      },
+      "2026-07-07": {
+        "2": {
+          "eligible": 62,
+          "calls": 55,
+          "correct": 55,
+          "mixed": 7,
+          "coverage": 0.8870967741935484,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 62,
+          "calls": 55,
+          "correct": 55,
+          "mixed": 7,
+          "coverage": 0.8870967741935484,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 62,
+          "calls": 55,
+          "correct": 54,
+          "mixed": 7,
+          "coverage": 0.8870967741935484,
+          "accuracy": 0.9818181818181818
+        },
+        "20": {
+          "eligible": 62,
+          "calls": 54,
+          "correct": 52,
+          "mixed": 8,
+          "coverage": 0.8709677419354839,
+          "accuracy": 0.9629629629629629
+        },
+        "30": {
+          "eligible": 62,
+          "calls": 55,
+          "correct": 52,
+          "mixed": 7,
+          "coverage": 0.8870967741935484,
+          "accuracy": 0.9454545454545454
+        },
+        "60": {
+          "eligible": 62,
+          "calls": 54,
+          "correct": 52,
+          "mixed": 8,
+          "coverage": 0.8709677419354839,
+          "accuracy": 0.9629629629629629
+        },
+        "100": {
+          "eligible": 62,
+          "calls": 53,
+          "correct": 51,
+          "mixed": 9,
+          "coverage": 0.8548387096774194,
+          "accuracy": 0.9622641509433962
+        },
+        "105": {
+          "eligible": 62,
+          "calls": 53,
+          "correct": 51,
+          "mixed": 9,
+          "coverage": 0.8548387096774194,
+          "accuracy": 0.9622641509433962
+        },
+        "120": {
+          "eligible": 62,
+          "calls": 53,
+          "correct": 48,
+          "mixed": 9,
+          "coverage": 0.8548387096774194,
+          "accuracy": 0.9056603773584906
+        }
+      },
+      "2026-07-08": {
+        "2": {
+          "eligible": 177,
+          "calls": 159,
+          "correct": 159,
+          "mixed": 18,
+          "coverage": 0.8983050847457628,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 177,
+          "calls": 158,
+          "correct": 158,
+          "mixed": 19,
+          "coverage": 0.8926553672316384,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 177,
+          "calls": 159,
+          "correct": 155,
+          "mixed": 18,
+          "coverage": 0.8983050847457628,
+          "accuracy": 0.9748427672955975
+        },
+        "20": {
+          "eligible": 177,
+          "calls": 158,
+          "correct": 152,
+          "mixed": 19,
+          "coverage": 0.8926553672316384,
+          "accuracy": 0.9620253164556962
+        },
+        "30": {
+          "eligible": 177,
+          "calls": 157,
+          "correct": 150,
+          "mixed": 20,
+          "coverage": 0.8870056497175142,
+          "accuracy": 0.9554140127388535
+        },
+        "60": {
+          "eligible": 177,
+          "calls": 153,
+          "correct": 144,
+          "mixed": 24,
+          "coverage": 0.864406779661017,
+          "accuracy": 0.9411764705882353
+        },
+        "100": {
+          "eligible": 177,
+          "calls": 147,
+          "correct": 132,
+          "mixed": 30,
+          "coverage": 0.8305084745762712,
+          "accuracy": 0.8979591836734694
+        },
+        "105": {
+          "eligible": 177,
+          "calls": 149,
+          "correct": 131,
+          "mixed": 28,
+          "coverage": 0.8418079096045198,
+          "accuracy": 0.8791946308724832
+        },
+        "120": {
+          "eligible": 177,
+          "calls": 145,
+          "correct": 128,
+          "mixed": 32,
+          "coverage": 0.8192090395480226,
+          "accuracy": 0.8827586206896552
+        }
+      },
+      "2026-07-09": {
+        "2": {
+          "eligible": 67,
+          "calls": 57,
+          "correct": 57,
+          "mixed": 10,
+          "coverage": 0.8507462686567164,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 67,
+          "calls": 59,
+          "correct": 57,
+          "mixed": 8,
+          "coverage": 0.8805970149253731,
+          "accuracy": 0.9661016949152542
+        },
+        "10": {
+          "eligible": 67,
+          "calls": 59,
+          "correct": 57,
+          "mixed": 8,
+          "coverage": 0.8805970149253731,
+          "accuracy": 0.9661016949152542
+        },
+        "20": {
+          "eligible": 67,
+          "calls": 61,
+          "correct": 57,
+          "mixed": 6,
+          "coverage": 0.9104477611940298,
+          "accuracy": 0.9344262295081968
+        },
+        "30": {
+          "eligible": 67,
+          "calls": 60,
+          "correct": 57,
+          "mixed": 7,
+          "coverage": 0.8955223880597015,
+          "accuracy": 0.95
+        },
+        "60": {
+          "eligible": 67,
+          "calls": 53,
+          "correct": 50,
+          "mixed": 14,
+          "coverage": 0.7910447761194029,
+          "accuracy": 0.9433962264150944
+        },
+        "100": {
+          "eligible": 67,
+          "calls": 48,
+          "correct": 45,
+          "mixed": 19,
+          "coverage": 0.7164179104477612,
+          "accuracy": 0.9375
+        },
+        "105": {
+          "eligible": 67,
+          "calls": 50,
+          "correct": 47,
+          "mixed": 17,
+          "coverage": 0.746268656716418,
+          "accuracy": 0.94
+        },
+        "120": {
+          "eligible": 67,
+          "calls": 47,
+          "correct": 42,
+          "mixed": 20,
+          "coverage": 0.7014925373134329,
+          "accuracy": 0.8936170212765957
+        }
+      },
+      "2026-07-10": {
+        "2": {
+          "eligible": 30,
+          "calls": 28,
+          "correct": 28,
+          "mixed": 2,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 30,
+          "calls": 29,
+          "correct": 29,
+          "mixed": 1,
+          "coverage": 0.9666666666666667,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 30,
+          "calls": 28,
+          "correct": 28,
+          "mixed": 2,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 30,
+          "calls": 27,
+          "correct": 27,
+          "mixed": 3,
+          "coverage": 0.9,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 30,
+          "calls": 28,
+          "correct": 28,
+          "mixed": 2,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 30,
+          "calls": 28,
+          "correct": 27,
+          "mixed": 2,
+          "coverage": 0.9333333333333333,
+          "accuracy": 0.9642857142857143
+        },
+        "100": {
+          "eligible": 30,
+          "calls": 22,
+          "correct": 20,
+          "mixed": 8,
+          "coverage": 0.7333333333333333,
+          "accuracy": 0.9090909090909091
+        },
+        "105": {
+          "eligible": 30,
+          "calls": 23,
+          "correct": 20,
+          "mixed": 7,
+          "coverage": 0.7666666666666667,
+          "accuracy": 0.8695652173913043
+        },
+        "120": {
+          "eligible": 30,
+          "calls": 22,
+          "correct": 18,
+          "mixed": 8,
+          "coverage": 0.7333333333333333,
+          "accuracy": 0.8181818181818182
+        }
+      }
+    },
+    "by_collection_block": {
+      "block_001": {
+        "2": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        }
+      },
+      "block_002": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_003": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_004": {
+        "2": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 3,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 3,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "60": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 0
+        },
+        "100": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 0
+        },
+        "105": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 0
+        },
+        "120": {
+          "eligible": 3,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 3,
+          "coverage": 0,
+          "accuracy": null
+        }
+      },
+      "block_005": {
+        "2": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 6,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 6,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 6,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 2,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        }
+      },
+      "block_006": {
+        "2": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.6
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 0.6666666666666666
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 0.3333333333333333
+        }
+      },
+      "block_007": {
+        "2": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        }
+      },
+      "block_008": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_009": {
+        "2": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 1
+        }
+      },
+      "block_010": {
+        "2": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 4,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.8
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_011": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_012": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        }
+      },
+      "block_013": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        }
+      },
+      "block_014": {
+        "2": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 7,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.5714285714285714,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 4,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 0.8
+        },
+        "120": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 4,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 0.8
+        }
+      },
+      "block_015": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_016": {
+        "2": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 0.9444444444444444
+        },
+        "20": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 16,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 0.9411764705882353
+        },
+        "30": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 16,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 0.9411764705882353
+        },
+        "60": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 16,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 0.9411764705882353
+        },
+        "100": {
+          "eligible": 19,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 3,
+          "coverage": 0.8421052631578947,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 19,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 3,
+          "coverage": 0.8421052631578947,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 19,
+          "calls": 16,
+          "correct": 15,
+          "mixed": 3,
+          "coverage": 0.8421052631578947,
+          "accuracy": 0.9375
+        }
+      },
+      "block_017": {
+        "2": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 6,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 6,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 2,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 6,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 2,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 6,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 6,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 6,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        }
+      },
+      "block_018": {
+        "2": {
+          "eligible": 11,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 11,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 10,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 11,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 10,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 7,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 0.875
+        }
+      },
+      "block_019": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_020": {
+        "2": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 0,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_021": {
+        "2": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        },
+        "60": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.6666666666666666
+        },
+        "100": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        },
+        "105": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        },
+        "120": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.3333333333333333
+        }
+      },
+      "block_022": {
+        "2": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_023": {
+        "2": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        }
+      },
+      "block_024": {
+        "2": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        }
+      },
+      "block_025": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_026": {
+        "2": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 0.75
+        }
+      },
+      "block_027": {
+        "2": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.75
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.5
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 4,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.5
+        }
+      },
+      "block_028": {
+        "2": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 15,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 13,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 0.9285714285714286
+        },
+        "105": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 13,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 0.9285714285714286
+        },
+        "120": {
+          "eligible": 15,
+          "calls": 13,
+          "correct": 12,
+          "mixed": 2,
+          "coverage": 0.8666666666666667,
+          "accuracy": 0.9230769230769231
+        }
+      },
+      "block_029": {
+        "2": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 18,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 18,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 18,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 18,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 18,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 19,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 2,
+          "coverage": 0.8947368421052632,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 0.9444444444444444
+        },
+        "105": {
+          "eligible": 19,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9473684210526315,
+          "accuracy": 0.9444444444444444
+        },
+        "120": {
+          "eligible": 19,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 4,
+          "coverage": 0.7894736842105263,
+          "accuracy": 1
+        }
+      },
+      "block_030": {
+        "2": {
+          "eligible": 9,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 2,
+          "coverage": 0.7777777777777778,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 9,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 2,
+          "coverage": 0.7777777777777778,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 9,
+          "calls": 7,
+          "correct": 6,
+          "mixed": 2,
+          "coverage": 0.7777777777777778,
+          "accuracy": 0.8571428571428571
+        },
+        "60": {
+          "eligible": 9,
+          "calls": 6,
+          "correct": 5,
+          "mixed": 3,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.8333333333333334
+        },
+        "100": {
+          "eligible": 9,
+          "calls": 7,
+          "correct": 6,
+          "mixed": 2,
+          "coverage": 0.7777777777777778,
+          "accuracy": 0.8571428571428571
+        },
+        "105": {
+          "eligible": 9,
+          "calls": 8,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8888888888888888,
+          "accuracy": 0.75
+        },
+        "120": {
+          "eligible": 9,
+          "calls": 8,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8888888888888888,
+          "accuracy": 0.75
+        }
+      },
+      "block_031": {
+        "2": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 5,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 0.8333333333333334
+        },
+        "105": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 7,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 4,
+          "coverage": 0.42857142857142855,
+          "accuracy": 1
+        }
+      },
+      "block_032": {
+        "2": {
+          "eligible": 54,
+          "calls": 49,
+          "correct": 49,
+          "mixed": 5,
+          "coverage": 0.9074074074074074,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 54,
+          "calls": 48,
+          "correct": 48,
+          "mixed": 6,
+          "coverage": 0.8888888888888888,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 54,
+          "calls": 48,
+          "correct": 45,
+          "mixed": 6,
+          "coverage": 0.8888888888888888,
+          "accuracy": 0.9375
+        },
+        "20": {
+          "eligible": 54,
+          "calls": 48,
+          "correct": 44,
+          "mixed": 6,
+          "coverage": 0.8888888888888888,
+          "accuracy": 0.9166666666666666
+        },
+        "30": {
+          "eligible": 54,
+          "calls": 47,
+          "correct": 43,
+          "mixed": 7,
+          "coverage": 0.8703703703703703,
+          "accuracy": 0.9148936170212766
+        },
+        "60": {
+          "eligible": 54,
+          "calls": 46,
+          "correct": 41,
+          "mixed": 8,
+          "coverage": 0.8518518518518519,
+          "accuracy": 0.8913043478260869
+        },
+        "100": {
+          "eligible": 54,
+          "calls": 44,
+          "correct": 38,
+          "mixed": 10,
+          "coverage": 0.8148148148148148,
+          "accuracy": 0.8636363636363636
+        },
+        "105": {
+          "eligible": 54,
+          "calls": 46,
+          "correct": 38,
+          "mixed": 8,
+          "coverage": 0.8518518518518519,
+          "accuracy": 0.8260869565217391
+        },
+        "120": {
+          "eligible": 54,
+          "calls": 47,
+          "correct": 40,
+          "mixed": 7,
+          "coverage": 0.8703703703703703,
+          "accuracy": 0.851063829787234
+        }
+      },
+      "block_033": {
+        "2": {
+          "eligible": 18,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 2,
+          "coverage": 0.8888888888888888,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 18,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 2,
+          "coverage": 0.8888888888888888,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 18,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9444444444444444,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 18,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9444444444444444,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 18,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9444444444444444,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 18,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 3,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 18,
+          "calls": 14,
+          "correct": 13,
+          "mixed": 4,
+          "coverage": 0.7777777777777778,
+          "accuracy": 0.9285714285714286
+        },
+        "105": {
+          "eligible": 18,
+          "calls": 12,
+          "correct": 11,
+          "mixed": 6,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.9166666666666666
+        },
+        "120": {
+          "eligible": 18,
+          "calls": 15,
+          "correct": 13,
+          "mixed": 3,
+          "coverage": 0.8333333333333334,
+          "accuracy": 0.8666666666666667
+        }
+      },
+      "block_034": {
+        "2": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "30": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "60": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "100": {
+          "eligible": 11,
+          "calls": 11,
+          "correct": 10,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.9090909090909091
+        },
+        "105": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "120": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 8,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 0.8888888888888888
+        }
+      },
+      "block_035": {
+        "2": {
+          "eligible": 12,
+          "calls": 12,
+          "correct": 12,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 12,
+          "calls": 12,
+          "correct": 12,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 12,
+          "calls": 12,
+          "correct": 12,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 12,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 1,
+          "coverage": 0.9166666666666666,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 12,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 1,
+          "coverage": 0.9166666666666666,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 12,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 1,
+          "coverage": 0.9166666666666666,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 12,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 3,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 12,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 3,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 12,
+          "calls": 10,
+          "correct": 10,
+          "mixed": 2,
+          "coverage": 0.8333333333333334,
+          "accuracy": 1
+        }
+      },
+      "block_036": {
+        "2": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 10,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 11,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 2,
+          "coverage": 0.8181818181818182,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 7,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 0.875
+        },
+        "100": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "105": {
+          "eligible": 11,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 1,
+          "coverage": 0.9090909090909091,
+          "accuracy": 0.9
+        },
+        "120": {
+          "eligible": 11,
+          "calls": 8,
+          "correct": 8,
+          "mixed": 3,
+          "coverage": 0.7272727272727273,
+          "accuracy": 1
+        }
+      },
+      "block_037": {
+        "2": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        }
+      },
+      "block_038": {
+        "2": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 7,
+          "calls": 7,
+          "correct": 7,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 6,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 1
+        }
+      },
+      "block_039": {
+        "2": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 4,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.5,
+          "accuracy": 0.5
+        },
+        "105": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        },
+        "120": {
+          "eligible": 4,
+          "calls": 3,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.75,
+          "accuracy": 0.6666666666666666
+        }
+      },
+      "block_040": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_041": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        }
+      },
+      "block_042": {
+        "2": {
+          "eligible": 13,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 4,
+          "coverage": 0.6923076923076923,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 13,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 4,
+          "coverage": 0.6923076923076923,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 13,
+          "calls": 9,
+          "correct": 9,
+          "mixed": 4,
+          "coverage": 0.6923076923076923,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 13,
+          "calls": 10,
+          "correct": 10,
+          "mixed": 3,
+          "coverage": 0.7692307692307693,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 13,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 2,
+          "coverage": 0.8461538461538461,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 13,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 2,
+          "coverage": 0.8461538461538461,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 13,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 2,
+          "coverage": 0.8461538461538461,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 13,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 2,
+          "coverage": 0.8461538461538461,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 13,
+          "calls": 11,
+          "correct": 11,
+          "mixed": 2,
+          "coverage": 0.8461538461538461,
+          "accuracy": 1
+        }
+      },
+      "block_043": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_044": {
+        "2": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 3,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 2,
+          "coverage": 0.3333333333333333,
+          "accuracy": 1
+        }
+      },
+      "block_045": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 0,
+          "correct": 0,
+          "mixed": 1,
+          "coverage": 0,
+          "accuracy": null
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_046": {
+        "2": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        }
+      },
+      "block_047": {
+        "2": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 1,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_048": {
+        "2": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.5
+        },
+        "10": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.5
+        },
+        "20": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.5
+        },
+        "30": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_049": {
+        "2": {
+          "eligible": 7,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.5714285714285714,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 7,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.5714285714285714,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 7,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 3,
+          "coverage": 0.5714285714285714,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 0.6666666666666666
+        },
+        "30": {
+          "eligible": 7,
+          "calls": 6,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8571428571428571,
+          "accuracy": 0.6666666666666666
+        },
+        "60": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 0.6
+        },
+        "100": {
+          "eligible": 7,
+          "calls": 4,
+          "correct": 2,
+          "mixed": 3,
+          "coverage": 0.5714285714285714,
+          "accuracy": 0.5
+        },
+        "105": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 0.6
+        },
+        "120": {
+          "eligible": 7,
+          "calls": 5,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.7142857142857143,
+          "accuracy": 0.6
+        }
+      },
+      "block_050": {
+        "2": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        }
+      },
+      "block_051": {
+        "2": {
+          "eligible": 17,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 1,
+          "coverage": 0.9411764705882353,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 17,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 1,
+          "coverage": 0.9411764705882353,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 17,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 1,
+          "coverage": 0.9411764705882353,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 17,
+          "calls": 16,
+          "correct": 16,
+          "mixed": 1,
+          "coverage": 0.9411764705882353,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 17,
+          "calls": 14,
+          "correct": 14,
+          "mixed": 3,
+          "coverage": 0.8235294117647058,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 17,
+          "calls": 15,
+          "correct": 15,
+          "mixed": 2,
+          "coverage": 0.8823529411764706,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 17,
+          "calls": 12,
+          "correct": 12,
+          "mixed": 5,
+          "coverage": 0.7058823529411765,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 17,
+          "calls": 12,
+          "correct": 12,
+          "mixed": 5,
+          "coverage": 0.7058823529411765,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 17,
+          "calls": 12,
+          "correct": 11,
+          "mixed": 5,
+          "coverage": 0.7058823529411765,
+          "accuracy": 0.9166666666666666
+        }
+      },
+      "block_052": {
+        "2": {
+          "eligible": 18,
+          "calls": 17,
+          "correct": 17,
+          "mixed": 1,
+          "coverage": 0.9444444444444444,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 18,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.9444444444444444
+        },
+        "10": {
+          "eligible": 18,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.9444444444444444
+        },
+        "20": {
+          "eligible": 18,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.9444444444444444
+        },
+        "30": {
+          "eligible": 18,
+          "calls": 18,
+          "correct": 17,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 0.9444444444444444
+        },
+        "60": {
+          "eligible": 18,
+          "calls": 13,
+          "correct": 12,
+          "mixed": 5,
+          "coverage": 0.7222222222222222,
+          "accuracy": 0.9230769230769231
+        },
+        "100": {
+          "eligible": 18,
+          "calls": 12,
+          "correct": 11,
+          "mixed": 6,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.9166666666666666
+        },
+        "105": {
+          "eligible": 18,
+          "calls": 12,
+          "correct": 11,
+          "mixed": 6,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.9166666666666666
+        },
+        "120": {
+          "eligible": 18,
+          "calls": 11,
+          "correct": 9,
+          "mixed": 7,
+          "coverage": 0.6111111111111112,
+          "accuracy": 0.8181818181818182
+        }
+      },
+      "block_053": {
+        "2": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 3,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        },
+        "105": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        },
+        "120": {
+          "eligible": 3,
+          "calls": 2,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.5
+        }
+      },
+      "block_054": {
+        "2": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        }
+      },
+      "block_055": {
+        "2": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 2,
+          "calls": 2,
+          "correct": 2,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 2,
+          "calls": 1,
+          "correct": 1,
+          "mixed": 1,
+          "coverage": 0.5,
+          "accuracy": 1
+        }
+      },
+      "block_056": {
+        "2": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 14,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 14,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 15,
+          "calls": 13,
+          "correct": 13,
+          "mixed": 2,
+          "coverage": 0.8666666666666667,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 15,
+          "calls": 13,
+          "correct": 13,
+          "mixed": 2,
+          "coverage": 0.8666666666666667,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 14,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 15,
+          "calls": 14,
+          "correct": 13,
+          "mixed": 1,
+          "coverage": 0.9333333333333333,
+          "accuracy": 0.9285714285714286
+        },
+        "100": {
+          "eligible": 15,
+          "calls": 10,
+          "correct": 9,
+          "mixed": 5,
+          "coverage": 0.6666666666666666,
+          "accuracy": 0.9
+        },
+        "105": {
+          "eligible": 15,
+          "calls": 11,
+          "correct": 9,
+          "mixed": 4,
+          "coverage": 0.7333333333333333,
+          "accuracy": 0.8181818181818182
+        },
+        "120": {
+          "eligible": 15,
+          "calls": 11,
+          "correct": 8,
+          "mixed": 4,
+          "coverage": 0.7333333333333333,
+          "accuracy": 0.7272727272727273
+        }
+      },
+      "block_057": {
+        "2": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "5": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "10": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "20": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "30": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "60": {
+          "eligible": 5,
+          "calls": 5,
+          "correct": 5,
+          "mixed": 0,
+          "coverage": 1,
+          "accuracy": 1
+        },
+        "100": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "105": {
+          "eligible": 5,
+          "calls": 4,
+          "correct": 4,
+          "mixed": 1,
+          "coverage": 0.8,
+          "accuracy": 1
+        },
+        "120": {
+          "eligible": 5,
+          "calls": 3,
+          "correct": 3,
+          "mixed": 2,
+          "coverage": 0.6,
+          "accuracy": 1
+        }
+      }
+    }
+  },
+  "tuning_performed": false
+}

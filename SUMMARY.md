@@ -2,6 +2,20 @@
 
 **Purpose:** complete handoff so a compacted/future session knows exactly where we left off. Read this + `CLAUDE.md` + `CONTEXT.md` first. When the user says "v1/v2/v3/v4" in conversation they usually mean **v5.1/v5.2/v5.3/v5.4** (the historical `v4/` multi-venue experiment is dead — never resurrect, never name anything v4).
 
+## 2026-07-08 — v8 conviction-tier dashboard add-on (newest state)
+
+**Claude started and Codex finished the v8 conviction-tier display/logging add-on.** The v8
+stream itself is unchanged: `decision.sig` still comes from `decideV8`, and the v7s early-call
+channel remains untouched. New `convictionOf()` metadata grades directional ticks without
+gating them: tier 3 (`UP···`/`DOWN···`) = 5/5 points, tier 2 (`··`) = 2–4 points, tier 1 (`·`)
+= weak/stand-aside; MIXED stays plain. The dashboard now shows the tier dots on the big tag,
+the Signal card, tooltips, the live tick table, and new log rows as `conv:{tier,pts,why}` while
+preserving the original `signal`. The local dashboard has a visible `V8-C` badge and cache-busts
+`signals.mjs?v=conv1`; if a tab still shows old `HIGH CONVICTION ×N`, hard-refresh or open
+`/v8/updown-liquidity-overlap.html?v=conv1`. Tests: `node --test v8/test/signals.test.mjs`
+(`20/20`) and `node v8/analysis/replay-compare.mjs v6/analysis/bqbars AUTOPSY/logs` (GATE 5/5,
+early channel 0 mismatches).
+
 ## 2026-07-08 — v8 ship (newest state)
 
 **v8 is live**: per-tick stream replaced with the calibrated cushion-lead rule

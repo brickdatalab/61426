@@ -7,6 +7,7 @@
 <style>
   :root{--bg:#0c0e12;--panel:#14171d;--panel2:#1b1f27;--line:#262b35;--txt:#e7eaf0;--dim:#8a93a3;--up:#2ec27e;--down:#ff5d6c;--flat:#c7b94a;--bin:#5b9dff;--poly:#e3c75a;--cvd:#9b8cff;}
   *{box-sizing:border-box}
+  html,body{max-width:100%;overflow-x:hidden}
   body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   header{padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -19,9 +20,9 @@
   .pulse{width:9px;height:9px;border-radius:50%;background:#444}
   .pulse.on{background:var(--up);animation:pp 1s infinite}
   @keyframes pp{0%{box-shadow:0 0 0 0 rgba(46,194,126,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,126,0)}100%{box-shadow:0 0 0 0 rgba(46,194,126,0)}}
-  .wrap{display:grid;grid-template-columns:290px 1fr;min-height:calc(100vh - 50px)}
-  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
-  .preview{padding:16px;overflow:auto}
+  .wrap{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:calc(100vh - 50px);width:100%;max-width:100%;overflow-x:hidden}
+  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .preview{padding:16px;overflow-y:auto;overflow-x:hidden;min-width:0;max-width:100%}
   label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 6px}
   input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 10px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px}
   input[type=text]:focus{outline:none;border-color:var(--bin)}
@@ -42,35 +43,62 @@
   .threads .thhead{text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
   .threads .thempty{color:var(--dim);opacity:.6;font-style:italic}
   /* signal = flowing pressure bar */
-  .signal{display:flex;align-items:center;gap:18px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px}
+  .signal{display:flex;align-items:center;gap:18px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);margin-bottom:14px;min-width:0;max-width:100%}
   .sigcol{flex:0 0 430px;max-width:430px;min-width:0}   /* fixed column: text changes can never move the pressure bar */
   .sigtag{font-size:26px;font-weight:800;letter-spacing:1px;line-height:1.1}
   .sigtag.UP{color:var(--up)}.sigtag.DOWN{color:var(--down)}.sigtag.MIXED{color:var(--flat)}.sigtag.WAIT{color:var(--dim)}
+  .sigtag.conv1{opacity:.55}
+  .sigtag.conv3{text-shadow:0 0 10px currentColor}
   .siginfo{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;line-height:1.5;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .siginfo b{color:var(--txt)}
-  .presswrap{flex:1;min-width:240px}
+  .presswrap{flex:1 1 0;min-width:240px;max-width:100%}
   .pressbar{position:relative;height:42px;border-radius:10px;background:linear-gradient(90deg,rgba(255,93,108,.22),rgba(255,93,108,.03) 45%,rgba(46,194,126,.03) 55%,rgba(46,194,126,.22));border:1px solid var(--line);overflow:hidden}
   .pressmid{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--txt);opacity:.45}
   .pressfill{position:absolute;top:6px;bottom:6px;left:50%;width:0;border-radius:4px;transition:width .9s cubic-bezier(.22,.61,.36,1),left .9s cubic-bezier(.22,.61,.36,1),background .3s}
   .pressneedle{position:absolute;top:-3px;bottom:-3px;left:50%;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.6);transition:left .9s cubic-bezier(.22,.61,.36,1)}
   .presslbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
-  .panels{display:grid;grid-template-columns:2fr 3fr;grid-template-rows:auto auto;gap:14px;margin-bottom:14px}
-  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .panels{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-rows:auto auto;gap:14px;margin-bottom:14px;min-width:0;max-width:100%}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0;max-width:100%}
   .card h3{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
   .legend{display:flex;gap:12px;font-size:10px;color:var(--dim);margin-top:6px;font-family:ui-monospace,monospace}
   .legend span b{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:4px}
-  #cvdChart,#cvdDeltaChart,#flowChart,#imbChart{width:100%}
-  #cvdChart a,#cvdDeltaChart a,#flowChart a,#imbChart a{display:none !important}
+  #cvdChart,#flowChart,#imbChart{width:100%;max-width:100%;min-width:0;overflow:hidden}
+  #cvdChart a,#flowChart a,#imbChart a{display:none !important}
+  .scorepanel{height:250px;min-width:0;max-width:100%;overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) 54px;align-items:stretch;gap:22px;padding:14px 18px 6px}
+  .scorebiggrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:18px;width:100%;height:100%;text-align:center;font-family:ui-monospace,monospace}
+  .scorebigitem{min-width:0;display:grid;grid-template-rows:auto auto auto;align-content:end;justify-items:center;row-gap:7px}
+  .scorebiglabel{font-size:clamp(14px,1.05vw,19px);font-weight:760;line-height:1;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);white-space:nowrap}
+  .scorebigval{font-size:clamp(50px,4.55vw,78px);font-weight:850;line-height:.92;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .scorebigval.mix{color:var(--flat)}
+  .scorebigpct{font-size:clamp(22px,1.75vw,32px);font-weight:800;line-height:1;color:#fff;white-space:nowrap}
+  .scoreprogress{width:100%;min-width:0;align-self:end}
+  .scoreprogressbar{height:28px;width:100%;border:1px solid #ffffff;border-radius:8px;background:transparent;overflow:hidden}
+  .scoreprogressfill{height:100%;width:0%;background:#fff;border-radius:8px 0 0 8px;transition:width .25s ease}
+  .scoreprogresspct{margin-top:9px;text-align:center;font:800 clamp(18px,1.45vw,26px)/1 ui-monospace,monospace;color:#fff}
   .tip{position:absolute;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:11px ui-monospace,monospace;color:var(--txt);pointer-events:none;display:none;z-index:5;white-space:nowrap}
-  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
-  .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
-  .metric .k{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim)}
-  .metric .v{font-size:16px;font-weight:600;margin-top:3px;font-family:ui-monospace,monospace}
-  .metric .kd{font-size:10px;color:var(--dim);margin-top:2px;font-family:ui-monospace,monospace}
+  .tightband{width:60%;min-width:min(960px, 100%);max-width:min(1600px, 100%);margin-left:auto;margin-right:auto}
+  .metrics{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:12px}
+  .metricrow{display:flex;justify-content:center;align-items:stretch;gap:9px;flex-wrap:wrap;max-width:100%}
+  .metricrow-primary{width:100%}
+  .metricrow-secondary{width:auto}
+  .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 12px;min-width:0;min-height:92px;display:flex;flex-direction:column;justify-content:flex-start}
+  .metric.metric-compact{flex:0 1 136px;width:136px;align-items:center;justify-content:center;text-align:center}
+  .metric.metric-deltas{flex:0 1 426px;width:426px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:16px;text-align:center}
+  .metric-delta{min-width:0}
+  .metric.metric-wide{flex:0 0 210px;width:210px}
+  .metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .metric .v{font-size:18px;font-weight:650;margin-top:9px;line-height:1.1;font-family:ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .metric.metric-compact .v{font-size:24px;font-weight:760;margin-top:12px}
+  .metric.metric-deltas .v{font-size:24px;font-weight:760;margin-top:12px}
+  .metric.metric-wide #mSig{font-size:20px}
+  .metric .kd{font-size:11px;color:var(--dim);margin-top:7px;font-family:ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scoreval{font-size:20px;font-weight:750;line-height:1.15;white-space:nowrap}
+  .scoreval.mix{color:var(--flat)}
   .metric .convtrack{height:3px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden;display:none}
   .metric .convtrack .fill{height:100%;width:0%;border-radius:2px;transition:width .4s ease, background .4s ease}
   .metric.conv-up{border-color:var(--up)}
   .metric.conv-down{border-color:var(--down)}
+  .metric.conv-weak{border-color:var(--flat);opacity:.85}
   .metric.conv-flash{animation:convflash 1.2s step-end infinite}
   @keyframes convflash{0%,49%{background:rgba(199,185,74,.55)}50%,100%{background:var(--panel)}}
   .metric .kd.convlbl{color:var(--txt);letter-spacing:.4px}
@@ -80,11 +108,18 @@
   }
   .pos{color:var(--up)}.neg{color:var(--down)}
   .earlybadge{margin-top:6px;font-size:12px;font-weight:700;letter-spacing:.3px}
+  .tableband{overflow-x:hidden;overflow-y:auto;max-width:100%;max-height:calc(29px * 81);scrollbar-gutter:stable;overscroll-behavior:contain}
   table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px}
   th,td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   th{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:10px;position:sticky;top:0;background:var(--bg)}
   th:first-child,td:first-child{text-align:left}
   td.UP{color:var(--up)}td.DOWN{color:var(--down)}td.MIXED{color:var(--flat)}
+  @media (max-width: 1200px){
+    .tightband{width:100%;min-width:0;max-width:none}
+    .signal{flex-direction:column;align-items:stretch}
+    .sigcol{flex:0 1 auto;width:100%;max-width:none}
+    .presswrap{width:100%;min-width:0}
+  }
   .settled{padding:13px 16px;border-radius:10px;margin-bottom:12px;font-weight:600;display:none}
   .settled.UP{background:rgba(46,194,126,.12);border:1px solid var(--up);color:var(--up)}
   .settled.DOWN{background:rgba(255,93,108,.12);border:1px solid var(--down);color:var(--down)}
@@ -111,7 +146,7 @@
 </head>
 <body>
 <header>
-  <h1>Up / Down <span class="vtag">V8</span></h1>
+  <h1>Up / Down <span class="vtag" title="V8 conviction-tier dashboard build">V8-C</span></h1>
   <span id="mBar">BTC — · Poly —</span>
   <div class="live"><span id="pulse" class="pulse"></span><span id="rate">idle</span><span class="rem" id="mRem">--:--</span></div>
 </header>
@@ -168,8 +203,30 @@
         <div id="cvdChart" style="width:100%;height:250px"></div>
       </div>
       <div class="card">
-        <h3>CVD 10s — delta flow</h3>
-        <div id="cvdDeltaChart" style="width:100%;height:250px"></div>
+        <h3>Score</h3>
+        <div class="scorepanel" id="scorePanel">
+          <div class="scorebiggrid">
+            <div class="scorebigitem">
+              <div class="scorebiglabel">UP</div>
+              <div class="scorebigval pos" id="scorePanelUp">0</div>
+              <div class="scorebigpct" id="scorePanelUpPct">0%</div>
+            </div>
+            <div class="scorebigitem">
+              <div class="scorebiglabel">DOWN</div>
+              <div class="scorebigval neg" id="scorePanelDown">0</div>
+              <div class="scorebigpct" id="scorePanelDownPct">0%</div>
+            </div>
+            <div class="scorebigitem">
+              <div class="scorebiglabel">MIXED</div>
+              <div class="scorebigval mix" id="scorePanelMixed">0</div>
+              <div class="scorebigpct" id="scorePanelMixedPct">0%</div>
+            </div>
+          </div>
+          <div class="scoreprogress">
+            <div class="scoreprogressbar"><div class="scoreprogressfill" id="scorePanelProgressFill"></div></div>
+            <div class="scoreprogresspct" id="scorePanelProgressPct">0%</div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <h3>Bar flow — CVD since open</h3>
@@ -186,19 +243,25 @@
       </div>
     </div>
 
-    <div class="metrics">
-      <div class="metric"><div class="k">Cushion</div><div class="v" id="mCush">—</div><div class="kd" id="mCushD">Δ10s —</div></div>
-      <div class="metric"><div class="k">CVD since open</div><div class="v" id="mCvdOpen">—</div></div>
-      <div class="metric"><div class="k">CVD Δ5s</div><div class="v" id="mCvd5">—</div></div>
-      <div class="metric"><div class="k">CVD Δ10s</div><div class="v" id="mCvd10">—</div></div>
-      <div class="metric"><div class="k">CVD Δ60s</div><div class="v" id="mCvd60">—</div></div>
-      <div class="metric" id="mSigCard"><div class="k">Signal</div><div class="v" id="mSig">—</div><div class="convtrack" id="mSigTrack"><div class="fill" id="mSigFill"></div></div><div class="kd" id="mSigRun">×—</div></div>
+    <div class="metrics tightband">
+      <div class="metricrow metricrow-primary">
+        <div class="metric metric-compact"><div class="k">Cushion</div><div class="v" id="mCush">—</div></div>
+        <div class="metric metric-compact"><div class="k">CVD since open</div><div class="v" id="mCvdOpen">—</div></div>
+        <div class="metric metric-deltas">
+          <div class="metric-delta"><div class="k">CVD Δ5s</div><div class="v" id="mCvd5">—</div></div>
+          <div class="metric-delta"><div class="k">CVD Δ10s</div><div class="v" id="mCvd10">—</div></div>
+          <div class="metric-delta"><div class="k">CVD Δ60s</div><div class="v" id="mCvd60">—</div></div>
+        </div>
+        <div class="metric metric-wide" id="mSigCard"><div class="k">Signal</div><div class="v" id="mSig">—</div><div class="convtrack" id="mSigTrack"><div class="fill" id="mSigFill"></div></div><div class="kd" id="mSigRun">×—</div></div>
+      </div>
     </div>
 
-    <table>
-      <thead><tr><th>Time</th><th>rem</th><th>BTC imb</th><th>Poly imb</th><th>comb</th><th>cushion</th><th>CVD30s</th><th>signal</th></tr></thead>
-      <tbody id="led"></tbody>
-    </table>
+    <div class="tableband tightband">
+      <table>
+        <thead><tr><th>Time</th><th>rem</th><th>Δ cush 10s</th><th>p_flip</th><th>cushion</th><th>CVD30s</th><th>signal</th></tr></thead>
+        <tbody id="led"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -218,7 +281,7 @@
 <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script type="module">
   // Pure signal logic (testable, see v5.1/test/signals.test.mjs) -> exposed to the page.
-  import { newSession, tick as sigTick, CFG } from './src/signals.mjs';
+  import { newSession, tick as sigTick, CFG } from './src/signals.mjs?v=conv1';
   window.V5 = { newSession, sigTick, CFG };
 </script>
 <script>
@@ -229,6 +292,12 @@ const POLY_BAND=0.06;    // ±6 cents of prob shown
 // v7s 'standard' band [0.82,0.93]: measured 2026-07-07 on the 883-bar pooled 24/7 evidence base: 85.1% @ 22.9% coverage (89.5% excluding the 07-05 cascade day), median fire ~67s in.
 const EARLY_TIER_ACC = { standard: '85%' };
 const EARLY_TIER_TIP = 'v7s standard band [0.82,0.93], BTC 5m, fire window 45-90s, dwell 3, cushion-agree. Measured 2026-07-07 on 883 pooled 24/7 bars: 85.1% @ 22.9% cov (89.5% ex-cascade-day). The live-hours sample ran higher (95.6%) but is selection-flattered - trust the 24/7 number. Abstains when no setup exists.';
+const CONV_TIER_ACC = {
+  3: '88% held-out / 94% live',
+  2: '81% held-out / 85% live',
+  1: '57% held-out / 50% live'
+};
+const CONV_TIER_SHORT = { 3: '94%', 2: '85%', 1: '50%' };
 let parsed=null,poll=null,st=null,runsLeft=0;
 
 function parseSlug(slug){
@@ -240,6 +309,28 @@ const fmtClock=s=>{s=Math.max(0,s);return String(Math.floor(s/60)).padStart(2,'0
 const sgn=v=>v>=0?'+':'';
 const fmtUsd=v=>(v>=0?'+':'')+Math.round(v).toLocaleString();
 const fmtK=v=>{const a=Math.abs(v);return (v>=0?'+':'-')+(a>=1000000?(a/1000000).toFixed(2)+'M':a>=1000?(a/1000).toFixed(1)+'k':''+a);};
+const SCORE_TOTAL_TICKS_5M = 296;
+function renderScore(){
+  const rows = st && Array.isArray(st.log) ? st.log : [];
+  const up = rows.filter(r => r && r.signal === 'UP').length;
+  const down = rows.filter(r => r && r.signal === 'DOWN').length;
+  const mixed = rows.filter(r => r && r.signal === 'MIXED').length;
+  const pct = n => Math.round(n / SCORE_TOTAL_TICKS_5M * 100) + '%';
+  const progressPct = Math.min(100, Math.round((up + down + mixed) / SCORE_TOTAL_TICKS_5M * 100));
+  const panelPairs = [
+    ['scorePanelUp', up], ['scorePanelDown', down], ['scorePanelMixed', mixed],
+    ['scorePanelUpPct', pct(up)], ['scorePanelDownPct', pct(down)], ['scorePanelMixedPct', pct(mixed)],
+    ['scorePanelProgressPct', progressPct + '%']
+  ];
+  panelPairs.forEach(([id, value]) => { const el = $('#' + id); if(el) el.textContent = value; });
+  const fill = $('#scorePanelProgressFill');
+  if(fill) fill.style.width = progressPct + '%';
+}
+const convWhy=conv=>conv&&conv.why?conv.why:'all five measured points';
+const convDots=conv=>conv&&conv.tier?' '+('·'.repeat(conv.tier)):'';
+const convSignalText=(sig,conv)=>(sig==='UP'||sig==='DOWN')?sig+convDots(conv):(sig==='MIXED'?'MIXED':'—');
+const convCompact=conv=>conv?`conv ${conv.pts}/5 - ${convWhy(conv)}`:'';
+const convTip=(sig,conv)=>conv?`${sig} tier ${conv.tier} (${conv.pts}/5). Measured ${CONV_TIER_ACC[conv.tier]||'unmeasured'}. ${convWhy(conv)}. Display/logging only; v8 signal unchanged.`:'';
 async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json();}
 async function jgetT(u,ms){const ac=new AbortController();const t=setTimeout(()=>ac.abort(),ms);
   try{const r=await fetch(u,{signal:ac.signal});if(!r.ok)throw new Error(r.status);return await r.json();}finally{clearTimeout(t);}}
@@ -421,15 +512,20 @@ async function tickBody(){
   if (pressure >= 0) { fill.style.left = '50%'; fill.style.width = (pressure * 48) + '%'; fill.style.background = 'rgba(46,194,126,.45)'; }
   else { fill.style.left = (50 + pressure * 48) + '%'; fill.style.width = (-pressure * 48) + '%'; fill.style.background = 'rgba(255,93,108,.45)'; }
   const dispSig = sig;
+  const conv = dr.conv || null;
+  const dispSigText = convSignalText(dispSig, conv);
   st.sigRun = (dispSig === st.sigRunVal) ? (st.sigRun || 0) + 1 : 1;   // consecutive ticks at this value
   st.sigRunVal = dispSig;
-  $('#sigtag').className = 'sigtag ' + dispSig;
-  $('#sigtag').textContent = dispSig === 'UP' ? 'UP' : dispSig === 'DOWN' ? 'DOWN' : 'MIXED';
+  const sigtag = $('#sigtag');
+  sigtag.className = 'sigtag ' + dispSig + (conv ? ' conv' + conv.tier : '');
+  sigtag.textContent = dispSigText;
+  sigtag.title = convTip(dispSig, conv);
   const flowNote = dr.note ? ' · ' + dr.note : '';
+  const convNote = conv ? ' · ' + convCompact(conv) : '';
   const edge = (flip && flip.p != null && pmid != null && flip.side)
     ? flip.p - (flip.side > 0 ? (1 - pmid) : pmid) : null;   // model P(flip) vs market-implied P(flip)
   $('#siginfo').innerHTML = `Binance <b>${bimb == null ? '—' : bimb.toFixed(2)}</b> · Polymarket <b>${pimb == null ? '—' : pimb.toFixed(2)}</b> · mom z<b>${sg ? (sg.momentum.z >= 0 ? '+' : '') + sg.momentum.z.toFixed(1) : '—'}</b>${flowNote}` +
-    ` · flip <b>${flip && flip.p != null ? Math.round(flip.p * 100) + '%' : '—'}</b>` +
+    `${convNote} · flip <b>${flip && flip.p != null ? Math.round(flip.p * 100) + '%' : '—'}</b>` +
     `${edge != null ? ' (edge ' + (edge >= 0 ? '+' : '') + Math.round(edge * 100) + '%)' : ''}` +
     `${flip && flip.alert ? ' <b class="neg">' + flip.alert + '</b>' : ''}<br>${Math.round(rem)}s left`;
 
@@ -462,36 +558,27 @@ async function tickBody(){
 
   // scorecards
   $('#mCush').textContent = cush == null ? '—' : sgn(cush) + cush.toFixed(1); $('#mCush').className = 'v ' + (cush > 0 ? 'pos' : cush < 0 ? 'neg' : '');
-  $('#mCushD').textContent = 'Δ10s ' + (sg && sg.cush_d10 != null ? sgn(sg.cush_d10) + sg.cush_d10.toFixed(1) : '—');
   const setV = (id, v) => { const e = $('#' + id); e.textContent = v == null ? '—' : fmtK(v); e.className = 'v ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : ''); };
   setV('mCvdOpen', st.owsSinceOpen);
   setV('mCvd5', sg ? sg.flow.d5 : null);
   setV('mCvd10', sg ? sg.flow.d10 : null);
   setV('mCvd60', sg ? sg.flow.d60 : null);
-  $('#mSig').textContent = dispSig; $('#mSig').className = 'v ' + (dispSig === 'UP' ? 'pos' : dispSig === 'DOWN' ? 'neg' : '');
-  // conviction visualization: run persistence toward 31 ticks + price-side agreement
-  // (measured on the first 28 verified bars: >=31 & agreeing = 96%; against price = ~33%)
-  const CONV_TICKS = 31;
+  $('#mSig').textContent = dispSigText; $('#mSig').className = 'v ' + (dispSig === 'UP' ? 'pos' : dispSig === 'DOWN' ? 'neg' : '');
+  // measured conviction visualization: 5-point tier attached to v8's emitted tag.
   const convCard = $('#mSigCard'), convTrack = $('#mSigTrack'), convFill = $('#mSigFill'), runEl = $('#mSigRun');
-  const convDir = dispSig === 'UP' || dispSig === 'DOWN';
-  const convAgrees = convDir && cush != null && cush !== 0 && ((dispSig === 'UP') === (cush > 0));
-  const convFighting = convDir && cush != null && cush !== 0 && !convAgrees;
-  // v5.4: lock also requires a REAL price lead — thin-cushion locks measured 58% vs fat 91% on 52 bars
-  const convFat = cush != null && Math.abs(cush) >= Math.max(10, 0.5 * (st.owsVol1m ?? 20));
-  const convLocked = convAgrees && convFat && st.sigRun >= CONV_TICKS;
-  convCard.classList.toggle('conv-up', convLocked && dispSig === 'UP');
-  convCard.classList.toggle('conv-down', convLocked && dispSig === 'DOWN');
-  convCard.classList.toggle('conv-flash', convLocked);
-  convTrack.style.display = convDir ? 'block' : 'none';
-  if (convDir) {
-    convFill.style.width = Math.min(100, 100 * st.sigRun / CONV_TICKS) + '%';
-    convFill.style.background = convFighting ? 'var(--flat)' : (dispSig === 'UP' ? 'var(--up)' : 'var(--down)');
+  convCard.classList.toggle('conv-up', !!conv && conv.tier === 3 && dispSig === 'UP');
+  convCard.classList.toggle('conv-down', !!conv && conv.tier === 3 && dispSig === 'DOWN');
+  convCard.classList.toggle('conv-weak', !!conv && conv.tier === 1);
+  convCard.classList.toggle('conv-flash', !!conv && conv.tier === 3);
+  convTrack.style.display = conv ? 'block' : 'none';
+  if (conv) {
+    convFill.style.width = Math.min(100, 100 * conv.pts / 5) + '%';
+    convFill.style.background = conv.tier === 1 ? 'var(--flat)' : (dispSig === 'UP' ? 'var(--up)' : 'var(--down)');
   }
-  runEl.classList.toggle('convlbl', convLocked);
-  runEl.textContent = convLocked ? 'HIGH CONVICTION · ×' + st.sigRun
-                    : convFighting ? '×' + st.sigRun + ' · fighting price'
-                    : '×' + st.sigRun + ' ticks';
-  runEl.title = convLocked ? 'Run ≥31 ticks agreeing with a real price lead — ≈90% on 52 verified bars' : '';
+  runEl.classList.toggle('convlbl', !!conv);
+  runEl.textContent = conv ? `T${conv.tier} · ${conv.pts}/5 · ${CONV_TIER_SHORT[conv.tier] || '—'}`
+                          : (dispSig === 'MIXED' ? 'no conviction' : 'conv —');
+  runEl.title = convTip(dispSig, conv);
   $('#pulse').className = 'pulse on'; $('#rate').textContent = 'live · ' + st.log.length + ' ticks';
 
   // histories for the two graphs
@@ -541,16 +628,18 @@ async function tickBody(){
     p_flip: flip && flip.p != null ? +flip.p.toFixed(3) : null,
     flip_alert: flip ? flip.alert : null,
     signal: sig,
+    conv: conv ? { tier: conv.tier, pts: conv.pts, why: conv.why || '' } : null,
     early_call: sg && sg.early ? sg.early.side : null,
     early_tier: sg && sg.early ? sg.early.tier : null,
   };
   st.log.push(row); saveLog();
+  renderScore();
   if(st.log.length%5===0)renderThreads();   // keep sidebar fresh (active thread, new threads)
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td>${t}</td><td>${row.rem}</td><td>${bimb == null ? '·' : sgn(bimb) + bimb.toFixed(2)}</td>` +
-    `<td>${pimb == null ? '·' : sgn(pimb) + pimb.toFixed(2)}</td><td>${comb == null ? '·' : sgn(comb) + comb.toFixed(2)}</td>` +
-    `<td>${cush == null ? '·' : sgn(cush) + cush.toFixed(1)}</td><td>${fmtUsd(st.cvd)}</td><td class="${sig}">${sig}</td>`;
-  const led = $('#led'); led.insertBefore(tr, led.firstChild); while (led.children.length > 80) led.removeChild(led.lastChild);
+  tr.innerHTML = `<td>${t}</td><td>${row.rem}</td><td>${row.cush_d10 == null ? '·' : sgn(row.cush_d10) + row.cush_d10.toFixed(1)}</td>` +
+    `<td>${row.p_flip == null ? '·' : Math.round(row.p_flip * 100) + '%'}</td>` +
+    `<td>${cush == null ? '·' : sgn(cush) + cush.toFixed(1)}</td><td>${fmtUsd(st.cvd)}</td><td class="${sig}">${dispSigText}</td>`;
+  const led = $('#led'); led.insertBefore(tr, led.firstChild);
   updatePrompt(sig, bimb, pimb);
 }
 
@@ -572,7 +661,21 @@ function ensureChart(id, colors, pf){
   });
   const lines=cs.map(c=>{const o={color:c,lineWidth:2};if(pf)o.priceFormat=pf;return addLine(chart,o);});
   lines[0].createPriceLine({price:0, color:'#ffffff', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, title:'0'});
-  charts[id]={chart, lines, rangeSet:false};
+  const resizeChart=()=>{
+    try{
+      chart.resize(Math.max(1, Math.floor(el.clientWidth)), 250);
+      if(parsed) chart.timeScale().setVisibleRange({from:parsed.ts, to:parsed.end});
+    }catch(e){}
+  };
+  if(window.ResizeObserver){
+    const ro=new ResizeObserver(resizeChart);
+    ro.observe(el);
+    charts[id]={chart, lines, rangeSet:false, ro};
+  }else{
+    window.addEventListener('resize', resizeChart);
+    charts[id]={chart, lines, rangeSet:false, resizeChart};
+  }
+  requestAnimationFrame(resizeChart);
 }
 function resetChart(id){ const c=charts[id]; if(!c||!parsed)return; c.lines.forEach(l=>l.setData([{time:parsed.ts}])); c.rangeSet=false; }  // seed whitespace at bar open only — setVisibleRange extends view to bar close
 function updateChart(id, tSec, val){
@@ -750,6 +853,7 @@ async function start(){
       owsCvd1m:null,owsSinceOpen:null,owsCvd3m:null,owsLargePrints:null,owsEfficiency:null,owsPerpSpotDiv:null,owsImb:null,owsVol1m:null,ows:null,_owrt:null,
       book:newBook(),diffBuffer:[],wsLast:null,trades:[],ws:null,wsRetry:0,binReady:false,_rt:null,lastTradeTs:0,bookLastAdv:0,
       signals:V5.newSession()};
+  renderScore();
   const PF={type:'price',precision:0,minMove:1}; ensureChart('cvdChart','#9b8cff',PF); ensureChart('cvdDeltaChart','#e3c75a',PF); ensureChart('flowChart','#2ec27e',PF);
   st.imbMode=$('#imbSelect').value||'imb';
   const ic=SWAP_MODES[st.imbMode]||SWAP_MODES.imb;

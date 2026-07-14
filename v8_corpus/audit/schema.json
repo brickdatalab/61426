@@ -1,0 +1,1347 @@
+{
+  "corpus_version": "v8-1",
+  "description": "V8 log-ingestion corpus: point-in-time ticks, signal runs, market labels, session quality.",
+  "source_map_note": "tick fields map logged source keys to canonical names; see per-field 'source'.",
+  "tables": {
+    "v8_ticks": [
+      {
+        "name": "corpus_version",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": "Corpus build version tag"
+      },
+      {
+        "name": "market_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": "asset-updown-interval-epoch"
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": "SHA-256 of source identity + content"
+      },
+      {
+        "name": "source_path",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": "Relative path to source log"
+      },
+      {
+        "name": "source_sha256",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": "SHA-256 of original source bytes"
+      },
+      {
+        "name": "row_index_raw",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "0-based index in the source rows array"
+      },
+      {
+        "name": "tick_index",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "0-based index among tick rows only"
+      },
+      {
+        "name": "asset",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": "BTC or ETH"
+      },
+      {
+        "name": "symbol",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": "BTCUSDT or ETHUSDT"
+      },
+      {
+        "name": "interval",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": "5m or 15m"
+      },
+      {
+        "name": "bar_seconds",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "Bar length in seconds"
+      },
+      {
+        "name": "bar_start_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": "Bar open instant"
+      },
+      {
+        "name": "bar_end_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": "Bar settle instant"
+      },
+      {
+        "name": "bar_date_utc",
+        "type": "date32[day]",
+        "nullable": false,
+        "source": "",
+        "description": "UTC date of the bar"
+      },
+      {
+        "name": "t_raw",
+        "type": "string",
+        "nullable": false,
+        "source": "t",
+        "description": "Logged clock string HH:MM:SS"
+      },
+      {
+        "name": "row_timestamp_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": "Reconstructed UTC write time (observed clock, unmodified)"
+      },
+      {
+        "name": "rem_s",
+        "type": "int32",
+        "nullable": false,
+        "source": "rem",
+        "description": "Seconds remaining at capture (primary earliness measure)"
+      },
+      {
+        "name": "elapsed_s",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "bar_seconds - rem_s"
+      },
+      {
+        "name": "previous_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": "rem_s of the prior tick"
+      },
+      {
+        "name": "delta_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": "previous_rem_s - rem_s"
+      },
+      {
+        "name": "delta_row_time_s",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "Observed clock delta vs prior tick (s)"
+      },
+      {
+        "name": "duplicate_rem",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "rem unchanged from prior tick"
+      },
+      {
+        "name": "nonmonotonic_rem",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "rem increased vs prior tick"
+      },
+      {
+        "name": "gap_after_previous",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Observed clock gap > 1s vs prior tick"
+      },
+      {
+        "name": "gap_size_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": "Missing whole seconds in the gap"
+      },
+      {
+        "name": "clock_disagreement_s",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": "|row_timestamp - rem-implied nominal|"
+      },
+      {
+        "name": "session_left_censored",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Session did not observe bar open"
+      },
+      {
+        "name": "session_right_censored",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Session ended before bar close"
+      },
+      {
+        "name": "binance_imbalance",
+        "type": "double",
+        "nullable": true,
+        "source": "btc_imb",
+        "description": "Binance order-book imbalance"
+      },
+      {
+        "name": "polymarket_imbalance",
+        "type": "double",
+        "nullable": true,
+        "source": "poly_imb",
+        "description": "Polymarket order-book imbalance"
+      },
+      {
+        "name": "combined_imbalance_logged",
+        "type": "double",
+        "nullable": true,
+        "source": "comb",
+        "description": "Logged combined imbalance"
+      },
+      {
+        "name": "cushion_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cushion",
+        "description": "Price vs bar open ($)"
+      },
+      {
+        "name": "spot_cvd_1m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cvd",
+        "description": "VM 1-minute CVD delta"
+      },
+      {
+        "name": "spot_cvd_since_open_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cvd_since_open",
+        "description": "CVD accumulated since bar open"
+      },
+      {
+        "name": "spot_cvd_delta_5s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cvd_d5",
+        "description": "5s CVD delta"
+      },
+      {
+        "name": "spot_cvd_delta_10s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cvd_d10",
+        "description": "10s CVD delta"
+      },
+      {
+        "name": "spot_cvd_delta_60s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cvd_d60",
+        "description": "60s CVD delta"
+      },
+      {
+        "name": "cushion_delta_10s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "cush_d10",
+        "description": "10s cushion delta"
+      },
+      {
+        "name": "momentum_z",
+        "type": "double",
+        "nullable": true,
+        "source": "mom_z",
+        "description": "Flow-slope momentum z-score"
+      },
+      {
+        "name": "momentum_direction",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "mom_dir",
+        "description": "FLAT/UP/DOWN"
+      },
+      {
+        "name": "imbalance_ewma",
+        "type": "double",
+        "nullable": true,
+        "source": "imb_ewma",
+        "description": "EWMA of combined imbalance"
+      },
+      {
+        "name": "large_print_net_3m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "large_prints",
+        "description": "3m large-print net flow"
+      },
+      {
+        "name": "efficiency_3m",
+        "type": "double",
+        "nullable": true,
+        "source": "efficiency",
+        "description": "3m efficiency ratio"
+      },
+      {
+        "name": "perp_minus_spot_cvd_5m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "perp_spot_div",
+        "description": "Perp-spot CVD 5m divergence"
+      },
+      {
+        "name": "realized_vol_1m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "vol_1m",
+        "description": "Realized 1-minute volatility ($)"
+      },
+      {
+        "name": "poly_up_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "poly_mid",
+        "description": "UP-token midpoint"
+      },
+      {
+        "name": "poly_down_mid_proxy",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "1 - poly_up_mid (complement proxy)"
+      },
+      {
+        "name": "poly_price_available",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "poly_up_mid present"
+      },
+      {
+        "name": "poly_favorite_side",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "",
+        "description": "UP/DOWN by larger midpoint"
+      },
+      {
+        "name": "poly_favorite_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "max(poly_up_mid, 1-poly_up_mid)"
+      },
+      {
+        "name": "poly_distance_from_50",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "|poly_up_mid - 0.5|"
+      },
+      {
+        "name": "signal_side_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "Midpoint on the signal side"
+      },
+      {
+        "name": "signal_side_discount_to_one",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "1 - signal_side_mid"
+      },
+      {
+        "name": "signal",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "signal",
+        "description": "Logged V8 signal UP/DOWN/MIXED"
+      },
+      {
+        "name": "conviction_tier",
+        "type": "int8",
+        "nullable": true,
+        "source": "conv.tier",
+        "description": "V8 conviction tier 1-3"
+      },
+      {
+        "name": "conviction_points",
+        "type": "int8",
+        "nullable": true,
+        "source": "conv.pts",
+        "description": "Conviction points 0-5"
+      },
+      {
+        "name": "conviction_reason",
+        "type": "string",
+        "nullable": true,
+        "source": "conv.why",
+        "description": "Conviction shortfall reason"
+      },
+      {
+        "name": "p_flip",
+        "type": "double",
+        "nullable": true,
+        "source": "p_flip",
+        "description": "Driftless flip probability"
+      },
+      {
+        "name": "flip_alert",
+        "type": "string",
+        "nullable": true,
+        "source": "flip_alert",
+        "description": "Flip alert label"
+      },
+      {
+        "name": "early_call_side",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "early_call",
+        "description": "Early-call side UP/DOWN"
+      },
+      {
+        "name": "early_tier",
+        "type": "string",
+        "nullable": true,
+        "source": "early_tier",
+        "description": "Early-call tier"
+      },
+      {
+        "name": "v8_floor_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "max(10, 0.5*vol_1m) or engine fallback"
+      },
+      {
+        "name": "cushion_floor_ratio",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "|cushion| / v8_floor_usd"
+      },
+      {
+        "name": "expected_v8_signal",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": "Engine-replayed expected signal"
+      },
+      {
+        "name": "signal_rule_match",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Logged signal matches expected (or boundary-ambiguous)"
+      },
+      {
+        "name": "floor_boundary_ambiguous",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Rounded values cannot resolve floor side"
+      },
+      {
+        "name": "previous_signal",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "",
+        "description": "Signal on the prior tick"
+      },
+      {
+        "name": "signal_changed",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "Signal differs from prior tick"
+      },
+      {
+        "name": "signal_run_id",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "Contiguous-same-signal run index"
+      },
+      {
+        "name": "signal_run_age_ticks",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "Ticks elapsed within current run"
+      },
+      {
+        "name": "signal_run_age_s",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": "Seconds elapsed within current run"
+      },
+      {
+        "name": "first_directional_tick",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "First UP/DOWN of the session"
+      },
+      {
+        "name": "previous_directional_signal",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "",
+        "description": "Last directional signal before now"
+      },
+      {
+        "name": "directional_reversal_count_prior",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "Directional reversals before this tick"
+      },
+      {
+        "name": "directional_reversal_count_through_now",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "Directional reversals through this tick"
+      },
+      {
+        "name": "up_count_prior",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "UP ticks before this tick"
+      },
+      {
+        "name": "down_count_prior",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "DOWN ticks before this tick"
+      },
+      {
+        "name": "mixed_count_prior",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": "MIXED ticks before this tick"
+      },
+      {
+        "name": "early_call_first_seen",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": "First tick with a non-null early call"
+      },
+      {
+        "name": "early_call_age_ticks",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": "Ticks since early call first seen"
+      },
+      {
+        "name": "early_call_age_s",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": "Seconds since early call first seen"
+      }
+    ],
+    "v8_signal_runs": [
+      {
+        "name": "market_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_run_id",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_tick_index",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_row_timestamp_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_elapsed_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "end_tick_index",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "end_row_timestamp_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "end_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "end_elapsed_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "observed_tick_count",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "observed_duration_s",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "left_censored",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "right_censored",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "contains_tick_gap",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "max_tick_gap_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_cushion_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_v8_floor_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_cushion_floor_ratio",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_realized_vol_1m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_poly_up_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_poly_favorite_side",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_poly_favorite_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_signal_side_mid",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_binance_imbalance",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_polymarket_imbalance",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_combined_imbalance_logged",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_imbalance_ewma",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_spot_cvd_since_open_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_spot_cvd_delta_5s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_spot_cvd_delta_10s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_spot_cvd_delta_60s_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_spot_cvd_delta_3m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_momentum_z",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_momentum_direction",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_large_print_net_3m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_efficiency_3m",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_perp_minus_spot_cvd_5m_usd",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_p_flip",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_flip_alert",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_conviction_tier",
+        "type": "int8",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_conviction_points",
+        "type": "int8",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "start_conviction_reason",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "directional_reversal_count_prior",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      }
+    ],
+    "v8_market_labels": [
+      {
+        "name": "market_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "canonical_session_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "asset",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "symbol",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "interval",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "bar_seconds",
+        "type": "int32",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "bar_start_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "bar_end_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settled_side",
+        "type": "dictionary<values=string, indices=int8, ordered=0>",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "label_up",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_open_usd",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_close_usd",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_move_usd",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_abs_move_usd",
+        "type": "double",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_timestamp_utc",
+        "type": "timestamp[ms, tz=UTC]",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_rule_consistent",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "near_flat_outcome",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      }
+    ],
+    "v8_session_quality": [
+      {
+        "name": "session_id",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "market_id",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "source_path",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "source_sha256",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "source_size_bytes",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "source_mtime_utc",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "ingest_status",
+        "type": "string",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "exclusion_reason",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "canonical_for_market",
+        "type": "bool",
+        "nullable": false,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "duplicate_type",
+        "type": "string",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "canonical_rank",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "raw_row_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "tick_row_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "settlement_row_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "first_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "last_rem_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "first_elapsed_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "last_elapsed_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "observed_span_s",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "distinct_rem_seconds",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "duplicate_rem_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "nonmonotonic_rem_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "missing_seconds_within_observed_span",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "largest_gap_s",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "starts_before_45s_elapsed",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "covers_45_to_90s_early_window",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "reaches_final_5s",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "left_censored",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "right_censored",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "cushion_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "volatility_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "poly_mid_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "poly_imbalance_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "binance_imbalance_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "cvd_since_open_null_fraction",
+        "type": "double",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_up_count_recomputed",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_down_count_recomputed",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_mixed_count_recomputed",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_up_count_raw_summary",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_down_count_raw_summary",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "signal_mixed_count_raw_summary",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "raw_summary_matches_recomputed",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "nonboundary_signal_mismatch_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "boundary_ambiguous_count",
+        "type": "int32",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "engine_compatible",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      },
+      {
+        "name": "early_call_validated_domain",
+        "type": "bool",
+        "nullable": true,
+        "source": "",
+        "description": ""
+      }
+    ]
+  },
+  "timestamp_precision": "second (UTC); parquet stores as timestamp[ms, tz=UTC] (ms component always 000) since the parquet format has no native seconds unit",
+  "boundary_ambiguity_epsilon": 0.0075
+}

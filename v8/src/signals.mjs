@@ -66,6 +66,14 @@ Object.assign(CFG, {
   // winner on the 823-bar 24/7 base; hysteresis/dwell variants measured worse OOS.
   V8_FLOOR_ABS: 10,        // $ absolute floor (same floor family as the early/BAFO channels)
   V8_FLOOR_VOLMULT: 0.5,   // vol multiple: floor = max(ABS, VOLMULT * vol_1m)
+  // v8 conviction tier (convictionOf) — measured 2026-07-08 (90_conviction_tiers.py,
+  // 229,578 directional ticks, walk-forward): tier3 = all 5 pts -> 88.2% heldout /
+  // 94.0% live; tier2 -> 81.2% / 85.1%; tier1 (<=1 pt, ~1% of ticks) -> 57.4% / 50.0%.
+  // Points: ratio>=1.5x floor, ratio>=2.5x, p_flip<=0.5, poly agrees (>=+0.02 on the
+  // side), zero reversals so far this bar. Display/logging layer ONLY — never gates
+  // the emitted sig.
+  CONV_R1: 1.5, CONV_R2: 2.5, CONV_PFLIP: 0.5, CONV_POLY: 0.02,
+  CONV_T3: 5, CONV_T1: 1,
 });
 
 const KEEP_MS = 65_000;       // a little more than the 60s delta window
@@ -77,7 +85,7 @@ export function newSession() {
     pMean: null, pVar: null,           // EWMA moments of the 6s price move
     imbEwma: null,
     sig: 'MIXED', pendingSig: null, pendingCount: 0, counterHold: 0,
-    sig8: 'MIXED',
+    sig8: 'MIXED', convPrev: null, convRev: 0,
     alertCount: 0, alert: null,
     earlyCall: null, earlyAbstain: false, earlyRun: 0, earlyPendSide: null,
   };
@@ -199,6 +207,32 @@ export function decideV8(s, inp) {
   return { sig, floor, note: sig === 'MIXED' ? '' : 'cushion-lead' };
 }
 
+// v8 conviction tier — a per-tick reliability grade on the emitted tag. Reads only
+// components that survived walk-forward validation (see CFG.CONV_* provenance).
+// Returns null on MIXED. Tracks bar reversal count on s (directional tag changes).
+// Display/logging layer only: never alters decideV8's call or the early channel.
+export function convictionOf(s, inp, sig, flipP) {
+  if (sig !== 'UP' && sig !== 'DOWN') return null;
+  if (s.convPrev && sig !== s.convPrev) s.convRev = (s.convRev ?? 0) + 1;
+  s.convPrev = sig;
+  const vol = inp.vol1m ?? volFromHist(s.priceHist);
+  const floor = Math.max(CFG.V8_FLOOR_ABS, CFG.V8_FLOOR_VOLMULT * vol);
+  const ratio = inp.cushion == null ? 0 : Math.abs(inp.cushion) / floor;
+  const ds = sig === 'UP' ? 1 : -1;
+  const polyOk = inp.polyMid != null && (inp.polyMid - 0.5) * ds >= CFG.CONV_POLY;
+  const pfOk = flipP != null && flipP <= CFG.CONV_PFLIP;
+  const pts = (ratio >= CFG.CONV_R1 ? 1 : 0) + (ratio >= CFG.CONV_R2 ? 1 : 0)
+    + (pfOk ? 1 : 0) + (polyOk ? 1 : 0) + ((s.convRev ?? 0) === 0 ? 1 : 0);
+  const tier = pts >= CFG.CONV_T3 ? 3 : (pts <= CFG.CONV_T1 ? 1 : 2);
+  const why = [];
+  if (ratio < CFG.CONV_R1) why.push('thin cushion');
+  else if (ratio < CFG.CONV_R2) why.push('shallow cushion');
+  if (!pfOk) why.push('flip-risk');
+  if (!polyOk) why.push('poly not agreeing');
+  if ((s.convRev ?? 0) > 0) why.push(`${s.convRev} reversal${s.convRev > 1 ? 's' : ''}`);
+  return { tier, pts, why: why.join(', ') };
+}
+
 // standard normal CDF (Abramowitz-Stegun 26.2.17, |err| < 7.5e-8)
 export function phi(x) {
   const t = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -300,12 +334,14 @@ export function tick(s, inp) {
   // (pressure bar + comparability), but the emitted sig is decideV8's.
   const legacy = decideDebounced(s, inp, momentum, flow);
   const v8 = decideV8(s, inp);
+  const flip = flipRisk(s, inp, flow);
+  const conv = convictionOf(s, inp, v8.sig, flip?.p ?? null);
   return {
     flow,
     cush_d10: deltaAt(s.priceHist, now, 10_000),
     momentum,
-    decision: { sig: v8.sig, imbEwma: legacy.imbEwma, note: v8.note, floor: v8.floor, legacySig: legacy.sig },
+    decision: { sig: v8.sig, imbEwma: legacy.imbEwma, note: v8.note, floor: v8.floor, legacySig: legacy.sig, conv },
     early: earlyCallOf(s, inp),
-    flip: flipRisk(s, inp, flow),
+    flip,
   };
 }

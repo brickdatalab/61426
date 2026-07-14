@@ -1,0 +1,33 @@
+{
+  "build": "V9 Lead + Settlement Nowcast",
+  "log_version": "v9-1",
+  "engine_state_version": "v9-1",
+  "snapshot_version": "v9-1",
+  "source_build_hash": "6556297f0caf755ea2443b6ff34247c6b27879e1666ab5a5a1428163b5262d4d",
+  "source_hashes": {
+    "v8/updown-liquidity-overlap-demo.html": "a1daa0b2bcc6044a300a9c8958b1cbd7f25bb8d5e3cc9bbeaae528e48766daca",
+    "v8/src/signals.mjs": "30c41979295728d2db481396a6d81d5d88408f3fa1869ceef821cb6e9abaedc5"
+  },
+  "v9_engine_sha256": "bb915e908fb15c99fd8078454147e5917163dac3e9df6a0b41f9ce3f4cf133c8",
+  "reference_tree": {
+    "file_count": 2859,
+    "sha256": "b6cfb696fe22f7b827d05b661b59473853f84801d3c5c2ffed90fc6b93c42e15",
+    "roots": ["v8", "v8.2"],
+    "excludes": [".venv", "__pycache__", ".DS_Store"]
+  },
+  "protected_files": {
+    "v8/README.md": "16b9554bddb1b68f275e3fd1ad863ba5013d23b6692c1c9fef3da994944dcbad",
+    "v8/src/signals.mjs": "30c41979295728d2db481396a6d81d5d88408f3fa1869ceef821cb6e9abaedc5",
+    "v8/test/signals.test.mjs": "8384f4aac855d23ad005787416b2cb5d8e70ada6ef99d3b82d0421d28e7cb575",
+    "v8/test/fixtures/btc-updown-5m-1783290000_bq.json": "5d96512021635fa9cd91363a3b451453c34bfa2b96165fe071b919c8448eae5f",
+    "v8/test/fixtures/btc-updown-5m-1783341600_bq.json": "0a820c11fe8a56ffcc0075039211efc5ad8b37a07aa5478d7ebb42fccc09a7da",
+    "v8/updown-liquidity-overlap.html": "3a12d2f417b1d697dc41a737046ea0bf16af476a6f00ba3f1885dad8481f2878",
+    "v8/updown-liquidity-overlap-demo.html": "a1daa0b2bcc6044a300a9c8958b1cbd7f25bb8d5e3cc9bbeaae528e48766daca",
+    "v8.2/src/signals.mjs": "2256414e53b3b7d0275aa2af44207d23b4f10295f72b7f4a95a97b3c9eced3d7",
+    "v8.2/test/outcome-shadow.test.mjs": "ff4cc471a7709dcad3b9e2c0bf6e9ae3bd0f8babea9592b8b2b2bec13e01a13c",
+    "v8.2/test/signals.test.mjs": "1682c59729781f59b095ee58714a141fab9d562ef6ff906515dd0f80f8309ab9",
+    "v8.2/test/fixtures/btc-updown-5m-1783290000_bq.json": "5d96512021635fa9cd91363a3b451453c34bfa2b96165fe071b919c8448eae5f",
+    "v8.2/test/fixtures/btc-updown-5m-1783341600_bq.json": "0a820c11fe8a56ffcc0075039211efc5ad8b37a07aa5478d7ebb42fccc09a7da",
+    "v8.2/updown-liquidity-overlap-shadow.html": "c95fed978b147b13caec47be30d6c02b5cd3935a1d1a876ecc40dd3d0aa5d853"
+  }
+}

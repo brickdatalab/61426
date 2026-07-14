@@ -53,3 +53,12 @@ Key pieces:
 - **Don't over-fit:** n=18 fixtures is small and noisy. Use regime-adaptive measures (z-scores, relative slopes) and honest confidence; treat edge as directional until confirmed on new data.
 - Signals must stay **forward-looking** — the value is lead time on a flip, not confirming a move that already happened.
 - Validation findings not to re-litigate: CVD-30s alone is weak (~65% late-bar sign match); 1s order-book imbalance is noise; the promising unvalidated signals are `large_print_net_3m_usd`, `efficiency_3m`, and perp−spot CVD divergence.
+
+## Log-pull shortcut
+
+When the user says **“let’s pull logs,” “get the new logs,”** or **“run the new log,”** treat it as this exact V8 log-refresh workflow:
+
+1. Run `python3 tools/pull-new-autopsy-logs.py --version v8` to fetch and atomically copy only remote V8 logs at or after the local high-water timestamp, without overwriting local files or backfilling older historical gaps.
+2. Verify every copied file is valid JSON and byte-matches `origin/main` before annotation.
+3. Run `python3 tools/add-signal-sums.py --files-from <manifest>` using a manifest containing **only the filenames copied in that pull**. This adds settlement-row signal sums only to those new logs; never run the annotator across the entire log directory for this shortcut.
+4. Report copied, annotated, skipped, historical-gap, and error counts. Do not commit or push unless separately instructed.

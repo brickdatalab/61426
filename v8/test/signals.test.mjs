@@ -5,7 +5,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { newSession, tick, CFG, decideV8 } from '../src/signals.mjs';
+import { newSession, tick, CFG, decideV8, convictionOf } from '../src/signals.mjs';
 
 const LO = CFG.EARLY_P_LO, HI = CFG.EARLY_P_HI;
 const MID_IN = (LO + Math.min(HI, LO + 0.04)) / 2;      // safely inside the band
@@ -121,6 +121,103 @@ test('decideV8: the -166/-1.2M pain shape can never be MIXED', () => {
   const s = newSession();
   const r = decideV8(s, { cushion: -166, vol1m: 120 });   // floor = 60
   assert.equal(r.sig, 'DOWN');
+});
+
+// ---------------- v8 conviction tier (display/logging only) ----------------
+
+test('conviction metadata does not gate or change the v8 signal', () => {
+  const s = newSession();
+  const out = tick(s, {
+    now: 1700000000000,
+    sinceOpen: 1000,
+    price: 50020,
+    cushion: 20,
+    remS: 60,
+    vol1m: 20,
+    polyMid: 0.4,    // poly disagrees with UP; conviction drops but sig remains UP
+  });
+  assert.equal(out.decision.sig, 'UP');
+  assert.ok(out.decision.conv);
+  assert.equal(out.decision.conv.tier, 2);
+  assert.match(out.decision.conv.why, /poly not agreeing/);
+});
+
+test('MIXED ticks have no conviction tier', () => {
+  const s = newSession();
+  const out = tick(s, {
+    now: 1700000000000,
+    sinceOpen: 1000,
+    price: 50005,
+    cushion: 5,
+    remS: 60,
+    vol1m: 20,
+    polyMid: 0.7,
+  });
+  assert.equal(out.decision.sig, 'MIXED');
+  assert.equal(out.decision.conv, null);
+});
+
+test('conviction tier 3 requires all five measured points', () => {
+  const s = newSession();
+  const out = tick(s, {
+    now: 1700000000000,
+    sinceOpen: 1000,
+    price: 50100,
+    cushion: 100,
+    remS: 60,
+    vol1m: 20,
+    polyMid: 0.7,
+  });
+  assert.equal(out.decision.sig, 'UP');
+  assert.deepEqual(out.decision.conv, { tier: 3, pts: 5, why: '' });
+
+  const missingPoly = convictionOf(newSession(), {
+    cushion: 100,
+    vol1m: 20,
+    polyMid: null,
+  }, 'UP', 0.1);
+  assert.equal(missingPoly.tier, 2);
+  assert.equal(missingPoly.pts, 4);
+  assert.match(missingPoly.why, /poly not agreeing/);
+});
+
+test('current-tick directional reversal loses the no-reversal conviction point', () => {
+  const s = newSession();
+  tick(s, {
+    now: 1700000000000,
+    sinceOpen: 1000,
+    price: 50100,
+    cushion: 100,
+    remS: 60,
+    vol1m: 20,
+    polyMid: 0.7,
+  });
+  const out = tick(s, {
+    now: 1700001000000,
+    sinceOpen: 1000,
+    price: 49900,
+    cushion: -100,
+    remS: 59,
+    vol1m: 20,
+    polyMid: 0.3,
+  });
+  assert.equal(out.decision.sig, 'DOWN');
+  assert.equal(out.decision.conv.tier, 2);
+  assert.equal(out.decision.conv.pts, 4);
+  assert.match(out.decision.conv.why, /1 reversal/);
+});
+
+test('elevated flip risk lowers conviction without changing the displayed side', () => {
+  const sig = decideV8(newSession(), { cushion: 100, vol1m: 20 }).sig;
+  const conv = convictionOf(newSession(), {
+    cushion: 100,
+    vol1m: 20,
+    polyMid: 0.7,
+  }, sig, 0.7);
+  assert.equal(sig, 'UP');
+  assert.equal(conv.tier, 2);
+  assert.equal(conv.pts, 4);
+  assert.match(conv.why, /flip-risk/);
 });
 
 // ---------------- pain-case fixture replays (real bars, real engine) ----------------

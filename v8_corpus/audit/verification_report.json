@@ -1,0 +1,1221 @@
+{
+  "checks": [
+    {
+      "name": "raw_tick_total_equals_parquet",
+      "passed": true,
+      "detail": "111914 vs 111914"
+    },
+    {
+      "name": "canonical_tick_rows_match",
+      "passed": true,
+      "detail": "111914 vs 111914"
+    },
+    {
+      "name": "labels_one_per_market",
+      "passed": true,
+      "detail": "381"
+    },
+    {
+      "name": "quality_all_files",
+      "passed": true,
+      "detail": "532"
+    },
+    {
+      "name": "v8_ticks_columns",
+      "passed": true,
+      "detail": "missing/exp order"
+    },
+    {
+      "name": "v8_ticks_corpus_version_type",
+      "passed": true,
+      "detail": "corpus_version: string != string"
+    },
+    {
+      "name": "v8_ticks_market_id_type",
+      "passed": true,
+      "detail": "market_id: string != string"
+    },
+    {
+      "name": "v8_ticks_session_id_type",
+      "passed": true,
+      "detail": "session_id: string != string"
+    },
+    {
+      "name": "v8_ticks_source_path_type",
+      "passed": true,
+      "detail": "source_path: string != string"
+    },
+    {
+      "name": "v8_ticks_source_sha256_type",
+      "passed": true,
+      "detail": "source_sha256: string != string"
+    },
+    {
+      "name": "v8_ticks_row_index_raw_type",
+      "passed": true,
+      "detail": "row_index_raw: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_tick_index_type",
+      "passed": true,
+      "detail": "tick_index: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_asset_type",
+      "passed": true,
+      "detail": "asset: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_symbol_type",
+      "passed": true,
+      "detail": "symbol: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_interval_type",
+      "passed": true,
+      "detail": "interval: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_bar_seconds_type",
+      "passed": true,
+      "detail": "bar_seconds: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_bar_start_utc_type",
+      "passed": true,
+      "detail": "bar_start_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_ticks_bar_end_utc_type",
+      "passed": true,
+      "detail": "bar_end_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_ticks_bar_date_utc_type",
+      "passed": true,
+      "detail": "bar_date_utc: date32[day] != date32[day]"
+    },
+    {
+      "name": "v8_ticks_t_raw_type",
+      "passed": true,
+      "detail": "t_raw: string != string"
+    },
+    {
+      "name": "v8_ticks_row_timestamp_utc_type",
+      "passed": true,
+      "detail": "row_timestamp_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_ticks_rem_s_type",
+      "passed": true,
+      "detail": "rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_elapsed_s_type",
+      "passed": true,
+      "detail": "elapsed_s: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_previous_rem_s_type",
+      "passed": true,
+      "detail": "previous_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_delta_rem_s_type",
+      "passed": true,
+      "detail": "delta_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_delta_row_time_s_type",
+      "passed": true,
+      "detail": "delta_row_time_s: double != double"
+    },
+    {
+      "name": "v8_ticks_duplicate_rem_type",
+      "passed": true,
+      "detail": "duplicate_rem: bool != bool"
+    },
+    {
+      "name": "v8_ticks_nonmonotonic_rem_type",
+      "passed": true,
+      "detail": "nonmonotonic_rem: bool != bool"
+    },
+    {
+      "name": "v8_ticks_gap_after_previous_type",
+      "passed": true,
+      "detail": "gap_after_previous: bool != bool"
+    },
+    {
+      "name": "v8_ticks_gap_size_s_type",
+      "passed": true,
+      "detail": "gap_size_s: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_clock_disagreement_s_type",
+      "passed": true,
+      "detail": "clock_disagreement_s: double != double"
+    },
+    {
+      "name": "v8_ticks_session_left_censored_type",
+      "passed": true,
+      "detail": "session_left_censored: bool != bool"
+    },
+    {
+      "name": "v8_ticks_session_right_censored_type",
+      "passed": true,
+      "detail": "session_right_censored: bool != bool"
+    },
+    {
+      "name": "v8_ticks_binance_imbalance_type",
+      "passed": true,
+      "detail": "binance_imbalance: double != double"
+    },
+    {
+      "name": "v8_ticks_polymarket_imbalance_type",
+      "passed": true,
+      "detail": "polymarket_imbalance: double != double"
+    },
+    {
+      "name": "v8_ticks_combined_imbalance_logged_type",
+      "passed": true,
+      "detail": "combined_imbalance_logged: double != double"
+    },
+    {
+      "name": "v8_ticks_cushion_usd_type",
+      "passed": true,
+      "detail": "cushion_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_spot_cvd_1m_usd_type",
+      "passed": true,
+      "detail": "spot_cvd_1m_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_spot_cvd_since_open_usd_type",
+      "passed": true,
+      "detail": "spot_cvd_since_open_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_spot_cvd_delta_5s_usd_type",
+      "passed": true,
+      "detail": "spot_cvd_delta_5s_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_spot_cvd_delta_10s_usd_type",
+      "passed": true,
+      "detail": "spot_cvd_delta_10s_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_spot_cvd_delta_60s_usd_type",
+      "passed": true,
+      "detail": "spot_cvd_delta_60s_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_cushion_delta_10s_usd_type",
+      "passed": true,
+      "detail": "cushion_delta_10s_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_momentum_z_type",
+      "passed": true,
+      "detail": "momentum_z: double != double"
+    },
+    {
+      "name": "v8_ticks_momentum_direction_type",
+      "passed": true,
+      "detail": "momentum_direction: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_imbalance_ewma_type",
+      "passed": true,
+      "detail": "imbalance_ewma: double != double"
+    },
+    {
+      "name": "v8_ticks_large_print_net_3m_usd_type",
+      "passed": true,
+      "detail": "large_print_net_3m_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_efficiency_3m_type",
+      "passed": true,
+      "detail": "efficiency_3m: double != double"
+    },
+    {
+      "name": "v8_ticks_perp_minus_spot_cvd_5m_usd_type",
+      "passed": true,
+      "detail": "perp_minus_spot_cvd_5m_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_realized_vol_1m_usd_type",
+      "passed": true,
+      "detail": "realized_vol_1m_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_poly_up_mid_type",
+      "passed": true,
+      "detail": "poly_up_mid: double != double"
+    },
+    {
+      "name": "v8_ticks_poly_down_mid_proxy_type",
+      "passed": true,
+      "detail": "poly_down_mid_proxy: double != double"
+    },
+    {
+      "name": "v8_ticks_poly_price_available_type",
+      "passed": true,
+      "detail": "poly_price_available: bool != bool"
+    },
+    {
+      "name": "v8_ticks_poly_favorite_side_type",
+      "passed": true,
+      "detail": "poly_favorite_side: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_poly_favorite_mid_type",
+      "passed": true,
+      "detail": "poly_favorite_mid: double != double"
+    },
+    {
+      "name": "v8_ticks_poly_distance_from_50_type",
+      "passed": true,
+      "detail": "poly_distance_from_50: double != double"
+    },
+    {
+      "name": "v8_ticks_signal_side_mid_type",
+      "passed": true,
+      "detail": "signal_side_mid: double != double"
+    },
+    {
+      "name": "v8_ticks_signal_side_discount_to_one_type",
+      "passed": true,
+      "detail": "signal_side_discount_to_one: double != double"
+    },
+    {
+      "name": "v8_ticks_signal_type",
+      "passed": true,
+      "detail": "signal: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_conviction_tier_type",
+      "passed": true,
+      "detail": "conviction_tier: int8 != int8"
+    },
+    {
+      "name": "v8_ticks_conviction_points_type",
+      "passed": true,
+      "detail": "conviction_points: int8 != int8"
+    },
+    {
+      "name": "v8_ticks_conviction_reason_type",
+      "passed": true,
+      "detail": "conviction_reason: string != string"
+    },
+    {
+      "name": "v8_ticks_p_flip_type",
+      "passed": true,
+      "detail": "p_flip: double != double"
+    },
+    {
+      "name": "v8_ticks_flip_alert_type",
+      "passed": true,
+      "detail": "flip_alert: string != string"
+    },
+    {
+      "name": "v8_ticks_early_call_side_type",
+      "passed": true,
+      "detail": "early_call_side: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_early_tier_type",
+      "passed": true,
+      "detail": "early_tier: string != string"
+    },
+    {
+      "name": "v8_ticks_v8_floor_usd_type",
+      "passed": true,
+      "detail": "v8_floor_usd: double != double"
+    },
+    {
+      "name": "v8_ticks_cushion_floor_ratio_type",
+      "passed": true,
+      "detail": "cushion_floor_ratio: double != double"
+    },
+    {
+      "name": "v8_ticks_expected_v8_signal_type",
+      "passed": true,
+      "detail": "expected_v8_signal: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_signal_rule_match_type",
+      "passed": true,
+      "detail": "signal_rule_match: bool != bool"
+    },
+    {
+      "name": "v8_ticks_floor_boundary_ambiguous_type",
+      "passed": true,
+      "detail": "floor_boundary_ambiguous: bool != bool"
+    },
+    {
+      "name": "v8_ticks_previous_signal_type",
+      "passed": true,
+      "detail": "previous_signal: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_signal_changed_type",
+      "passed": true,
+      "detail": "signal_changed: bool != bool"
+    },
+    {
+      "name": "v8_ticks_signal_run_id_type",
+      "passed": true,
+      "detail": "signal_run_id: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_signal_run_age_ticks_type",
+      "passed": true,
+      "detail": "signal_run_age_ticks: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_signal_run_age_s_type",
+      "passed": true,
+      "detail": "signal_run_age_s: double != double"
+    },
+    {
+      "name": "v8_ticks_first_directional_tick_type",
+      "passed": true,
+      "detail": "first_directional_tick: bool != bool"
+    },
+    {
+      "name": "v8_ticks_previous_directional_signal_type",
+      "passed": true,
+      "detail": "previous_directional_signal: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_ticks_directional_reversal_count_prior_type",
+      "passed": true,
+      "detail": "directional_reversal_count_prior: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_directional_reversal_count_through_now_type",
+      "passed": true,
+      "detail": "directional_reversal_count_through_now: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_up_count_prior_type",
+      "passed": true,
+      "detail": "up_count_prior: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_down_count_prior_type",
+      "passed": true,
+      "detail": "down_count_prior: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_mixed_count_prior_type",
+      "passed": true,
+      "detail": "mixed_count_prior: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_early_call_first_seen_type",
+      "passed": true,
+      "detail": "early_call_first_seen: bool != bool"
+    },
+    {
+      "name": "v8_ticks_early_call_age_ticks_type",
+      "passed": true,
+      "detail": "early_call_age_ticks: int32 != int32"
+    },
+    {
+      "name": "v8_ticks_early_call_age_s_type",
+      "passed": true,
+      "detail": "early_call_age_s: double != double"
+    },
+    {
+      "name": "v8_signal_runs_columns",
+      "passed": true,
+      "detail": "missing/exp order"
+    },
+    {
+      "name": "v8_signal_runs_market_id_type",
+      "passed": true,
+      "detail": "market_id: string != string"
+    },
+    {
+      "name": "v8_signal_runs_session_id_type",
+      "passed": true,
+      "detail": "session_id: string != string"
+    },
+    {
+      "name": "v8_signal_runs_signal_run_id_type",
+      "passed": true,
+      "detail": "signal_run_id: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_signal_type",
+      "passed": true,
+      "detail": "signal: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_signal_runs_start_tick_index_type",
+      "passed": true,
+      "detail": "start_tick_index: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_start_row_timestamp_utc_type",
+      "passed": true,
+      "detail": "start_row_timestamp_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_signal_runs_start_rem_s_type",
+      "passed": true,
+      "detail": "start_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_start_elapsed_s_type",
+      "passed": true,
+      "detail": "start_elapsed_s: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_end_tick_index_type",
+      "passed": true,
+      "detail": "end_tick_index: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_end_row_timestamp_utc_type",
+      "passed": true,
+      "detail": "end_row_timestamp_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_signal_runs_end_rem_s_type",
+      "passed": true,
+      "detail": "end_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_end_elapsed_s_type",
+      "passed": true,
+      "detail": "end_elapsed_s: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_observed_tick_count_type",
+      "passed": true,
+      "detail": "observed_tick_count: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_observed_duration_s_type",
+      "passed": true,
+      "detail": "observed_duration_s: double != double"
+    },
+    {
+      "name": "v8_signal_runs_left_censored_type",
+      "passed": true,
+      "detail": "left_censored: bool != bool"
+    },
+    {
+      "name": "v8_signal_runs_right_censored_type",
+      "passed": true,
+      "detail": "right_censored: bool != bool"
+    },
+    {
+      "name": "v8_signal_runs_contains_tick_gap_type",
+      "passed": true,
+      "detail": "contains_tick_gap: bool != bool"
+    },
+    {
+      "name": "v8_signal_runs_max_tick_gap_s_type",
+      "passed": true,
+      "detail": "max_tick_gap_s: int32 != int32"
+    },
+    {
+      "name": "v8_signal_runs_start_cushion_usd_type",
+      "passed": true,
+      "detail": "start_cushion_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_v8_floor_usd_type",
+      "passed": true,
+      "detail": "start_v8_floor_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_cushion_floor_ratio_type",
+      "passed": true,
+      "detail": "start_cushion_floor_ratio: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_realized_vol_1m_usd_type",
+      "passed": true,
+      "detail": "start_realized_vol_1m_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_poly_up_mid_type",
+      "passed": true,
+      "detail": "start_poly_up_mid: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_poly_favorite_side_type",
+      "passed": true,
+      "detail": "start_poly_favorite_side: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_signal_runs_start_poly_favorite_mid_type",
+      "passed": true,
+      "detail": "start_poly_favorite_mid: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_signal_side_mid_type",
+      "passed": true,
+      "detail": "start_signal_side_mid: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_binance_imbalance_type",
+      "passed": true,
+      "detail": "start_binance_imbalance: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_polymarket_imbalance_type",
+      "passed": true,
+      "detail": "start_polymarket_imbalance: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_combined_imbalance_logged_type",
+      "passed": true,
+      "detail": "start_combined_imbalance_logged: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_imbalance_ewma_type",
+      "passed": true,
+      "detail": "start_imbalance_ewma: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_spot_cvd_since_open_usd_type",
+      "passed": true,
+      "detail": "start_spot_cvd_since_open_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_spot_cvd_delta_5s_usd_type",
+      "passed": true,
+      "detail": "start_spot_cvd_delta_5s_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_spot_cvd_delta_10s_usd_type",
+      "passed": true,
+      "detail": "start_spot_cvd_delta_10s_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_spot_cvd_delta_60s_usd_type",
+      "passed": true,
+      "detail": "start_spot_cvd_delta_60s_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_spot_cvd_delta_3m_usd_type",
+      "passed": true,
+      "detail": "start_spot_cvd_delta_3m_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_momentum_z_type",
+      "passed": true,
+      "detail": "start_momentum_z: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_momentum_direction_type",
+      "passed": true,
+      "detail": "start_momentum_direction: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_signal_runs_start_large_print_net_3m_usd_type",
+      "passed": true,
+      "detail": "start_large_print_net_3m_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_efficiency_3m_type",
+      "passed": true,
+      "detail": "start_efficiency_3m: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_perp_minus_spot_cvd_5m_usd_type",
+      "passed": true,
+      "detail": "start_perp_minus_spot_cvd_5m_usd: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_p_flip_type",
+      "passed": true,
+      "detail": "start_p_flip: double != double"
+    },
+    {
+      "name": "v8_signal_runs_start_flip_alert_type",
+      "passed": true,
+      "detail": "start_flip_alert: string != string"
+    },
+    {
+      "name": "v8_signal_runs_start_conviction_tier_type",
+      "passed": true,
+      "detail": "start_conviction_tier: int8 != int8"
+    },
+    {
+      "name": "v8_signal_runs_start_conviction_points_type",
+      "passed": true,
+      "detail": "start_conviction_points: int8 != int8"
+    },
+    {
+      "name": "v8_signal_runs_start_conviction_reason_type",
+      "passed": true,
+      "detail": "start_conviction_reason: string != string"
+    },
+    {
+      "name": "v8_signal_runs_directional_reversal_count_prior_type",
+      "passed": true,
+      "detail": "directional_reversal_count_prior: int32 != int32"
+    },
+    {
+      "name": "v8_market_labels_columns",
+      "passed": true,
+      "detail": "missing/exp order"
+    },
+    {
+      "name": "v8_market_labels_market_id_type",
+      "passed": true,
+      "detail": "market_id: string != string"
+    },
+    {
+      "name": "v8_market_labels_canonical_session_id_type",
+      "passed": true,
+      "detail": "canonical_session_id: string != string"
+    },
+    {
+      "name": "v8_market_labels_asset_type",
+      "passed": true,
+      "detail": "asset: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_market_labels_symbol_type",
+      "passed": true,
+      "detail": "symbol: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_market_labels_interval_type",
+      "passed": true,
+      "detail": "interval: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_market_labels_bar_seconds_type",
+      "passed": true,
+      "detail": "bar_seconds: int32 != int32"
+    },
+    {
+      "name": "v8_market_labels_bar_start_utc_type",
+      "passed": true,
+      "detail": "bar_start_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_market_labels_bar_end_utc_type",
+      "passed": true,
+      "detail": "bar_end_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_market_labels_settled_side_type",
+      "passed": true,
+      "detail": "settled_side: dictionary<values=string, indices=int8, ordered=0> != dictionary<values=string, indices=int8, ordered=0>"
+    },
+    {
+      "name": "v8_market_labels_label_up_type",
+      "passed": true,
+      "detail": "label_up: bool != bool"
+    },
+    {
+      "name": "v8_market_labels_settlement_open_usd_type",
+      "passed": true,
+      "detail": "settlement_open_usd: double != double"
+    },
+    {
+      "name": "v8_market_labels_settlement_close_usd_type",
+      "passed": true,
+      "detail": "settlement_close_usd: double != double"
+    },
+    {
+      "name": "v8_market_labels_settlement_move_usd_type",
+      "passed": true,
+      "detail": "settlement_move_usd: double != double"
+    },
+    {
+      "name": "v8_market_labels_settlement_abs_move_usd_type",
+      "passed": true,
+      "detail": "settlement_abs_move_usd: double != double"
+    },
+    {
+      "name": "v8_market_labels_settlement_timestamp_utc_type",
+      "passed": true,
+      "detail": "settlement_timestamp_utc: timestamp[ms, tz=UTC] != timestamp[ms, tz=UTC]"
+    },
+    {
+      "name": "v8_market_labels_settlement_rule_consistent_type",
+      "passed": true,
+      "detail": "settlement_rule_consistent: bool != bool"
+    },
+    {
+      "name": "v8_market_labels_near_flat_outcome_type",
+      "passed": true,
+      "detail": "near_flat_outcome: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_columns",
+      "passed": true,
+      "detail": "missing/exp order"
+    },
+    {
+      "name": "v8_session_quality_session_id_type",
+      "passed": true,
+      "detail": "session_id: string != string"
+    },
+    {
+      "name": "v8_session_quality_market_id_type",
+      "passed": true,
+      "detail": "market_id: string != string"
+    },
+    {
+      "name": "v8_session_quality_source_path_type",
+      "passed": true,
+      "detail": "source_path: string != string"
+    },
+    {
+      "name": "v8_session_quality_source_sha256_type",
+      "passed": true,
+      "detail": "source_sha256: string != string"
+    },
+    {
+      "name": "v8_session_quality_source_size_bytes_type",
+      "passed": true,
+      "detail": "source_size_bytes: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_source_mtime_utc_type",
+      "passed": true,
+      "detail": "source_mtime_utc: string != string"
+    },
+    {
+      "name": "v8_session_quality_ingest_status_type",
+      "passed": true,
+      "detail": "ingest_status: string != string"
+    },
+    {
+      "name": "v8_session_quality_exclusion_reason_type",
+      "passed": true,
+      "detail": "exclusion_reason: string != string"
+    },
+    {
+      "name": "v8_session_quality_canonical_for_market_type",
+      "passed": true,
+      "detail": "canonical_for_market: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_duplicate_type_type",
+      "passed": true,
+      "detail": "duplicate_type: string != string"
+    },
+    {
+      "name": "v8_session_quality_canonical_rank_type",
+      "passed": true,
+      "detail": "canonical_rank: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_raw_row_count_type",
+      "passed": true,
+      "detail": "raw_row_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_tick_row_count_type",
+      "passed": true,
+      "detail": "tick_row_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_settlement_row_count_type",
+      "passed": true,
+      "detail": "settlement_row_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_first_rem_s_type",
+      "passed": true,
+      "detail": "first_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_last_rem_s_type",
+      "passed": true,
+      "detail": "last_rem_s: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_first_elapsed_s_type",
+      "passed": true,
+      "detail": "first_elapsed_s: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_last_elapsed_s_type",
+      "passed": true,
+      "detail": "last_elapsed_s: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_observed_span_s_type",
+      "passed": true,
+      "detail": "observed_span_s: double != double"
+    },
+    {
+      "name": "v8_session_quality_distinct_rem_seconds_type",
+      "passed": true,
+      "detail": "distinct_rem_seconds: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_duplicate_rem_count_type",
+      "passed": true,
+      "detail": "duplicate_rem_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_nonmonotonic_rem_count_type",
+      "passed": true,
+      "detail": "nonmonotonic_rem_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_missing_seconds_within_observed_span_type",
+      "passed": true,
+      "detail": "missing_seconds_within_observed_span: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_largest_gap_s_type",
+      "passed": true,
+      "detail": "largest_gap_s: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_starts_before_45s_elapsed_type",
+      "passed": true,
+      "detail": "starts_before_45s_elapsed: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_covers_45_to_90s_early_window_type",
+      "passed": true,
+      "detail": "covers_45_to_90s_early_window: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_reaches_final_5s_type",
+      "passed": true,
+      "detail": "reaches_final_5s: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_left_censored_type",
+      "passed": true,
+      "detail": "left_censored: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_right_censored_type",
+      "passed": true,
+      "detail": "right_censored: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_cushion_null_fraction_type",
+      "passed": true,
+      "detail": "cushion_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_volatility_null_fraction_type",
+      "passed": true,
+      "detail": "volatility_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_poly_mid_null_fraction_type",
+      "passed": true,
+      "detail": "poly_mid_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_poly_imbalance_null_fraction_type",
+      "passed": true,
+      "detail": "poly_imbalance_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_binance_imbalance_null_fraction_type",
+      "passed": true,
+      "detail": "binance_imbalance_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_cvd_since_open_null_fraction_type",
+      "passed": true,
+      "detail": "cvd_since_open_null_fraction: double != double"
+    },
+    {
+      "name": "v8_session_quality_signal_up_count_recomputed_type",
+      "passed": true,
+      "detail": "signal_up_count_recomputed: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_signal_down_count_recomputed_type",
+      "passed": true,
+      "detail": "signal_down_count_recomputed: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_signal_mixed_count_recomputed_type",
+      "passed": true,
+      "detail": "signal_mixed_count_recomputed: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_signal_up_count_raw_summary_type",
+      "passed": true,
+      "detail": "signal_up_count_raw_summary: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_signal_down_count_raw_summary_type",
+      "passed": true,
+      "detail": "signal_down_count_raw_summary: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_signal_mixed_count_raw_summary_type",
+      "passed": true,
+      "detail": "signal_mixed_count_raw_summary: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_raw_summary_matches_recomputed_type",
+      "passed": true,
+      "detail": "raw_summary_matches_recomputed: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_nonboundary_signal_mismatch_count_type",
+      "passed": true,
+      "detail": "nonboundary_signal_mismatch_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_boundary_ambiguous_count_type",
+      "passed": true,
+      "detail": "boundary_ambiguous_count: int32 != int32"
+    },
+    {
+      "name": "v8_session_quality_engine_compatible_type",
+      "passed": true,
+      "detail": "engine_compatible: bool != bool"
+    },
+    {
+      "name": "v8_session_quality_early_call_validated_domain_type",
+      "passed": true,
+      "detail": "early_call_validated_domain: bool != bool"
+    },
+    {
+      "name": "tick_corpus_version_no_nulls",
+      "passed": true,
+      "detail": "corpus_version: 0 nulls"
+    },
+    {
+      "name": "tick_market_id_no_nulls",
+      "passed": true,
+      "detail": "market_id: 0 nulls"
+    },
+    {
+      "name": "tick_session_id_no_nulls",
+      "passed": true,
+      "detail": "session_id: 0 nulls"
+    },
+    {
+      "name": "tick_source_path_no_nulls",
+      "passed": true,
+      "detail": "source_path: 0 nulls"
+    },
+    {
+      "name": "tick_source_sha256_no_nulls",
+      "passed": true,
+      "detail": "source_sha256: 0 nulls"
+    },
+    {
+      "name": "tick_row_index_raw_no_nulls",
+      "passed": true,
+      "detail": "row_index_raw: 0 nulls"
+    },
+    {
+      "name": "tick_tick_index_no_nulls",
+      "passed": true,
+      "detail": "tick_index: 0 nulls"
+    },
+    {
+      "name": "tick_asset_no_nulls",
+      "passed": true,
+      "detail": "asset: 0 nulls"
+    },
+    {
+      "name": "tick_symbol_no_nulls",
+      "passed": true,
+      "detail": "symbol: 0 nulls"
+    },
+    {
+      "name": "tick_interval_no_nulls",
+      "passed": true,
+      "detail": "interval: 0 nulls"
+    },
+    {
+      "name": "tick_bar_seconds_no_nulls",
+      "passed": true,
+      "detail": "bar_seconds: 0 nulls"
+    },
+    {
+      "name": "tick_bar_start_utc_no_nulls",
+      "passed": true,
+      "detail": "bar_start_utc: 0 nulls"
+    },
+    {
+      "name": "tick_bar_end_utc_no_nulls",
+      "passed": true,
+      "detail": "bar_end_utc: 0 nulls"
+    },
+    {
+      "name": "tick_bar_date_utc_no_nulls",
+      "passed": true,
+      "detail": "bar_date_utc: 0 nulls"
+    },
+    {
+      "name": "tick_t_raw_no_nulls",
+      "passed": true,
+      "detail": "t_raw: 0 nulls"
+    },
+    {
+      "name": "tick_row_timestamp_utc_no_nulls",
+      "passed": true,
+      "detail": "row_timestamp_utc: 0 nulls"
+    },
+    {
+      "name": "tick_rem_s_no_nulls",
+      "passed": true,
+      "detail": "rem_s: 0 nulls"
+    },
+    {
+      "name": "tick_elapsed_s_no_nulls",
+      "passed": true,
+      "detail": "elapsed_s: 0 nulls"
+    },
+    {
+      "name": "tick_duplicate_rem_no_nulls",
+      "passed": true,
+      "detail": "duplicate_rem: 0 nulls"
+    },
+    {
+      "name": "tick_nonmonotonic_rem_no_nulls",
+      "passed": true,
+      "detail": "nonmonotonic_rem: 0 nulls"
+    },
+    {
+      "name": "tick_gap_after_previous_no_nulls",
+      "passed": true,
+      "detail": "gap_after_previous: 0 nulls"
+    },
+    {
+      "name": "tick_clock_disagreement_s_no_nulls",
+      "passed": true,
+      "detail": "clock_disagreement_s: 0 nulls"
+    },
+    {
+      "name": "tick_session_left_censored_no_nulls",
+      "passed": true,
+      "detail": "session_left_censored: 0 nulls"
+    },
+    {
+      "name": "tick_session_right_censored_no_nulls",
+      "passed": true,
+      "detail": "session_right_censored: 0 nulls"
+    },
+    {
+      "name": "tick_poly_price_available_no_nulls",
+      "passed": true,
+      "detail": "poly_price_available: 0 nulls"
+    },
+    {
+      "name": "tick_signal_no_nulls",
+      "passed": true,
+      "detail": "signal: 0 nulls"
+    },
+    {
+      "name": "tick_expected_v8_signal_no_nulls",
+      "passed": true,
+      "detail": "expected_v8_signal: 0 nulls"
+    },
+    {
+      "name": "tick_signal_rule_match_no_nulls",
+      "passed": true,
+      "detail": "signal_rule_match: 0 nulls"
+    },
+    {
+      "name": "tick_floor_boundary_ambiguous_no_nulls",
+      "passed": true,
+      "detail": "floor_boundary_ambiguous: 0 nulls"
+    },
+    {
+      "name": "tick_signal_changed_no_nulls",
+      "passed": true,
+      "detail": "signal_changed: 0 nulls"
+    },
+    {
+      "name": "tick_signal_run_id_no_nulls",
+      "passed": true,
+      "detail": "signal_run_id: 0 nulls"
+    },
+    {
+      "name": "tick_signal_run_age_ticks_no_nulls",
+      "passed": true,
+      "detail": "signal_run_age_ticks: 0 nulls"
+    },
+    {
+      "name": "tick_signal_run_age_s_no_nulls",
+      "passed": true,
+      "detail": "signal_run_age_s: 0 nulls"
+    },
+    {
+      "name": "tick_first_directional_tick_no_nulls",
+      "passed": true,
+      "detail": "first_directional_tick: 0 nulls"
+    },
+    {
+      "name": "tick_directional_reversal_count_prior_no_nulls",
+      "passed": true,
+      "detail": "directional_reversal_count_prior: 0 nulls"
+    },
+    {
+      "name": "tick_directional_reversal_count_through_now_no_nulls",
+      "passed": true,
+      "detail": "directional_reversal_count_through_now: 0 nulls"
+    },
+    {
+      "name": "tick_up_count_prior_no_nulls",
+      "passed": true,
+      "detail": "up_count_prior: 0 nulls"
+    },
+    {
+      "name": "tick_down_count_prior_no_nulls",
+      "passed": true,
+      "detail": "down_count_prior: 0 nulls"
+    },
+    {
+      "name": "tick_mixed_count_prior_no_nulls",
+      "passed": true,
+      "detail": "mixed_count_prior: 0 nulls"
+    },
+    {
+      "name": "tick_early_call_first_seen_no_nulls",
+      "passed": true,
+      "detail": "early_call_first_seen: 0 nulls"
+    },
+    {
+      "name": "no_leakage_cols_in_ticks",
+      "passed": true,
+      "detail": "set()"
+    },
+    {
+      "name": "file_order_preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "tick_markets_in_labels",
+      "passed": true,
+      "detail": "set()"
+    },
+    {
+      "name": "canonical_session_ids_in_ticks",
+      "passed": true,
+      "detail": "set()"
+    },
+    {
+      "name": "raw_byte_regeneration",
+      "passed": true,
+      "detail": "checked 25"
+    }
+  ],
+  "passed": true,
+  "failures": []
+}
