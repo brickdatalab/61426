@@ -20,8 +20,17 @@
   .pulse{width:9px;height:9px;border-radius:50%;background:#444}
   .pulse.on{background:var(--up);animation:pp 1s infinite}
   @keyframes pp{0%{box-shadow:0 0 0 0 rgba(46,194,126,.6)}70%{box-shadow:0 0 0 7px rgba(46,194,126,0)}100%{box-shadow:0 0 0 0 rgba(46,194,126,0)}}
-  .wrap{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:calc(100vh - 50px);width:100%;max-width:100%;overflow-x:hidden}
-  .controls{padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .wrap{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:calc(100vh - 50px);width:100%;max-width:100%;overflow-x:hidden;transition:grid-template-columns .18s ease}
+  .wrap.sidebar-collapsed{grid-template-columns:48px minmax(0,1fr)}
+  .controls{position:relative;padding:16px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .sidebar-toggle{position:absolute;top:12px;right:-15px;z-index:10;width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--txt);font:700 20px/1 ui-monospace,monospace;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.32)}
+  .sidebar-toggle:hover{border-color:var(--bin);color:var(--bin)}
+  .sidebar-toggle:focus-visible{outline:2px solid var(--bin);outline-offset:2px}
+  .sidebar-content{min-width:0}
+  .wrap.sidebar-collapsed .sidebar-content{visibility:hidden;opacity:0;pointer-events:none}
+  .wrap.sidebar-collapsed .sidebar-toggle{right:9px}
+  @media (max-width:760px){.wrap,.wrap.sidebar-collapsed{grid-template-columns:1fr}.wrap.sidebar-collapsed .controls{height:48px;padding:0;border-bottom:1px solid var(--line)}.sidebar-toggle,.wrap.sidebar-collapsed .sidebar-toggle{right:10px}.controls{border-right:0;padding-top:54px}}
+  @media (prefers-reduced-motion:reduce){.wrap{transition:none}}
   .preview{padding:16px;overflow-y:auto;overflow-x:hidden;min-width:0;max-width:100%}
   label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 6px}
   input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:9px 10px;border-radius:7px;font-family:ui-monospace,monospace;font-size:12px}
@@ -165,6 +174,8 @@
 
 <div class="wrap">
   <div class="controls">
+    <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-controls="sidebarContent" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
+    <div id="sidebarContent" class="sidebar-content">
     <div class="group"><label>Market slug</label>
       <input id="slug" type="text" value="btc-updown-15m-1781669700" spellcheck="false"></div>
     <div class="group"><label>Presets — current live bar</label>
@@ -187,6 +198,7 @@
     <div class="threads" id="threads">
       <div class="thhead">Session history</div>
       <div class="thempty">No past sessions yet</div>
+    </div>
     </div>
   </div>
 
@@ -334,6 +346,22 @@ const POLY_BAND=0.06;    // ±6 cents of prob shown
 const EARLY_TIER_TIP = 'Inherited selective early-call channel. Outcome Shadow remains display-and-log only.';
 const SOURCE_BUILD_HASH = '6556297f0caf755ea2443b6ff34247c6b27879e1666ab5a5a1428163b5262d4d';
 let parsed=null,poll=null,st=null,runsLeft=0;
+const SIDEBAR_STATE_KEY='updownSidebarCollapsed:v9';
+function setSidebarCollapsed(collapsed,persist=true){
+  const wrap=$('.wrap'),button=$('#sidebarToggle');
+  wrap.classList.toggle('sidebar-collapsed',collapsed);
+  button.setAttribute('aria-expanded',String(!collapsed));
+  button.setAttribute('aria-label',collapsed?'Expand sidebar':'Collapse sidebar');
+  button.title=collapsed?'Expand sidebar':'Collapse sidebar';
+  button.textContent=collapsed?'›':'‹';
+  if(persist){try{localStorage.setItem(SIDEBAR_STATE_KEY,collapsed?'1':'0');}catch(e){}}
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+}
+function initSidebarToggle(){
+  let collapsed=false;try{collapsed=localStorage.getItem(SIDEBAR_STATE_KEY)==='1';}catch(e){}
+  setSidebarCollapsed(collapsed,false);
+  $('#sidebarToggle').addEventListener('click',()=>setSidebarCollapsed(!$('.wrap').classList.contains('sidebar-collapsed')));
+}
 
 function parseSlug(slug){
   const m=slug.trim().toLowerCase().match(/^([a-z]+)-updown-(\d+)([mh])-(\d+)$/);
@@ -1182,6 +1210,7 @@ $('#presets').onclick=e=>{const b=e.target.closest('button');if(!b||st?.running)
   $('#slug').value=`${b.dataset.a}-updown-${b.dataset.i}-${ts}`;updatePrompt();};
 $('#copy').onclick=()=>{navigator.clipboard.writeText($('#prompt').value);const b=$('#copy');b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1200);};
 $('#imbSelect').onchange=()=>{ if(st){ swapImbChart($('#imbSelect').value); } };
+initSidebarToggle();
 parsed=parseSlug($('#slug').value);updatePrompt();
 $('#threads').addEventListener('click',e=>{const b=e.target.closest('.thitem');if(b)openThread(b.dataset.slug);});
 $('#thClose').onclick=()=>{ $('#threadModal').style.display='none'; };
